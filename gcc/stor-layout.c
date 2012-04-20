@@ -1074,6 +1074,38 @@ update_alignment_for_field (record_layout_info rli, tree field,
   return desired_align;
 }
 
+static void
+handle_warn_if_not_align (tree field, unsigned int record_align)
+{
+  tree type = TREE_TYPE (field);
+
+  if (type == error_mark_node)
+    return;
+
+  unsigned int warn_if_not_align = TYPE_WARN_IF_NOT_ALIGN (type);
+
+  if (!warn_if_not_align && TYPE_USER_ALIGN (type))
+    warn_if_not_align = TYPE_ALIGN (type);
+
+  if (!warn_if_not_align)
+    return;
+
+  tree context = DECL_CONTEXT (field);
+
+  warn_if_not_align /= BITS_PER_UNIT;
+  record_align /= BITS_PER_UNIT;
+  if ((record_align % warn_if_not_align) != 0)
+    warning (0, "alignment %d of %qT is less than %d",
+	     record_align, context, warn_if_not_align);
+
+  unsigned int off
+    = (tree_to_uhwi (DECL_FIELD_OFFSET (field))
+       + tree_to_uhwi (DECL_FIELD_BIT_OFFSET (field)) / BITS_PER_UNIT);
+  if ((off % warn_if_not_align) != 0)
+    warning (0, "%q+D offset %d in %qT isn't aligned to %d",
+	     field, off, context, warn_if_not_align);
+}
+
 /* Called from place_field to handle unions.  */
 
 static void
@@ -1084,6 +1116,7 @@ place_union_field (record_layout_info rli, tree field)
   DECL_FIELD_OFFSET (field) = size_zero_node;
   DECL_FIELD_BIT_OFFSET (field) = bitsize_zero_node;
   SET_DECL_OFFSET_ALIGN (field, BIGGEST_ALIGNMENT);
+  handle_warn_if_not_align (field, rli->record_align);
 
   /* If this is an ERROR_MARK return *after* having set the
      field at the start of the union. This helps when parsing
@@ -1169,6 +1202,7 @@ place_field (record_layout_info rli, tree field)
       DECL_FIELD_OFFSET (field) = rli->offset;
       DECL_FIELD_BIT_OFFSET (field) = rli->bitpos;
       SET_DECL_OFFSET_ALIGN (field, rli->offset_align);
+      handle_warn_if_not_align (field, rli->record_align);
       return;
     }
 
@@ -1290,6 +1324,9 @@ place_field (record_layout_info rli, tree field)
 
       if (! DECL_PACKED (field))
 	TYPE_USER_ALIGN (rli->t) |= TYPE_USER_ALIGN (type);
+
+      SET_TYPE_WARN_IF_NOT_ALIGN (rli->t,
+				  TYPE_WARN_IF_NOT_ALIGN (type));
     }
 
 #ifdef BITFIELD_NBYTES_LIMITED
@@ -1328,6 +1365,8 @@ place_field (record_layout_info rli, tree field)
 	rli->bitpos = round_up (rli->bitpos, type_align);
 
       TYPE_USER_ALIGN (rli->t) |= TYPE_USER_ALIGN (type);
+      SET_TYPE_WARN_IF_NOT_ALIGN (rli->t,
+				  TYPE_WARN_IF_NOT_ALIGN (type));
     }
 #endif
 
@@ -1478,6 +1517,7 @@ place_field (record_layout_info rli, tree field)
   DECL_FIELD_OFFSET (field) = rli->offset;
   DECL_FIELD_BIT_OFFSET (field) = rli->bitpos;
   SET_DECL_OFFSET_ALIGN (field, rli->offset_align);
+  handle_warn_if_not_align (field, rli->record_align);
 
   /* Evaluate nonconstant offsets only once, either now or as soon as safe.  */
   if (TREE_CODE (DECL_FIELD_OFFSET (field)) != INTEGER_CST)
@@ -2088,6 +2128,8 @@ finish_builtin_struct (tree type, const char *name, tree fields,
     {
       SET_TYPE_ALIGN (type, TYPE_ALIGN (align_type));
       TYPE_USER_ALIGN (type) = TYPE_USER_ALIGN (align_type);
+      SET_TYPE_WARN_IF_NOT_ALIGN (type,
+				  TYPE_WARN_IF_NOT_ALIGN (align_type));
     }
 
   layout_type (type);
@@ -2324,6 +2366,9 @@ layout_type (tree type)
 	  align = MAX (align, TYPE_ALIGN (type));
 	else
 	  TYPE_USER_ALIGN (type) = TYPE_USER_ALIGN (element);
+	if (!TYPE_WARN_IF_NOT_ALIGN (type))
+	  SET_TYPE_WARN_IF_NOT_ALIGN (type,
+				      TYPE_WARN_IF_NOT_ALIGN (element));
 #ifdef ROUND_TYPE_ALIGN
 	align = ROUND_TYPE_ALIGN (type, align, BITS_PER_UNIT);
 #else

@@ -8363,6 +8363,8 @@ finish_enum (tree enumtype, tree values, tree attributes)
       TYPE_PRECISION (tem) = TYPE_PRECISION (enumtype);
       SET_TYPE_ALIGN (tem, TYPE_ALIGN (enumtype));
       TYPE_USER_ALIGN (tem) = TYPE_USER_ALIGN (enumtype);
+      SET_TYPE_WARN_IF_NOT_ALIGN (tem,
+				  TYPE_WARN_IF_NOT_ALIGN (enumtype));
       TYPE_UNSIGNED (tem) = TYPE_UNSIGNED (enumtype);
       TYPE_LANG_SPECIFIC (tem) = TYPE_LANG_SPECIFIC (enumtype);
     }

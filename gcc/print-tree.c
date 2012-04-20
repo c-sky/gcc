@@ -603,8 +603,10 @@ print_node (FILE *file, const char *prefix, tree node, int indent,
       if (TYPE_USER_ALIGN (node))
 	fprintf (file, " user");
 
-      fprintf (file, " align %d symtab %d alias set " HOST_WIDE_INT_PRINT_DEC,
-	       TYPE_ALIGN (node), TYPE_SYMTAB_ADDRESS (node),
+      fprintf (file, " align %d warn_if_not_align %d symtab %d alias set "
+	       HOST_WIDE_INT_PRINT_DEC,
+	       TYPE_ALIGN (node), TYPE_WARN_IF_NOT_ALIGN (node),
+	       TYPE_SYMTAB_ADDRESS (node),
 	       (HOST_WIDE_INT) TYPE_ALIAS_SET (node));
 
       if (TYPE_STRUCTURAL_EQUALITY_P (node))
