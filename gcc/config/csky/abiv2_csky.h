@@ -81,7 +81,9 @@
    is GET_MODE_SIZE(DImode).  */
 #define MAX_FIXED_MODE_SIZE 64
 
-/* Allocation boundary (in *bits*) for the code of a function.  */
+/* Allocation boundary (in *bits*) for the code of a function.
+   we prefer to performance, but we care about much more for size like ck801
+   and so on.  */
 #define FUNCTION_BOUNDARY (((TARGET_CK801 || TARGET_CK802) \
                             && optimize_size) ? 16 : 32)
 
