@@ -4,6 +4,27 @@
 
 
 /******************************************************************
+ *     Defining data structures for per-function information      *
+ ******************************************************************/
+
+
+/* A C structure for machine-specific, per-function data.
+   This is added to the cfun structure.  */
+typedef struct GTY(()) machine_function
+{
+  /* Records if LR has to be saved for far jumps.  */
+  int far_jump_used;
+  /* Records the type of the current function.  */
+  unsigned long func_type;
+  /* Record if the function has a variable argument list.  */
+  int uses_anonymous_args;
+  /* Record the number of regs before varargs.  */
+  int number_of_regs_before_varargs;
+}
+machine_function;
+
+
+/******************************************************************
  *                         Storage Layout                         *
  ******************************************************************/
 
@@ -99,6 +120,139 @@
 
 /* 'char' is unsigned by default for backward compatiblity  */
 #define DEFAULT_SIGNED_CHAR    0
+
+
+/******************************************************************
+ *              Stack Layout and Calling Conventions              *
+ ******************************************************************/
+
+
+/* Basic Stack Layout  */
+
+
+/* Define this if pushing a word on the stack
+   makes the stack pointer a smaller address.  */
+#define STACK_GROWS_DOWNWARD    1
+
+/* Define this to nonzero if the nominal address of the stack frame
+   is at the high-address end of the local variables;
+   that is, each additional local variable allocated
+   goes at a more negative offset in the frame.  */
+#define FRAME_GROWS_DOWNWARD    1
+
+/* Offset within stack frame to start allocating local variables at.
+   If FRAME_GROWS_DOWNWARD, this is the offset to the END of the
+   first local allocated.  Otherwise, it is the offset to the BEGINNING
+   of the first local allocated.  */
+#define STARTING_FRAME_OFFSET   0
+
+/* Offset of first parameter from the argument pointer register value.  */
+#define FIRST_PARM_OFFSET(FNDECL) 0
+
+/* A C expression whose value is RTL representing the value of the return
+   address for the frame COUNT steps up from the current frame.  */
+#define RETURN_ADDR_RTX(COUNT, FRAME) \
+  csky_return_addr (COUNT, FRAME)
+
+/* Pick up the return address upon entry to a procedure. Used for
+   dwarf2 unwind information.  This also enables the table driven
+   mechanism.  */
+#define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, LR_REGNUM)
+
+
+/* Registers That Address the Stack Frame  */
+
+
+/* Register to use for pushing function arguments.  */
+#define STACK_POINTER_REGNUM  SP_REGNUM
+
+/* Base register for access to local variables of the function.  */
+#define FRAME_POINTER_REGNUM  8
+
+/* Base register for access to arguments of the function.  */
+#define ARG_POINTER_REGNUM    32
+
+/* TODO  */
+#define STATIC_CHAIN_REGNUM   (TARGET_CK801 ? 7 : 12)
+
+
+/* Eliminating Frame Pointer and Arg Pointer  */
+
+
+/* Definitions for register eliminations.
+
+   This is an array of structures.  Each structure initializes one pair
+   of eliminable registers.  The "from" register number is given first,
+   followed by "to".  Eliminations of the same "from" register are listed
+   in order of preference.
+
+   We have two registers that can be eliminated on the CSKY.  First, the
+   arg pointer register can often be eliminated in favor of the stack
+   pointer register.  Secondly, the pseudo frame pointer register can always
+   be eliminated; it is replaced with the stack pointer.  */
+#define ELIMINABLE_REGS           \
+{{ ARG_POINTER_REGNUM,        STACK_POINTER_REGNUM            },\
+ { ARG_POINTER_REGNUM,        FRAME_POINTER_REGNUM            },\
+ { FRAME_POINTER_REGNUM,      STACK_POINTER_REGNUM            }}
+
+/* Define the offset between two registers, one to be eliminated, and the
+   other its replacement, at the start of a routine.  */
+#define INITIAL_ELIMINATION_OFFSET(FROM, TO, OFFSET)      \
+  (OFFSET) = csky_initial_elimination_offset (FROM, TO)
+
+
+/* Passing Function Arguments on the Stack  */
+
+
+/* Define this if the maximum size of all the outgoing args is to be
+   accumulated and pushed during the prologue.  The amount can be
+   found in the variable crtl->outgoing_args_size.  */
+#define ACCUMULATE_OUTGOING_ARGS 1
+
+
+/* Passing Arguments in Registers  */
+
+
+/* A C type for declaring a variable that is used as the first argument of
+   TARGET_ FUNCTION_ARG and other related values.  */
+#define CUMULATIVE_ARGS  int
+
+/* Initialize a variable CUM of type CUMULATIVE_ARGS
+   for a call to a function whose data type is FNTYPE.
+   For a library call, FNTYPE is 0.
+
+   On CSKY, the offset always starts at 0: the first parm reg is always
+   the same reg.  */
+#define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS) \
+  ((CUM) = 0)
+
+/* 1 if N is a possible register number for function argument passing.
+   On the CSKY, r0-r3 are used to pass args.  */
+#define FUNCTION_ARG_REGNO_P(REGNO)         \
+  ((REGNO) >= CSKY_FIRST_PARM_REG           \
+   && (REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))
+
+
+/* How Large Values Are Returned  */
+
+
+/* Define DEFAULT_PCC_STRUCT_RETURN to 1 if all structure and union return
+   values must be in memory.  On the CSKY, small
+   structures (eight bytes or fewer) are returned in
+   the register pair r0/r1.  */
+#define DEFAULT_PCC_STRUCT_RETURN 0
+
+
+/* Generating Code for Profiling  */
+
+
+/* Call the function profiler with a given profile label.  */
+#define FUNCTION_PROFILER(STREAM, LABELNO)            \
+{                                                     \
+  fprintf (STREAM, "    trap    1\n");                \
+  fprintf (STREAM, "    .align    2\n");              \
+  fprintf (STREAM, "    .long    .LP%d\n", (LABELNO));\
+}
 
 
 #endif /* GCC_CSKY_H */
