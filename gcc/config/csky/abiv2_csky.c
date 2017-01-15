@@ -120,6 +120,7 @@ get_csky_frame_layout (csky_stack_frame *infp)
   int pad_arg, pad_reg, pad_local, pad_outbound;
   int spill_size; /* the size of args we need to spill ourselves */
   int reg_mask, reg_count;
+  int mod = 0;
 
   memset(infp, 0, sizeof(*infp));
 
@@ -130,22 +131,16 @@ get_csky_frame_layout (csky_stack_frame *infp)
                  * UNITS_PER_WORD;
 
   arg_size = spill_size ? spill_size : crtl->args.pretend_args_size;
-  pad_arg = (arg_size % CSKY_STACK_BOUNDARY_BYTES)
-            ? (CSKY_STACK_BOUNDARY_BYTES
-               - (arg_size % CSKY_STACK_BOUNDARY_BYTES))
-            : 0;
+  mod = arg_size % CSKY_STACK_BOUNDARY_BYTES;
+  pad_arg = mod ? (CSKY_STACK_BOUNDARY_BYTES - mod) : 0;
 
   local_size = get_frame_size();
-  pad_local = (local_size % CSKY_STACK_BOUNDARY_BYTES)
-              ? (CSKY_STACK_BOUNDARY_BYTES
-                 - (local_size % CSKY_STACK_BOUNDARY_BYTES))
-              : 0;
+  mod = local_size % CSKY_STACK_BOUNDARY_BYTES;
+  pad_local = mod ? (CSKY_STACK_BOUNDARY_BYTES - mod) : 0;
 
   outbound_size = crtl->outgoing_args_size;
-  pad_outbound = (outbound_size % CSKY_STACK_BOUNDARY_BYTES)
-                 ? (CSKY_STACK_BOUNDARY_BYTES
-                    - (outbound_size % CSKY_STACK_BOUNDARY_BYTES))
-                 : 0;
+  mod = outbound_size % CSKY_STACK_BOUNDARY_BYTES;
+  pad_outbound = mod ? (CSKY_STACK_BOUNDARY_BYTES - mod) : 0;
 
   if ((local_size + pad_local + outbound_size + pad_outbound)
       > (CSKY_ADDI_MAX_STEP * 2))
@@ -154,10 +149,8 @@ get_csky_frame_layout (csky_stack_frame *infp)
   reg_mask = get_csky_live_regs (&reg_count);
   reg_size = reg_count * 4;
 
-  pad_reg = (reg_size % CSKY_STACK_BOUNDARY_BYTES)
-            ? (CSKY_STACK_BOUNDARY_BYTES
-               - (reg_size % CSKY_STACK_BOUNDARY_BYTES))
-            : 0;
+  mod = reg_size % CSKY_STACK_BOUNDARY_BYTES;
+  pad_reg = mod ? (CSKY_STACK_BOUNDARY_BYTES - mod) : 0;
 
   infp->arg_size = arg_size;
   infp->reg_size = reg_size;
@@ -216,15 +209,15 @@ csky_function_arg (cumulative_args_t pcum_v, machine_mode mode,
   int arg_reg = *pcum;
 
   if (!named || mode == VOIDmode)
-    return NULL_rtx;
+    return NULL_RTX;
 
   if (targetm.calls.must_pass_in_stack (mode, type))
-    return NULL_rtx;
+    return NULL_RTX;
 
   if (arg_reg < CSKY_NPARM_REGS)
     return gen_rtx_REG (mode, CSKY_FIRST_PARM_REG + arg_reg);
 
-  return NULL_rtx;
+  return NULL_RTX;
 }
 
 

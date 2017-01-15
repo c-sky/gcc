@@ -243,16 +243,4 @@ machine_function;
 #define DEFAULT_PCC_STRUCT_RETURN 0
 
 
-/* Generating Code for Profiling  */
-
-
-/* Call the function profiler with a given profile label.  */
-#define FUNCTION_PROFILER(STREAM, LABELNO)            \
-{                                                     \
-  fprintf (STREAM, "    trap    1\n");                \
-  fprintf (STREAM, "    .align    2\n");              \
-  fprintf (STREAM, "    .long    .LP%d\n", (LABELNO));\
-}
-
-
 #endif /* GCC_CSKY_H */
