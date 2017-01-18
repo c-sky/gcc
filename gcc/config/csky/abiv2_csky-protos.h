@@ -5,12 +5,30 @@
 
 #define CSKY_STACK_BOUNDARY_BYTES (STACK_BOUNDARY/BITS_PER_UNIT)
 
-#define CSKY_NPARM_REGS       4
-#define CSKY_FIRST_PARM_REG   0
-#define CSKY_NGPR_REGS        32
-#define CSKY_FIRST_RET_REG    0
+#define CSKY_NPARM_REGS               4
+#define CSKY_FIRST_PARM_REG           0
+#define CSKY_NGPR_REGS                32
+#define CSKY_FIRST_RET_REG            0
+#define CSKY_FIRST_VFP_REGNUM         52
+#define CSKY_LAST_VFP_REGNUM          67
+#define CSKY_FIRST_HIGH_REGNUM        16
+#define CSKY_LAST_HIGH_REGNUM         (CSKY_NGPR_REGS - 1)
+#define CSKY_FIRST_MINI_REGNUM        0
+#define CSKY_LAST_MINI_REGNUM         7
+#define CSKY_CC_REGNUM                33
+#define CSKY_HI_REGNUM                34
+#define CSKY_LO_REGNUM                35
+#define CSKY_SP_REGNUM                14
+#define CSKY_LR_REGNUM                15
+#define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
 
 #define CSKY_NUM_WORDS(SIZE) ((SIZE + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
+
+#define CSKY_GENERAL_REGNO_P(N) \
+  (((N) < CSKY_NGPR_REGS && (N) >= 0))
+
+#define CSKY_NUM_REGS(MODE) \
+  CSKY_NUM_WORDS(GET_MODE_SIZE (MODE))
 
 /* Structure used to hold the function stack frame layout.  */
 typedef struct GTY(()) csky_stack_frame

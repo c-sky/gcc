@@ -157,14 +157,14 @@ machine_function;
 /* Pick up the return address upon entry to a procedure. Used for
    dwarf2 unwind information.  This also enables the table driven
    mechanism.  */
-#define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, LR_REGNUM)
+#define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, CSKY_LR_REGNUM)
 
 
 /* Registers That Address the Stack Frame  */
 
 
 /* Register to use for pushing function arguments.  */
-#define STACK_POINTER_REGNUM  SP_REGNUM
+#define STACK_POINTER_REGNUM  CSKY_SP_REGNUM
 
 /* Base register for access to local variables of the function.  */
 #define FRAME_POINTER_REGNUM  8
@@ -242,5 +242,283 @@ machine_function;
    the register pair r0/r1.  */
 #define DEFAULT_PCC_STRUCT_RETURN 0
 
+
+/******************************************************************
+ *              Register Usage & Register Classes                 *
+ ******************************************************************/
+
+
+#define FIRST_PSEUDO_REGISTER 71
+
+/* 1 for registers that have pervasive standard uses
+   and are not available for the register allocator.
+   On the CSKY, r14 is sp, r26 is used by linker,
+   r27 is used by assembler, r28 is data base address,
+   r29 is GOT base address, r30 is handler base address,
+   r31 is TLS register.  */
+#define FIXED_REGISTERS                                                 \
+ /*  r0    r1    r2    r3    r4    r5    r6    r7  */                   \
+{    0,    0,    0,    0,    0,    0,    0,    0,                       \
+ /*  r8    r9    r10   r11   r12   r13   r14   r15 */                   \
+     0,    0,    0,    0,    0,    0,    1,    0,                       \
+ /*  r16   r17   r18   r19   r20   r21   r22   r23 */                   \
+     0,    0,    0,    0,    0,    0,    0,    0,                       \
+ /*  r24   r25   r26   r27   r28   r29   r30   tls */                   \
+     0,    0,    1,    1,    1,    1,    1,    1,                       \
+ /*  reserve     c     hi    lo  */                                     \
+     1,          1,    0,    0,                                         \
+ /* reserved */                                                         \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* vr0   vr1   vr2   vr3   vr4   vr5   vr6   vr7  */                   \
+     0,    0,    0,    0,    0,    0,    0,    0,                       \
+ /* vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */                   \
+     0,    0,    0,    0,    0,    0,    0,    0 ,                      \
+ /* reserved */                                                         \
+     1,    1,                                                           \
+ /* epc */                                                              \
+     1                                                                  \
+}
+
+/* 1 for registers that is clobbered (in general) by function calls.
+   If a register has 0, the compiler automatically saves it on
+   function entry and restores it on function exit, if the register
+   is used within the function.  */
+#define CALL_USED_REGISTERS \
+ /*  r0    r1    r2    r3    r4    r5    r6    r7  */                   \
+{    1,    1,    1,    1,    0,    0,    0,    0,                       \
+ /*  r8    r9    r10   r11   r12   r13   r14   r15 */                   \
+     0,    0,    0,    0,    1,    1,    1,    0,                       \
+ /*  r16   r17   r18   r19   r20   r21   r22   r23 */                   \
+     0,    0,    1,    1,    1,    1,    1,    1,                       \
+ /*  r24   r25   r26   r27   r28   r29   r30   r31 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /*  reserver    c     hi    lo */                                      \
+     1,          1,    1,    1,                                         \
+ /*  reserved */                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* vr0   vr1   vr2   vr3   vr4   vr5   vr6   vr7 */                    \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* reserved */                                                         \
+     1,    1,                                                           \
+ /* epc */                                                              \
+     1                                                                  \
+}
+
+#define REGISTER_NAMES                                                  \
+{                                                                       \
+  "a0",  "a1",  "a2",  "a3",  "l0",  "l1",  "l2",  "l3",                \
+  "l4",  "l5",  "l6",  "l7",  "t0",  "t1",  "sp",  "lr",                \
+  "l8",  "l9",  "t2",  "t3",  "t4",  "t5",  "t6",  "t7",                \
+  "t8",  "t9",  "r26", "r27", "gb",  "r29", "svbr","r31",               \
+  /* reserved */                                                        \
+  "reserved",                                                           \
+  /* CC register: 33 */                                                 \
+  "c",                                                                  \
+  /* DSP instruction register: 34, 35 */                                \
+  "hi", "lo",                                                           \
+  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
+  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
+  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
+  "reserverd",                                                          \
+  /* V reigsters: 52~67 */                                              \
+  "vr0", "vr1", "vr2",  "vr3",  "vr4",  "vr5",  "vr6",  "vr7",          \
+  "vr8", "vr9", "vr10", "vr11", "vr12", "vr13", "vr14", "vr15",         \
+  "reserverd" ,"reserverd",                                             \
+  "epc"                                                                 \
+}
+
+/* Table of additional register names to use in user input.  */
+#define ADDITIONAL_REGISTER_NAMES   \
+{                                   \
+  {"r0",  0},                       \
+  {"r1",  1},                       \
+  {"r2",  2},                       \
+  {"r3",  3},                       \
+  {"r4",  4},                       \
+  {"r5",  5},                       \
+  {"r6",  6},                       \
+  {"r7",  7},                       \
+  {"r8",  8},                       \
+  {"r9",  9},                       \
+  {"r10", 10},                      \
+  {"r11", 11},                      \
+  {"r12", 12},                      \
+  {"r13", 13},                      \
+  {"r14", 14},                      \
+  {"r15", 15},                      \
+  {"r16", 16},                      \
+  {"r17", 17},                      \
+  {"r18", 18},                      \
+  {"r19", 19},                      \
+  {"r20", 20},                      \
+  {"r21", 21},                      \
+  {"r22", 22},                      \
+  {"r23", 23},                      \
+  {"r24", 24},                      \
+  {"r25", 25},                      \
+  {"r26", 26},                      \
+  {"r27", 27},                      \
+  {"r28", 28},                      \
+  {"r29", 29},                      \
+  {"r30", 30},                      \
+  {"r31", 31},                      \
+}
+
+/* The order in which register should be allocated.
+   It is better to use the register caller need not to save.
+   Allocate r0 throufh r3 int reverse order since r3 is least likely
+   to contain a function parameter; in addition results are returned
+   in r0.  It is quite good to use lr since other order since other
+   calls may clobber it anyway.  */
+#define REG_ALLOC_ORDER                                         \
+/*   r3    r2    r1    r0   r12   r13   r18   r19 */            \
+  {   3,    2,    1,    0,   12,   13,   18,   19,              \
+/*  r20   r21   r22   r23   r24   r25 */                        \
+     20,   21,   22,   23,   24,   25,                          \
+/*   r15   r4    r5   r6     r7    r8    r9   r10   r11 */      \
+     15,    4,    5,   6,     7,    8,    9,   10,   11,        \
+/*  r16   r17   r26   r27   r28   r29   r30    hi    lo  */     \
+     16,   17,   26,   27,   28,   29,   30,   34,   35,        \
+/*  vr0   vr1   vr2   vr3   vr4   vr5   vr6   vr7  */           \
+     52,   53,   54,   55,   56,   57,   58,   59,              \
+/*  vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */           \
+     60,   61,   62,   63,   64,   65,   66,   67,              \
+/*  reserved  */                                                \
+     36,   37,   38,   39,   40,   41,   42,   43,              \
+     44,   45,   46,   47,   48,   49,   50,   51,              \
+/*   sp   tls   reserved     c    vfp   reserved    epc */      \
+     14,   31,   32,         33,   68,   69,         70  }
+
+/* Return number of consecutive hard regs needed starting at reg REGNO
+   to hold something of mode MODE.
+   This is ordinarily the length in words of a value of mode MODE
+   but can be less for certain modes in special long registers.
+
+   On the CSKY core regs are UNITS_PER_WORD bits wide.  */
+#define HARD_REGNO_NREGS(REGNO, MODE) \
+  ((REGNO >= CSKY_FIRST_VFP_REGNUM) ? 1 : CSKY_NUM_REGS (MODE))
+
+/* Retrun true if REGNO is suitable for holding a quantity of type MODE.  */
+#define HARD_REGNO_MODE_OK(REGNO, MODE) \
+  csky_hard_regno_mode_ok ((REGNO), (MODE))
+
+/* Value is 1 if it is a good idea to tie two pseudo registers
+   when one has mode MODE1 and one has mode MODE2.
+   If HARD_REGNO_MODE_OK could produce different values for MODE1 and MODE2,
+   for any hard reg, then this must be 0 for correct output.  */
+#define MODES_TIEABLE_P(MODE1, MODE2) \
+  (!TARGET_HARD_FLOAT  || \
+   !((MODE1) == DFmode && (MODE1) != (MODE2) || \
+     (MODE2) == DFmode && (MODE1) != (MODE2)))
+
+/*  Register classes.  */
+enum reg_class
+{
+  NO_REGS,
+  MINI_REGS,
+  SP_REGS,
+  GENERAL_REGS,
+  C_REGS,
+  HI_REGS,
+  LO_REGS,
+  HILO_REGS,
+  V_REGS,
+  OTHER_REGS,
+  RESERVE_REGS,
+  ALL_REGS,
+  LIM_REG_CLASSES
+};
+
+#define N_REG_CLASSES  (int) LIM_REG_CLASSES
+
+/* Give names of register classes as strings for dump file.  */
+#define REG_CLASS_NAMES \
+{                       \
+  "NO_REGS",            \
+  "MINI_REGS",          \
+  "SP_REGS",            \
+  "GENERAL_REGS",       \
+  "C_REGS",             \
+  "HI_REGS",            \
+  "LO_REGS",            \
+  "HILO_REGS",          \
+  "V_REGS",             \
+  "OTHER_REGS",         \
+  "RESERVE_REGS",       \
+  "ALL_REGS",           \
+}
+
+/* Define which registers fit in which classes.  This is an initializer
+   for a vector of HARD_REG_SET of length N_REG_CLASSES.  */
+#define REG_CLASS_CONTENTS                                           \
+{                                                                    \
+  {0x00000000, 0x00000000, 0x00000000 },  /* NO_REGS           */    \
+  {0x000000FF, 0x00000000, 0x00000000 },  /* MINI_REGS         */    \
+  {0x00004000, 0x00000000, 0x00000000 },  /* SP_REGS           */    \
+  {0xFFFFFFFF, 0x00000000, 0x00000000 },  /* GENERAL_REGS      */    \
+  {0x00000000, 0x00000002, 0x00000000 },  /* C_REGS            */    \
+  {0x00000000, 0x00000004, 0x00000000 },  /* HI_REG            */    \
+  {0x00000000, 0x00000008, 0x00000000 },  /* LO_REG            */    \
+  {0x00000000, 0x0000000c, 0x00000000 },  /* HILO_REGS         */    \
+  {0x00000000, 0xF0000000, 0x0000000F },  /* V_REGS            */    \
+  {0x00000000, 0x00000000, 0x00000040 },  /* OTHER_REGS        */    \
+  {0x00000000, 0x0FF00001, 0x00000030 },  /* RESERVE_REGS      */    \
+  {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F },  /* ALL_REGS          */    \
+}
+
+/* The class value fo index registers, and the one for base regs.  */
+#define INDEX_REG_CLASS  (TARGET_MU ? GENERAL_REGS : NO_REGS)
+#define BASE_REG_CLASS  GENERAL_REGS
+
+/* TODO is it necessary to set it to MINI_REGS to emit more 16bits
+   instructions?  */
+#define MODE_BASE_REG_CLASS(MODE) GENERAL_REGS
+
+/* V_REG registers can't do subreg as all values are reformatted to
+   internal precision.  */
+#define CANNOT_CHANGE_MODE_CLASS(FROM, TO, CLASS)   \
+  (GET_MODE_SIZE (FROM) != GET_MODE_SIZE (TO)       \
+   ? reg_classes_intersect_p (V_REGS, (CLASS))      \
+   : 0)
+
+/* The macros REG_OK_FOR..._P assume that the arg is a REG rtx
+   and check its validity for a certain class.
+   We have two alternate definitions for each of them.
+   The usual definition accepts all pseudo regs; the other rejects
+   them unless they have been allocated suitable hard regs.
+   The symbol REG_OK_STRICT causes the latter definition to be used.
+
+   Most source files want to accept pseudo regs in the hope that
+   they will get allocated to the class that the insn wants them to be in.
+   Source files for reload pass need to be strict.
+   After reload, it makes no difference, since pseudo regs have
+   been eliminated by then.
+
+   The reg_renumber is used to map pseudo regs into hardware
+   regs, it is set up as a result of register allocation.  */
+#ifdef REG_OK_STRICT
+#define REGNO_OK_FOR_BASE_P(REGNO)                     \
+    (CSKY_GENERAL_REGNO_P(REGNO)                       \
+     || CSKY_GENERAL_REGNO_P(reg_renumber[(REGNO)]) )
+#else
+#define REGNO_OK_FOR_BASE_P(REGNO)                     \
+    (CSKY_GENERAL_REGNO_P(REGNO)                       \
+     || (REGNO) >= FIRST_PSEUDO_REGISTER)
+#endif
+
+
+#ifdef REG_OK_STRICT
+#define REGNO_OK_FOR_INDEX_P(REGNO)                   \
+    (CSKY_GENERAL_REGNO_P(REGNO)                      \
+     || CSKY_GENERAL_REGNO_P(reg_renumber[(REGNO)]) )
+#else
+#define REGNO_OK_FOR_INDEX_P(REGNO)                   \
+    (CSKY_GENERAL_REGNO_P(REGNO)                      \
+     || (REGNO) >= FIRST_PSEUDO_REGISTER)
+#endif
 
 #endif /* GCC_CSKY_H */

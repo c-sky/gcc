@@ -1,4 +1,45 @@
 
+/* Array of the smallest class containing reg number REGNO, indexed by
+   REGNO.  Used by REGNO_REG_CLASS.  */
+enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
+{
+  /* Registers r0-r7.  */
+  MINI_REGS,     MINI_REGS,     MINI_REGS,     MINI_REGS,
+  MINI_REGS,     MINI_REGS,     MINI_REGS,     MINI_REGS,
+  /* Registers r8-r13.  */
+  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
+  GENERAL_REGS, GENERAL_REGS,
+  /* SP register.  */
+  SP_REGS,
+  /* Registers r15-r31.  */
+  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
+  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
+  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
+  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
+  GENERAL_REGS,
+  /* Reserved.  */
+  RESERVE_REGS,
+  /* CC,HI,LO registers.  */
+  C_REGS,      HI_REGS,      LO_REGS,
+  /* Reserved.  */
+  RESERVE_GRES, RESERVE_GEGS, RESERVE_REGS, RESERVE_REGS,
+  RESERVE_GRES, RESERVE_GEGS, RESERVE_REGS, RESERVE_REGS,
+  RESERVE_GRES, RESERVE_GEGS, RESERVE_REGS, RESERVE_REGS,
+  RESERVE_GRES, RESERVE_GEGS, RESERVE_REGS, RESERVE_REGS,
+  /* Vec registers.  */
+  V_REGS,       V_REGS,       V_REGS,       V_REGS,
+  V_REGS,       V_REGS,       V_REGS,       V_REGS,
+  V_REGS,       V_REGS,       V_REGS,       V_REGS,
+  V_REGS,       V_REGS,       V_REGS,       V_REGS,
+  /* Reserved.  */
+  RESERVE_REGS, RESERVE_REGS,
+  /* Register epc.  */
+  OTHER_REGS
+};
+
+/* The register number to be used for the PIC offset register.  */
+unsigned csky_pic_register = INVALID_REGNUM;
+
 /******************************************************************
  *                         Storage Layout                         *
  ******************************************************************/
@@ -70,6 +111,25 @@
 #define CSKY_ADDI_MAX_STEP    ((TARGET_CK801) ? (CSKY_ADDISP_MAX_STEP) : 4096)
 #define CSKY_SUBI_MAX_STEP    ((TARGET_CK801) ? (CSKY_SUBISP_MAX_STEP) : 4096)
 
+
+/******************************************************************
+ *                         Register Usage                         *
+ ******************************************************************/
+
+#undef  TARGET_CONDITIONAL_REGISTER_USAGE
+#define TARGET_CONDITIONAL_REGISTER_USAGE csky_conditional_register_usage
+
+#undef TARGET_CLASS_LIKELY_SPILLED_P
+#define TARGET_CLASS_LIKELY_SPILLED_P csky_class_likely_spilled_p
+
+#undef TARGET_PREFERRED_RELOAD_CLASS
+#define TARGET_PREFERRED_RELOAD_CLASS csky_preferred_reload_class
+
+#undef TARGET_CLASS_MAX_NREGS
+#define TARGET_CLASS_MAX_NREGS csky_class_max_nregs
+
+#undef  TARGET_SECONDARY_RELOAD
+#define TARGET_SECONDARY_RELOAD  csky_secondary_reload
 
 static int
 get_csky_live_regs (int *count)
@@ -458,4 +518,235 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   fprintf(file, "\tjbr \t");
   output_addr_const(file, fnaddr);
   fprintf(file, "\n");
+}
+
+
+/* Conditionally modify five variables fixed_regs, call_used_regs, global_regs,
+   reg_names, and reg_class_contents, to take into account any dependence of
+   these register sets on target flags.
+
+   On csky, ck801 has registers r0-r8,r13,r14,r15.
+   ck802 & ck803s has registers r0-r15.
+   Other cpu has registers r0-r31 when -mhigh-registers, otherwise it has
+   only r0-r15, ck803 default close this option, others default open.  */
+
+static void
+csky_conditional_register_usage (void)
+{
+  /* Only use mini registers in smart mode or 801.  */
+  if (TARGET_SMART || TARGET_CK801)
+    {
+      int i;
+
+      for (i = (CSKY_LAST_MINI_REGNUM + 1); i < 32; i++)
+        {
+          fixed_regs[i] = 1;
+          call_used_regs[i] = 1;
+          call_really_used_regs[i] = 1;
+        }
+    }
+  /* For some targets, the high regitser is not supported.
+     Expect ck801 & ck802 & ck803s, other cpu use high registers
+     depend on -mhigh-registers option(ck803 is default off,
+     others are default on).  */
+  else if (TARGET_CK802 || TARGET_CK803S || !TARGET_HIGH_REGISTER)
+   {
+      int i;
+
+      for (i = CSKY_FIRST_HIGH_REGNUM; i <= CSKY_LAST_HIGH_REGNUM; i++)
+      {
+        fixed_regs[i] = 1;
+        call_used_regs[i] = 1;
+        call_really_used_regs[i] = 1;
+      }
+   }
+
+
+  /* The hi,lo register is only supported in dsp mode.  */
+  if (!TARGET_DSP)
+    {
+      fixed_regs[CSKY_HI_REGNUM] = 1;
+      call_used_regs[CSKY_HI_REGNUM] = 1;
+      call_really_used_regs[CSKY_HI_REGNUM] = 1;
+
+      fixed_regs[CSKY_LO_REGNUM] = 1;
+      call_used_regs[CSKY_LO_REGNUM] = 1;
+      call_really_used_regs[CSKY_LO_REGNUM] = 1;
+    }
+
+  /* The V_REGS is only suported on hard float mode.  */
+  if (!TARGET_FPUV2 || !TARGET_HARD_FLOAT )
+    {
+      int regno;
+
+      for (regno = CSKY_FIRST_VFP_REGNUM;
+           regno <= CSKY_LAST_VFP_REGNUM; regno++)
+        {
+          fixed_regs[regno] = 1;
+          call_used_regs[regno] = 1;
+          call_really_used_regs[regno] = 1;
+        }
+    }
+
+  /* On the pic mode, the gb is not avilable for register
+     allocator.  Since the gb is not clobbered by function
+     call, set the call_really_used_regs to 0.  */
+  if (TARGET_PIC)
+    {
+      gcc_assert (csky_pic_register != INVALID_REGNUM);
+
+      fixed_regs[csky_pic_register] = 1;
+      call_used_regs[csky_pic_register] = 1;
+      call_really_used_regs[csky_pic_register] = 0;
+    }
+}
+
+
+/* Return true if REGNO is a valid register for holding
+   a quantity of type MODE.  */
+
+int
+csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
+{
+  /* General register always return 1 if mode is one word size,
+     when the size is larger than one word size, there should
+     be enough successive two register to put the data.  */
+  if (regno < CSKY_NGPR_REGS)
+    {
+      if (CSKY_NUM_REGS(mode) < 2)
+        return 1;
+      else
+        {
+          if (TARGET_SMART || TARGET_CK801)
+            return (regno < CSKY_LAST_MINI_REGNUM);
+          else if (TARGET_CK802 || TARGET_CK803S || !TARGET_HIGH_REGISTERS)
+            {
+              /* Without high register, r15 cannot hold two word size data.  */
+              return (regno < (CSKY_SP_REGNUM - 1));
+            }
+          else
+            return ((regno >= CSKY_LR_REGNUM)
+                    && (regno < CSKY_LAST_HIGH_UNFIXED_REGNUM));
+        }
+    }
+  else if (regno == CSKY_CC_REGNUM)
+    {
+      return (mode == CCmode);
+    }
+  else if (regno == CSKY_HI_REGNUM || regno == CSKY_LO_REGNUM)
+    {
+      /* Don't allocate hi,lo register for float data even
+         if in dsp mode, because it will cause high cost
+         to reload data from hi,lo register.  */
+      if (!TARGET_DSP || mode == SFmode || mode == DFmode)
+        return 0;
+      else if (CSKY_NUM_REGS(mode) == 2)
+        return (regno == CSKY_HI_REGNUM);
+      else
+        return 1;
+    }
+  else if ((regno >= CSKY_FIRST_VFP_REGNUM) && (regno <= CSKY_LAST_VFP_REGNUM))
+      return TARGET_HARD_FLOAT;
+
+  return 0;
+}
+
+
+/* We need to define this for MINI_REGS when we only use r0 - r7.
+   Otherwise we can end up using r0-r4 for function arguments,and don't
+   have enough left over to do doubleword arithmetic.  */
+
+static bool
+csky_class_likely_spilled_p (reg_class_t rclass)
+{
+  if (((TARGET_SMART || TARGET_CK801)
+       && rclass == MINI_REGS)
+      || rclass == C_REGS)
+    return true;
+
+  return false;
+}
+
+
+/* Given an rtx X being reloaded into a reg required to be
+   in class CLASS, return the class of reg to actually use.
+   In general this is just CLASS.  */
+
+static reg_class_t
+csky_preferred_reload_class (rtx x ATTRIBUTE_UNUSED, reg_class_t rclass)
+{
+  return rclass;
+}
+
+
+/* Return the maximum number of consecutive registers of class rclass needed
+   to hold a value of mode mode.
+
+   On the csky, this is the size of MODE in words,
+   except in the FP regs, where a single reg is always enough.  */
+
+static unsigned char
+csky_class_max_nregs (reg_class_t rclass, machine_mode mode)
+{
+  if (rclass == V_REGS)
+    return 1;
+  else
+    return CSKY_NUM_REGS (mode);
+}
+
+
+/*  For input reloads, this target hook is called with nonzero IN_P, and X is
+    an rtx that needs to be copied to a register of class RCLASS in MODE
+    reload mode. For output reloads, this target hook is called with zero IN_P,
+    and a register of class RCLASS needs to be copied to rtx X in MODE reload
+    mode.
+    If copying a register of RCALSS from/to X requires an intermediate register,
+    the hook should return the REGISTER_CLASS required for this intermediate register.
+    If no intermediate register is required, it should return NO_REGS. If more than
+    one intermediate register is required, describe the one that is closest in the
+    copy chain to the reload register.  */
+enum reg_class
+csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
+                       enum reg_class rclass,
+                       enum machine_mode mode ATTRIBUTE_UNUSED,
+                       secondary_reload_info * sri ATTRIBUTE_UNUSED)
+{
+  int regno = -1;
+
+  if (GET_CODE (x) == SIGN_EXTEND)
+    {
+      int off = 0;
+
+      x = XEXP (x, 0);
+
+      if (reg_renumber)
+        regno = true_regnum (x);
+      else
+        {
+          while (GET_CODE (x) == SUBREG)
+            {
+              off += subreg_regno_offset (REGNO (SUBREG_REG (x)),
+              GET_MODE (SUBREG_REG (x)),
+              SUBREG_BYTE (x), GET_MODE (x));
+              x = SUBREG_REG (x);
+            }
+
+            if (GET_CODE (x) == REG)
+              regno = REGNO (x) + off;
+        }
+    }
+  else if (GET_CODE (x) == REG || GET_CODE (x) == SUBREG)
+    regno = true_regnum (x);
+
+  /* We always require a general register when copying anything to
+     HI/LO_REGNUM, except when copying an SImode value from HI/LO_REGNUM
+     to a general register, or when copying from register 0.  */
+  if ((rclass == HILO_REGS || rclass == LO_REGS || rclass == HI_REGS)
+      && !GENERAL_REGNO_P (regno))
+    return GENERAL_REGS;
+
+  if (rclass == V_REGS && !GENERAL_REGNO_P (regno))
+    return GENERAL_REGS;
+
+  return NO_REGS;
 }
