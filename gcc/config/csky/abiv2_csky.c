@@ -1,4 +1,7 @@
 
+#include "abiv2_csky_internal.h"
+
+
 /* Array of the smallest class containing reg number REGNO, indexed by
    REGNO.  Used by REGNO_REG_CLASS.  */
 enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
@@ -103,6 +106,60 @@ unsigned csky_pic_register = INVALID_REGNUM;
 
 #undef  TARGET_SETUP_INCOMING_VARARGS
 #define TARGET_SETUP_INCOMING_VARARGS csky_setup_incoming_varargs
+
+
+/******************************************************************
+ *         Defining target-specific uses of __attribute__         *
+ ******************************************************************/
+
+
+#undef  TARGET_OPTION_OVERRIDE
+#define TARGET_OPTION_OVERRIDE csky_option_override
+
+
+static const struct csky_processors all_cores[] =
+{
+#undef CSKY_CORE
+#define CSKY_CORE(NAME, CORE, X, ARCH, ISA)  \
+  {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH, \
+  {ISA CSKY_ISA_FEATURE_GET(none)}},
+#include "abiv2_csky_cores.def"
+#undef CSKY_CORE
+  {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
+  {CSKY_ISA_FEATURE_GET(none)}}
+};
+
+static const struct csky_processors all_architectures[] =
+{
+#undef CSKY_ARCH
+#define CSKY_ARCH(NAME, CORE, ARCH, ISA)     \
+  {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH,  \
+  {ISA CSKY_ISA_FEATURE_GET(none)}},
+#include "abiv2_csky_arches.def"
+#undef CSKY_ARCH
+  {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
+  {CSKY_ISA_FEATURE_GET(none)}}
+};
+
+static const struct csky_fpu_desc all_fpus[] =
+{
+#undef CSKY_FPU
+#define CSKY_FPU(NAME, CNAME, ISA) \
+  {NAME, {ISA CSKY_ISA_FEATURE_GET(none)}},
+#include "abiv2_csky_fpus.def"
+#undef CSKY_FPU
+};
+
+static sbitmap csky_isa_all_fpubits;
+
+/* Active target architecture.  */
+struct csky_build_target csky_active_target;
+
+/* The following are used in the .md file as equivalents to bits
+   in the above two flag variables.  */
+
+/* Nonzero if this chip supports the CSKY Architecture base instructions.  */
+int csky_arch_base = 0;
 
 
 #define CSKY_ADDISP_MAX_STEP  508
@@ -749,4 +806,152 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
     return GENERAL_REGS;
 
   return NO_REGS;
+}
+
+
+/* Convert a static initializer array of feature bits to sbitmap
+   representation.  */
+static void
+csky_initialize_isa (sbitmap isa, const enum csky_isa_feature *isa_bits)
+{
+  bitmap_clear (isa);
+  while (*isa_bits != CSKY_ISA_FEATURE_DEFINE(none))
+    bitmap_set_bit (isa, *(isa_bits++));
+}
+
+
+/* Configure a build target TARGET from the user-specified options OPTS and
+   OPTS_SET.  If WARN_COMPATIBLE, emit a diagnostic if both the CPU and
+   architecture have been specified, but the two are not identical.  */
+void
+csky_configure_build_target (struct csky_build_target *target,
+                             struct cl_target_option *opts,
+                             struct gcc_options *opts_set,
+                             bool warn_compatible)
+{
+  const struct processors *csky_selected_arch = NULL;
+  const struct processors *csky_selected_cpu = NULL;
+  const struct csky_fpu_desc *csky_selected_fpu = NULL;
+
+  bitmap_clear (target->isa);
+  target->core_name = NULL;
+  target->arch_name = NULL;
+
+  if (opts_set->x_csky_arch_option)
+    csky_selected_arch = &all_architectures[opts->x_csky_arch_option];
+
+  if (opts_set->x_csky_cpu_option)
+      csky_selected_cpu = &all_cores[opts->x_csky_cpu_option];
+
+  if (csky_selected_arch)
+    {
+      csky_initialize_isa (target->isa, csky_selected_arch->isa_bits);
+
+      if (csky_selected_cpu)
+        {
+          /* TODO  */
+        }
+      else
+        {
+          /* Pick a CPU based on the architecture.  */
+          csky_selected_cpu = csky_selected_arch;
+          target->arch_name = csky_selected_arch->name;
+          /* Note: target->core_name is left unset in this path.  */
+        }
+    }
+  else if (csky_selected_cpu)
+    {
+      target->core_name = csky_selected_cpu->name;
+      csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
+    }
+  else /* If the user did not specify a processor, choose one for them.  */
+    {
+      csky_selected_cpu = &all_cores[TARGET_CPU_DEFAULT];
+      gcc_assert (csky_selected_cpu->name);
+
+      /* TODO: TARGET_CPU_DEFAULT + options to create cpu  */
+
+      /* Now we know the CPU, we can finally initialize the target
+         structure.  */
+      target->core_name = csky_selected_cpu->name;
+      csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
+    }
+
+  gcc_assert (csky_selected_cpu);
+
+  if (opts->x_csky_fpu_index != TARGET_FPU_auto)
+    {
+      csky_selected_fpu = &all_fpus[opts->x_csky_fpu_index];
+      auto_sbitmap fpu_bits (CSKY_ISA_FEATURE_GET(max));
+
+      csky_initialize_isa (fpu_bits, csky_selected_fpu->isa_bits);
+      bitmap_and_compl (target->isa, target->isa, csky_isa_all_fpubits);
+      bitmap_ior (target->isa, target->isa, fpu_bits);
+    }
+  else if (target->core_name == NULL)
+    /* To support this we need to be able to parse FPU feature options
+       from the architecture string.  */
+    sorry ("-mfpu=auto not currently supported without an explicit CPU.");
+
+  /* Finish initializing the target structure.  */
+  target->arch_pp_name = csky_selected_cpu->arch;
+  target->base_arch = csky_selected_cpu->base_arch;
+  target->arch_core = csky_selected_cpu->core;
+}
+
+
+static void
+csky_option_override (void)
+{
+  static const enum csky_isa_feature fpu_bitlist[]
+  = {CSKY_ISA_ALL_FPU, CSKY_ISA_FEATURE_GET(none)};
+
+  csky_isa_all_fpubits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
+  csky_initialize_isa (csky_isa_all_fpubits, fpu_bitlist);
+
+  csky_active_target.isa = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
+
+  if (!global_options_set.x_csky_fpu_index)
+    {
+      const char *target_fpu_name;
+      bool ok;
+      int fpu_index;
+
+#ifdef CSKY_FPUTYPE_DEFAULT
+      target_fpu_name = CSKY_FPUTYPE_DEFAULT;
+#else
+      target_fpu_name = "vfpv2";
+#endif
+
+      ok = opt_enum_arg_to_value (OPT_mfpu_, target_fpu_name, &fpu_index,
+                                  CL_TARGET);
+      gcc_assert (ok);
+      csky_fpu_index = (enum fpu_type) fpu_index;
+    }
+
+  /* Create the default target_options structure.  We need this early
+     to configure the overall build target.  */
+  target_option_default_node = target_option_current_node
+                             = build_target_option_node (&global_options);
+
+  csky_configure_build_target (&csky_active_target,
+                              TREE_TARGET_OPTION (target_option_default_node),
+                              &global_options_set, true);
+
+#ifdef SUBTARGET_OVERRIDE_OPTIONS
+  SUBTARGET_OVERRIDE_OPTIONS;
+#endif
+
+  /* TODO: target_flags  */
+
+  /* Initialize boolean versions of the architectural flags, for use
+     in the .md file.  */
+  csky_arch_base = bitmap_bit_p (csky_active_target.isa,
+                                 CSKY_ISA_FEATURE_GET(base));
+
+  /* TODO  */
+
+/* Resynchronize the saved target options.  */
+  cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
+                         &global_options);
 }

@@ -1,0 +1,16 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_ARCH(NAME, CORE, ARCH, ISA)
+
+   The NAME is the name of the architecture, represented as a string
+   constant.  The CORE is the identifier for a core representative of
+   this architecture.  ARCH is the architecture revision.  ISA is the
+   detailed architectural capabilities of the core.  */
+
+CSKY_ARCH("ck801",    ck801,    1,    CSKY_ISA_FEAT(CSKY_ISA_CK801))
+CSKY_ARCH("ck802",    ck802,    2,    CSKY_ISA_FEAT(CSKY_ISA_CK802))
+CSKY_ARCH("ck803",    ck803,    3,    CSKY_ISA_FEAT(CSKY_ISA_CK803))
+CSKY_ARCH("ck803s",   ck803s,   3S,   CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+CSKY_ARCH("ck807",    ck807,    7,    CSKY_ISA_FEAT(CSKY_ISA_CK807))
+CSKY_ARCH("ck810",    ck810,    10,   CSKY_ISA_FEAT(CSKY_ISA_CK810))

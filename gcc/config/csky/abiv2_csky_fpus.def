@@ -1,0 +1,10 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_FPU(NAME, CNAME, ISA)
+
+   NAME is the publicly visible option name.
+   CNAME is a C-compatible variable name substring.
+   ISA is the list of feature bits that this FPU provides.  */
+
+CSKY_FPU("vfpv2", vfpv2, CSKY_ISA_FEAT(CSKY_ISA_VFPv2))

@@ -1,0 +1,41 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA)
+
+   The CORE_NAME is the name of the core, represented as a string constant.
+   The INTERNAL_IDENT is the name of the core represented as an identifier.
+   This must be unique for each entry in this table.
+   The TUNE_IDENT is the name of the core for which scheduling decisions
+   should be made, represented as an identifier.
+   ARCH is the architecture revision implemented by the chip.
+   ISA is the detailed architectural capabilities of the core.  */
+
+/* ck801 Architecture Processors */
+CSKY_CORE("ck801",  ck801,  ck801,  1,  CSKY_ISA_FEAT(CSKY_ISA_CK801))
+
+/* ck802 Architecture Processors */
+CSKY_CORE("ck802",  ck802,  ck802,  2,  CSKY_ISA_FEAT(CSKY_ISA_CK802))
+CSKY_CORE("ck802j",  ck802j,  ck802j,  2,  CSKY_ISA_FEAT(CSKY_ISA_CK802))
+
+/* ck803 Architecture Processors */
+CSKY_CORE("ck803",  ck803,  ck803,  3,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
+CSKY_CORE("ck803e",  ck803e,  ck803e,  3,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
+
+/* ck803s Architecture Processors */
+CSKY_CORE("ck803s",  ck803s,  ck803s,  3S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+CSKY_CORE("ck803se",  ck803se,  ck803se,  3S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  3S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+CSKY_CORE("ck803sef",  ck803sef,  ck803sef,  3S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+
+/* ck807 Architecture Processors */
+CSKY_CORE("ck807",  ck807,  ck807,  7,  CSKY_ISA_FEAT(CSKY_ISA_CK807))
+CSKY_CORE("ck807e",  ck807e,  ck807e,  7,  CSKY_ISA_FEAT(CSKY_ISA_CK807))
+CSKY_CORE("ck807f",  ck807f,  ck807f,  7,  CSKY_ISA_FEAT(CSKY_ISA_CK807))
+CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  7,  CSKY_ISA_FEAT(CSKY_ISA_CK807))
+
+/* ck810 Architecture Processors */
+CSKY_CORE("ck810",  ck810,  ck810,  10,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
+CSKY_CORE("ck810e",  ck810e,  ck810e,  10,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
+CSKY_CORE("ck810f",  ck810f,  ck810f,  10,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
+CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  10,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
