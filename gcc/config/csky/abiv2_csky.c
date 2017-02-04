@@ -216,6 +216,23 @@ int csky_arch_base = 0;
 #define TARGET_CANNOT_COPY_INSN_P csky_cannot_copy_insn_p
 
 
+/******************************************************************
+ *                      Assembler Format                          *
+ ******************************************************************/
+
+
+#undef TARGET_PRINT_OPERAND
+#define TARGET_PRINT_OPERAND csky_print_operand
+
+#undef TARGET_PRINT_OPERAND_ADDRESS
+#define TARGET_PRINT_OPERAND_ADDRESS csky_print_operand_address
+
+#undef  TARGET_ASM_UNALIGNED_HI_OP
+#define TARGET_ASM_UNALIGNED_HI_OP "\t.short\t"
+
+#undef  TARGET_ASM_UNALIGNED_SI_OP
+#define TARGET_ASM_UNALIGNED_SI_OP "\t.long\t"
+
 static int
 get_csky_live_regs (int *count)
 {
@@ -1338,5 +1355,307 @@ static bool
 csky_cannot_copy_insn_p (rtx insn)
 {
   return for_each_rtx (&PATTERN (insn), csky_note_pic_base, NULL);
+}
+
+
+/* Extract the parts of an RTL expression that is a valid memory address
+   for an instruction.  Return FALSE if it is a invalid memory address.  */
+
+static bool
+csky_decompose_address (rtx addr, struct csky_address * out)
+{
+  rtx base = NULL_RTX, index = NULL_RTX, disp = NULL_RTX;
+  HOST_WIDE_INT scale = 1;
+  rtx scale_rtx = NULL_RTX;
+  int i;
+
+  out->base = out->index = out->symbol = out->label = out->disp = NULL_RTX;
+  out->scale = 0;
+
+  if (REG_P (addr))
+    {
+      out->base = addr;
+      return true;
+    }
+
+  if (GET_CODE (addr) == LABEL_REF)
+    {
+      out->label = addr;
+      return true;
+    }
+
+  if (GET_CODE (addr) == PLUS)
+    {
+      rtx addends[2], op, tmp;
+
+      addends[0] = XEXP (addr, 0);
+      addends[1] = XEXP (addr, 1);
+
+      if (GET_CODE (addends[0]) == LABEL_REF && CONST_INT_P (addends[1]))
+        {
+          out->label = addends[0];
+          out->disp = addends[1];
+          return true;
+        }
+
+      for (i = 0; i < 2; ++i)
+        {
+          op = addends[i];
+          switch (GET_CODE (op))
+            {
+            case REG:
+              if (!base)
+                base = op;
+              else if (!index)
+                index = op;
+              else
+                return false;
+              break;
+            case CONST_INT:
+            case UNSPEC:
+              if (disp)
+                return false;
+              disp = op;
+              break;
+            case MULT:
+              if (index)
+                return false;
+              index = XEXP (op, 0);
+              scale_rtx = XEXP (op, 1);
+              break;
+            case ASHIFT:
+              if (index)
+                return false;
+              index = XEXP (op, 0);
+              scale_rtx = XEXP (op, 1);
+              if (!CONST_INT_P (scale_rtx))
+                return false;
+              scale = scale << INTVAL (scale_rtx);
+            default:
+              return false;
+            }
+        }
+    }
+
+  if (!base)
+    return false;
+
+  if (scale_rtx && !CONST_INT_P (scale_rtx))
+    {
+      tmp = scale_rtx;
+      scale_rtx = index;
+      index = tmp;
+    }
+
+  if (scale_rtx && !CONST_INT_P (scale_rtx))
+    return false;
+  else if (scale_rtx && CONST_INT_P (scale_rtx))
+    scale = INTVAL (scale_rtx);
+
+  out->base = base;
+  out->index = index;
+  out->disp = disp;
+  out->scale = scale;
+
+  return true;
+}
+
+
+/* Print the UNSPEC operand in X to the STREAM.  */
+
+static void
+csky_output_pic_addr_const (FILE * stream, rtx x, int code)
+{
+
+  if (GET_CODE (x) != UNSPEC)
+    return;
+
+  if (UNSPEC_TLS == XINT (x, 1))
+    {
+      /* FIXME It is not reached */
+
+      return;
+    }
+
+  csky_print_operand (stream, XVECEXP (x, 0, 0), code);
+
+  switch (XINT (x, 1))
+    {
+    case PIC_SYMBOL_GOTOFF:
+      fputs ("@GOTOFF", stream);
+      break;
+    case PIC_SYMBOL_PLT:
+      fputs ("@PLT", stream);
+      break;
+    case PIC_SYMBOL_GOT:
+      fputs ("@GOT", stream);
+      break;
+    case PIC_SYMBOL_GOTPC:
+      fputs ("@GOTPC", stream);
+      break;
+    case PIC_SYMBOL_BSR:
+      break;
+    default:
+      break;
+    }
+}
+
+
+/* Output the constpool label according to the rtx expression X.  */
+
+void
+csky_output_constpool_label (FILE * stream, rtx x)
+{
+  char buf[15];
+
+  gcc_assert (GET_CODE (x) == LABEL_REF);
+  x = XEXP (x, 0);
+
+  if (GET_CODE (x) == UNSPEC_VOLATILE && XINT (x, 1) == VUNSPEC_POOL_LABEL)
+    {
+      ASM_GENERATE_INTERNAL_LABEL (buf, CSKY_CONSTPOOL_LABEL_PREFIX,
+                                   INTVAL (XVECEXP (x, 0, 0)));
+      assemble_name (stream, buf);
+    }
+}
+
+
+/* Print the operand address in X to the STREAM.  */
+
+void
+csky_print_operand_address (FILE * stream, rtx x)
+{
+
+  struct csky_address addr;
+
+  csky_decompose_address (x, &addr);
+
+  if (addr.label && addr.disp && GET_CODE (addr.disp) == CONST_INT)
+    {
+      fprintf (stream, "[");
+      csky_output_constpool_label (stream, addr.label);
+      fprintf (stream, "+%d]", (int) INTVAL (addr.disp));
+    }
+  else if (addr.label)
+    {
+      fprintf (stream, "[");
+      csky_output_constpool_label (stream, addr.label);
+      fprintf (stream, "]");
+    }
+  else if (addr.symbol && addr.disp && GET_CODE (addr.disp) == CONST_INT)
+    {
+      fprintf (stream, "[");
+      output_addr_const (stream, addr.symbol);
+      fprintf (stream, "+%d]", (int) INTVAL (addr.disp));
+    }
+  else if (addr.symbol)
+    {
+      fprintf (stream, "[");
+      output_addr_const (stream, addr.symbol);
+      fprintf (stream, "]");
+    }
+  else if (addr.disp && GET_CODE (addr.disp) == CONST_INT)
+    {
+      fprintf (stream, "(%s, %d)",
+               reg_names[REGNO (addr.base)], (int) INTVAL (addr.disp));
+    }
+  else if (addr.disp && GET_CODE (addr.disp) == UNSPEC)
+    {
+      if (REGNO (addr.base) != CSKY_GB_REGNUM)
+        fprintf (stream, "(%s, ", reg_names[REGNO (addr.base)]);
+      else
+        fprintf (stream, "[");
+      csky_output_pic_addr_const (stream, addr.disp, 0);
+      fprintf (stream, "%s", (REGNO (addr.base) != CSKY_GB_REGNUM)
+               ? ")" : "]");
+    }
+  else if (addr.index)
+    {
+      fprintf (stream, "(%s, %s << %d)",
+               reg_names[REGNO (addr.base)], reg_names[REGNO (addr.index)],
+               exact_log2 ((int) (addr.scale)));
+    }
+  else
+    {
+      fprintf (stream, "(%s, 0)", reg_names[REGNO (addr.base)]);
+    }
+
+}
+
+
+/* Print operand X (an rtx) in assembler syntax to file STEAM
+   according to modifier CODE.
+
+   'N'  print the log2(X+1), mainly used for bmaski
+   'P'  print the log2(X)
+   'Q'  print the log2(~X)
+   'O'  print a decimal number
+   'M'  print a decimal number as its negative
+   'R'  print the next register or memory location along, i.e. the lsw in
+   a double word value
+   'H'  print the high 16 bits of a constant.  */
+
+void
+csky_print_operand (FILE * stream, rtx x, int code)
+{
+  switch (code)
+    {
+    case 'N':
+      if ((INTVAL (x) & 0xffffffff) == 0xffffffff)
+        fprintf (stream, "0");
+      else
+        fprintf (stream, "%d",
+                 (int) exact_log2 ((INTVAL (x) & 0xffffffff) + 1) % 32);
+      break;
+    case 'P':
+      fprintf (stream, "%d",
+               (int) exact_log2 (INTVAL (x) & 0xffffffff));
+      break;
+    case 'Q':
+      fprintf (stream, "%d",
+               (int) exact_log2 (~INTVAL (x) & 0xffffffff));
+      break;
+    case 'O':
+      fprintf (stream, "%d", (int) INTVAL (x));
+      break;
+    case 'M':
+      fprintf (stream, "%d", (int) (-INTVAL (x)));
+      break;
+    case 'R':
+      /* Next location along in memory or register.  */
+      switch (GET_CODE (x))
+        {
+        case REG:
+          fputs (reg_names[REGNO (x) + 1], stream);
+          break;
+        case MEM:
+          csky_print_operand_address
+            (stream, XEXP (adjust_address (x, SImode, 4), 0));
+          break;
+        default:
+          gcc_unreachable ();
+        }
+      break;
+    case 'H':
+      fprintf (stream, "%d", ((INTVAL (x)) & 0xFFFF0000) >> 16);
+      break;
+    default:
+      switch (GET_CODE (x))
+        {
+        case REG:
+          fputs (reg_names[REGNO (x)], stream);
+          break;
+        case MEM:
+          output_address (XEXP (x, 0));
+          break;
+        case UNSPEC:
+          csky_output_pic_addr_const (stream, x, code);
+          break;
+        default:
+          output_addr_const (stream, x);
+          break;
+        }
+      break;
+    }
 }
 

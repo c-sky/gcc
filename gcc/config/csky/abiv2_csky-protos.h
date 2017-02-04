@@ -21,6 +21,7 @@
 #define CSKY_SP_REGNUM                14
 #define CSKY_LR_REGNUM                15
 #define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
+#define CSKY_GB_REGNUM                28
 
 #define CSKY_LD16_MAX_OFFSET(MODE)    (31 * GET_MODE_SIZE(MODE))
 #define CSKY_LD32_MAX_OFFSET(MODE)    (4095 * GET_MODE_SIZE(MODE))
@@ -36,6 +37,8 @@
 
 #define CSKY_NUM_REGS(MODE) \
   CSKY_NUM_WORDS(GET_MODE_SIZE (MODE))
+
+#define CSKY_CONSTPOOL_LABEL_PREFIX   "LCP"
 
 /* Structure used to hold the function stack frame layout.  */
 typedef struct GTY(()) csky_stack_frame

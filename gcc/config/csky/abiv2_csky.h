@@ -686,4 +686,106 @@ typedef struct GTY (()) machine_function
 #endif
 
 
+/******************************************************************
+ *                           Section                              *
+ ******************************************************************/
+
+
+/* Switch to the text or data segment.  */
+#define TEXT_SECTION_ASM_OP  "\t.text"
+#define DATA_SECTION_ASM_OP  "\t.data"
+
+
+/******************************************************************
+ *                      Assembler Format                          *
+ ******************************************************************/
+
+
+/* A C string constant for text to be output before(after) each asm
+   statement or group of consecutive ones.  */
+#undef  ASM_APP_ON
+#define ASM_APP_ON    "// inline asm begin\n"
+#undef  ASM_APP_OFF
+#define ASM_APP_OFF   "// inline asm end\n"
+
+/* A C string constant describing how to begin a comment in the target
+   assembler language.  */
+#define ASM_COMMENT_START "\t//"
+
+/* This says how to output an assembler line
+   to define a global common symbol, with alignment information.  */
+#undef  ASM_OUTPUT_ALIGNED_COMMON
+#define ASM_OUTPUT_ALIGNED_COMMON(STREAM, NAME, SIZE, ALIGN)    \
+  do                                                            \
+    {                                                           \
+      fputs ("\t.comm\t", STREAM);                              \
+      assemble_name (STREAM, NAME);                             \
+      fprintf (STREAM, ",%lu, %u\n", (unsigned long)(SIZE),     \
+               (ALIGN) / BITS_PER_UNIT);                        \
+    }                                                           \
+while (0)
+
+/* Define a local common symbol whose alignment we wish to specify.
+   ALIGN comes in as bits, we have to turn it into bytes.  */
+#undef  ASM_OUTPUT_ALIGNED_LOCAL
+#define ASM_OUTPUT_ALIGNED_LOCAL(STREAM, NAME, SIZE, ALIGN)     \
+  do                                                            \
+{                                                               \
+  fputs ("\t.bss\t", (STREAM));                                 \
+  assemble_name ((STREAM), (NAME));                             \
+  fprintf ((STREAM), ",%d, %d\n", (int)(SIZE),                  \
+           (ALIGN) / BITS_PER_UNIT);                            \
+}                                                               \
+while (0)
+
+/* Globalizing directive for a label.  */
+#define GLOBAL_ASM_OP "\t.global\t"
+
+/* Output a reference to a label.  */
+#undef  ASM_OUTPUT_LABELREF
+#define ASM_OUTPUT_LABELREF(STREAM, NAME)  \
+  fprintf (STREAM, "%s", (* targetm.strip_name_encoding) (NAME))
+
+/* Make an internal label into a string.  */
+#undef  ASM_GENERATE_INTERNAL_LABEL
+#define ASM_GENERATE_INTERNAL_LABEL(STRING, PREFIX, NUM)  \
+  sprintf (STRING, "*.%s%ld", PREFIX, (long) NUM)
+
+/* This is how to output an insn to push a register on the stack.
+   It need not be very fast code.  */
+#define ASM_OUTPUT_REG_PUSH(STREAM,REGNO)                   \
+  fprintf (STREAM, "\tsubi\t %s,%d\n\tst.w\t %s,(%s)\n",    \
+           reg_names[STACK_POINTER_REGNUM],                 \
+           (STACK_BOUNDARY / BITS_PER_UNIT),                \
+           reg_names[REGNO],                                \
+           reg_names[STACK_POINTER_REGNUM])
+
+/* This is how to output an insn to pop a register from the stack.  */
+#define ASM_OUTPUT_REG_POP(STREAM,REGNO)                    \
+  fprintf (STREAM, "\tld.w\t %s,(%s)\n\taddi\t %s,%d\n",    \
+           reg_names[REGNO],                                \
+           reg_names[STACK_POINTER_REGNUM],                 \
+           reg_names[STACK_POINTER_REGNUM],                 \
+           (STACK_BOUNDARY / BITS_PER_UNIT))
+
+/* Output an element of a dispatch table.  */
+#define ASM_OUTPUT_ADDR_VEC_ELT(STREAM,VALUE)  \
+  fprintf (STREAM, "\t.long\t.L%d\n", VALUE)
+
+/* This is how to output an assembler line
+   that says to advance the location counter by SIZE bytes.  */
+#undef  ASM_OUTPUT_SKIP
+#define ASM_OUTPUT_SKIP(STREAM,SIZE)  \
+  fprintf (STREAM, "\t.fill %d, 1\n", (int)(SIZE))
+
+/* Align output to a power of two.  Note ".align 0" is redundant,
+   and also GAS will treat it as ".align 2" which we do not want.  */
+#define ASM_OUTPUT_ALIGN(STREAM, POWER)           \
+  do                                              \
+    {                                             \
+      if ((POWER) > 0)                            \
+      fprintf (STREAM, "\t.align\t%d\n", POWER);  \
+    }                                             \
+  while (0)
+
 #endif /* GCC_CSKY_H */
