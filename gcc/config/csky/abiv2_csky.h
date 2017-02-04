@@ -535,4 +535,155 @@ enum reg_class
    Shifts in addresses can't be by a register.  */
 #define MAX_REGS_PER_ADDRESS 2
 
+
+/******************************************************************
+ *                        Run-time Target                         *
+ ******************************************************************/
+
+
+#define TARGET_CPU_CPP_BUILTINS()                   \
+    do                                              \
+    {                                               \
+        builtin_define ("__csky__=2");              \
+        builtin_define ("__CSKY__=2");              \
+        builtin_define ("__ckcore__=2");            \
+        builtin_define ("__CKCORE__=2");            \
+                                                    \
+        builtin_define ("__CSKYABIV2__");           \
+        builtin_define ("__cskyabiv2__");           \
+        builtin_define ("__CSKYABI__=2");           \
+        builtin_define ("__cskyabi__=2");           \
+                                                    \
+        builtin_define ("NO_TRAMPOLINES");          \
+                                                    \
+        if (TARGET_LITTLE_ENDIAN)                   \
+        {                                           \
+            builtin_define ("__ckcoreLE__");        \
+            builtin_define ("__cskyLE__");          \
+            builtin_define ("__cskyle__");          \
+            builtin_define ("__CSKYLE__");          \
+        }                                           \
+        else                                        \
+        {                                           \
+            builtin_define ("__ckcoreBE__");        \
+            builtin_define ("__cskyBE__");          \
+            builtin_define ("__cskybe__");          \
+            builtin_define ("__CSKYBE__");          \
+        }                                           \
+                                                    \
+        if (TARGET_CK802)                           \
+        {                                           \
+            builtin_define ("__ck802__");           \
+            builtin_define ("__CK802__");           \
+        }                                           \
+        else if (TARGET_CK803)                      \
+        {                                           \
+            builtin_define ("__ck803__");           \
+            builtin_define ("__CK803__");           \
+        }                                           \
+        else if (TARGET_CK810)                      \
+        {                                           \
+            builtin_define ("__ck810__");           \
+            builtin_define ("__CK810__");           \
+        }                                           \
+        else if (TARGET_CK803S)                     \
+        {                                           \
+            builtin_define ("__ck803s__");          \
+            builtin_define ("__CK803S__");          \
+        }                                           \
+        else if (TARGET_CK807)                      \
+        {                                           \
+            builtin_define ("__ck807__");           \
+            builtin_define ("__CK807__");           \
+        }                                           \
+        else if (TARGET_CK801)                      \
+        {                                           \
+            builtin_define ("__ck801__");           \
+            builtin_define ("__CK801__");           \
+        }                                           \
+                                                    \
+        if (TARGET_DSP)                             \
+        {                                           \
+            builtin_define ("__csky_dsp__");        \
+            builtin_define ("__CSKY_DSP__");        \
+        }                                           \
+        if (TARGET_SIMD)                            \
+        {                                           \
+            builtin_define ("__csky_simd__");       \
+            builtin_define ("__CSKY_SIMD__");       \
+        }                                           \
+        if (TARGET_FPUV1)                           \
+        {                                           \
+            builtin_define ("__csky_fpuv1__");      \
+            builtin_define ("__CSKY_FPUV1__");      \
+        }                                           \
+        if (TARGET_FPUV2)                           \
+        {                                           \
+            builtin_define ("__csky_fpuv2__");      \
+            builtin_define ("__CSKY_FPUV2__");      \
+        }                                           \
+        if (TARGET_SECURITY)                        \
+        {                                           \
+            builtin_define ("__csky_security__");   \
+            builtin_define ("__CSKY_SECURITY__");   \
+        }                                           \
+        if (TARGET_CP)                              \
+        {                                           \
+            builtin_define ("__csky_cp__");         \
+            builtin_define ("__CSKY_CP__");         \
+        }                                           \
+        if (TARGET_MP)                              \
+        {                                           \
+            builtin_define ("__csky_mp__");         \
+            builtin_define ("__CSKY_MP__");         \
+        }                                           \
+        if (TARGET_CACHE)                           \
+        {                                           \
+            builtin_define ("__csky_cache__");      \
+            builtin_define ("__CSKY_CACHE__");      \
+        }                                           \
+                                                    \
+        if (TARGET_HARD_FLOAT)                      \
+        {                                           \
+            builtin_define ("__csky_hard_float__"); \
+            builtin_define ("__CSKY_HARD_FLOAT__"); \
+        }                                           \
+        else                                        \
+        {                                           \
+            builtin_define ("__csky_soft_float__"); \
+            builtin_define ("__CSKY_SOFT_FLOAT__"); \
+        }                                           \
+    }                                               \
+    while (0)
+
+
+/******************************************************************
+ *                      Per-function Data                         *
+ ******************************************************************/
+
+
+/* Initialize data used by insn expanders.  This is called from insn_emit,
+   once for every function before code is generated.  */
+#define INIT_EXPANDERS  csky_init_expanders ()
+
+#if !defined(GENERATOR_FILE) && !defined (USED_FOR_TARGET)
+/* A C structure for machine-specific, per-function data.
+   This is added to the cfun structure.  */
+typedef struct GTY (()) machine_function
+{
+  /* Record if the function has a variable argument list.  */
+  int uses_anonymous_args;
+
+  /* Records if LR has to be saved for far jumps.  */
+  int far_jump_used;
+
+  /* Record the number of regs before varargs  */
+  int number_of_regs_before_varargs;
+
+  /*Records the type of current function */
+  unsigned long func_type;
+}
+#endif
+
+
 #endif /* GCC_CSKY_H */

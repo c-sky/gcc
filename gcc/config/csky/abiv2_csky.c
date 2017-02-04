@@ -206,6 +206,16 @@ int csky_arch_base = 0;
 #undef TARGET_LEGITIMATE_ADDRESS_P
 #define TARGET_LEGITIMATE_ADDRESS_P csky_legitimate_address_p
 
+
+/******************************************************************
+ *                             Others                             *
+ ******************************************************************/
+
+
+#undef  TARGET_CANNOT_COPY_INSN_P
+#define TARGET_CANNOT_COPY_INSN_P csky_cannot_copy_insn_p
+
+
 static int
 get_csky_live_regs (int *count)
 {
@@ -1281,5 +1291,52 @@ csky_legitimate_address_p (machine_mode, rtx addr, bool strict)
     }
 
   return 0;
+}
+
+
+/* Functions to save and restore machine-specific function data.  */
+
+static struct machine_function *
+csky_init_machine_status (void)
+{
+  struct machine_function *machine;
+
+  machine = ggc_cleared_alloc<machine_function> ();
+
+#if CSKY_FT_UNKNOWN != 0
+  machine->func_type = CSKY_FT_UNKNOWN;
+#endif
+  return machine;
+}
+
+
+/* Return an RTX indicating where the return address to the
+   calling function can be found.  */
+
+void
+csky_init_expanders (void)
+{
+  /* Arrange to initialize and mark the machine per-function status.  */
+  init_machine_status = csky_init_machine_status;
+}
+
+
+/* Must not copy any rtx that uses a pc-relative address.  */
+
+static int
+csky_note_pic_base (rtx * x, void *date ATTRIBUTE_UNUSED)
+{
+  if (GET_CODE (*x) == UNSPEC
+      && ((XINT (*x, 1) == UNSPEC_TLS_LABEL) ||
+          (XINT (*x, 1) == PIC_SYMBOL_GOTPC_GRS)))
+    return 1;
+  return 0;
+}
+
+
+static bool
+csky_cannot_copy_insn_p (rtx insn)
+{
+  return for_each_rtx (&PATTERN (insn), csky_note_pic_base, NULL);
 }
 

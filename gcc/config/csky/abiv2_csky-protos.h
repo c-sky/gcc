@@ -53,5 +53,12 @@ typedef struct GTY(()) csky_stack_frame
 }
 csky_stack_frame;
 
+/*define these macros to describe the function type*/
+#define CSKY_FT_TYPE_MASK   ((1 << 3) - 1)
+#define CSKY_FT_UNKNOWN     0               /*Type not been determined */
+#define CSKY_FT_NORMAL      1               /*Normal function */
+#define CSKY_FT_ISR         4               /*Interrupt service routine */
+#define CSKY_FT_FIQ         5               /*Fast interrupt service routine */
+#define CSKY_FT_EXCEPTION   6               /*Exception handler */
 
 #endif /* GCC_CSKY_PROTOS_H */
