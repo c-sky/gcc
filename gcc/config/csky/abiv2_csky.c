@@ -188,6 +188,24 @@ int csky_arch_base = 0;
 #undef  TARGET_SECONDARY_RELOAD
 #define TARGET_SECONDARY_RELOAD  csky_secondary_reload
 
+
+/******************************************************************
+ *                        Addressing Modes                        *
+ ******************************************************************/
+
+
+#undef TARGET_CANNOT_FORCE_CONST_MEM
+#define TARGET_CANNOT_FORCE_CONST_MEM csky_cannot_force_const_mem
+
+#undef TARGET_LEGITIMATE_CONSTANT_P
+#define TARGET_LEGITIMATE_CONSTANT_P csky_legitimate_constant_p
+
+#undef TARGET_LEGITIMIZE_ADDRESS
+#define TARGET_LEGITIMIZE_ADDRESS csky_legitimize_address
+
+#undef TARGET_LEGITIMATE_ADDRESS_P
+#define TARGET_LEGITIMATE_ADDRESS_P csky_legitimate_address_p
+
 static int
 get_csky_live_regs (int *count)
 {
@@ -955,3 +973,313 @@ csky_option_override (void)
   cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
                          &global_options);
 }
+
+
+/* Determine if it's legal to put X into the constant pool.  This
+   is not possible for the address of thread-local symbols, which
+   is checked above.  */
+
+static bool
+csky_cannot_force_const_mem (rtx x)
+{
+  /* TODO impelent the TLS related function later.  */
+  return csky_tls_referenced_p (x);
+}
+
+
+/* Nonzero if the constant value X is a legitimate general operand.
+   It is given that X satisfies CONSTANT_P or is a CONST_DOUBLE.  */
+
+static bool
+csky_legitimate_constant_p (machine_mode mode, rtx x)
+{
+  return (!csky_cannot_force_const_mem (x)
+          && CONSTANT_P (x))
+}
+
+
+/* Return true if X is valid as an CSKY addressing register.  */
+
+static bool
+is_csky_address_register_rtx_p (rtx x, int strict_p)
+{
+  int regno;
+
+  if (!x)
+    return false;
+  if (!REG_P (x))
+    return false;
+
+  regno = REGNO (x);
+
+  if (strict_p)
+    return CSKY_GENERAL_REGNO_P (regno) || CSKY_GENERAL_REGNO_P (reg_renumber[regno]);
+  else
+    return CSKY_GENERAL_REGNO_P (regno) || regno >= FIRST_PSEUDO_REGISTER;
+}
+
+
+/* Get the bits count of offset used in ld.(bhwd) instruction
+   accordding to MODE.  */
+
+static unsigned int
+get_offset_bits_count (machine_mode mode)
+{
+  if (TARGET_CK801)
+    {
+      switch (GET_MODE_SIZE (mode))
+        {
+        case 1:
+          return 5;
+        case 2:
+          return 6;
+        default:
+          return 7;
+        }
+    }
+  else
+    {
+      switch (GET_MODE_SIZE (mode))
+        {
+        case 1:
+          return 12;
+        case 2:
+          return 13;
+        default:
+          return 14;
+        }
+    }
+}
+
+
+/* Try machine-dependent ways of modifying an illegitimate address
+   to be legitimate.  If we find one, return the new, valid address.  */
+
+static rtx
+csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
+{
+
+  /* TODO impelent the TLS related function later.  */
+  if (csky_tls_symbol_p (x))
+    return legitimize_tls_address (x, NULL_RTX);
+
+  if (GET_CODE (x) == PLUS)
+    {
+      rtx xop0 = XEXP (x, 0);
+      rtx xop1 = XEXP (x, 1);
+
+      if (is_csky_address_register_rtx_p (xop0, 0)
+          && CONST_INT_P (xop1))
+        {
+          HOST_WIDE_INT offset = INTVAL (op1);
+
+          /* Try to replace ld32 rx,(ry, offset), to addi16 rz, oimm8
+             and ld16 rx,(rz, new_ld_offset) to avoid emit 32bit ld,
+             but this addi has it limition.  */
+          if (optimize_size
+              && offset > CSKY_LD16_MAX_OFFSET (mode)
+              && offset <= (CSKY_ADDI_MAX_IMM
+                           + CSKY_LD16_MAX_OFFSET (mode)))
+            {
+              HOST_WIDE_INT new_ld_offset = offset
+                & CSKY_LD16_OFFSET_MASK (mode);
+
+              op0 = force_operand (plus_constant (op0, offset - new_ld_offset),
+                                   NULL_RTX);
+              x = plus_constant (op0, new_ld_offset);
+            }
+          else if (offset < 0 && offset >= (-CSKY_SUBI_MAX_IMM))
+            x = force_operand (x, NULL_RTX);
+          else if (offset > CSKY_LD16_MAX_OFFSET (mode)
+                   || offset < 0)
+            {
+              /* For the remaining cases, force the constant into a register.  */
+              op1 = force_reg (SImode, op1);
+              x = gen_rtx_PLUS (SImode, op0, op1);
+            }
+        }
+
+      /* If the index is store in register, force the
+         base to register.  */
+      if (is_csky_address_register_rtx_p (xop1, 0)
+          && !is_csky_address_register_rtx_p (xop0, 0))
+        {
+          xop0 = force_operand (xop0, NULL_RTX);
+          x = gen_rtx_PLUS (SImode, xop0, xop1);
+        }
+    }
+  /* Make sure to take full advantage of the pre-indexed addressing mode
+     with absolute addresses which often allows for the base register to
+     be factorized for multiple adjacent memory references, and it might
+     even allows for the mini pool to be avoided entirely. */
+  else if (CONST_INT_P (x)  && optimize > 0)
+    {
+      HOST_WIDE_INT mask, base, index;
+      rtx base_reg;
+
+      mask = CSKY_LD16_OFFSET_MASK (mode);;
+      base = INTVAL (x) & ~mask;
+      index = INTVAL (x) & mask;
+      base_reg = force_reg (SImode, GEN_INT (base));
+      x = plus_constant (base_reg, index);
+    }
+
+  return x;
+}
+
+
+/* Return nonzero if INDEX is valid for an address index operand.
+   ck801 use 16 bits ld
+   ck802 use 16 and 32 bits ld
+   others use ld and ldr.  */
+
+static int
+ck801_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
+{
+  enum rtx_code code = GET_CODE (index);
+
+  /* When the mode size is larger than 4, we may use two ld instruction
+     to get data, the index and (index+1) should be valid.  */
+  if (GET_MODE_SIZE (mode) >= 8)
+    return (code == CONST_INT
+            && INTVAL (index) <  CSKY_LD16_MAX_OFFSET (SImode)
+            && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
+
+  if (code == CONST_INT
+      && INTVAL (index) <= CSKY_LD16_MAX_OFFSET (mode)
+      && INTVAL (index) >= 0)
+    return (INTVAL (index) % GET_MODE_SIZE (mode));
+
+  return 0;
+}
+
+
+static int
+ck802_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
+{
+  enum rtx_code code = GET_CODE (index);
+
+  /* When the mode size is larger than 4, we may use two ld instruction
+     to get data, the index and (index+1) should be valid.  */
+  if (GET_MODE_SIZE (mode) >= 8)
+    return (code == CONST_INT
+            && INTVAL (index) < CSKY_LD32_MAX_OFFSET (SImode)
+            && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
+
+  if (code == CONST_INT
+      && INTVAL (index) <= CSKY_LD32_MAX_OFFSET(mode)
+      && INTVAL (index) >= 0)
+    return (INTVAL (index) % GET_MODE_SIZE (mode));
+
+  return 0;
+}
+
+
+/* The instruction ldr rz, (rx, ry << i), i can be 0,1,2,3.
+   Checkout the SHIFT is whether valid, if the code is MULT,
+   the shift should be 1<<i.  */
+static bool
+is_ldr_shift_p (HOST_WIDE_INT shift, enum rtx_code code)
+{
+  if (code == ASHIFT)
+    return (shift >= 0 && shift <=3);
+  else if (code == MULT)
+    return (shift == 1
+            || shift == 2
+            || shift == 4
+            || shift == 8);
+  else
+    return false;
+}
+
+
+static int
+ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
+{
+  enum rtx_code code = GET_CODE (index);
+
+  if (code == CONST_INT)
+    {
+      /* When the mode size is larger than 4, we may use two ld instruction
+         to get data, the index and (index+1) should be valid.  */
+      if (GET_MODE_SIZE (mode) >= 8)
+        return (INTVAL (index) < CSKY_LD32_MAX_OFFSET (SImode)
+                && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
+
+      if (INTVAL (index) <= CSKY_LD32_MAX_OFFSET (SImode)
+          && INTVAL (index) >= 0)
+        return (INTVAL (index) % GET_MODE_SIZE (mode));
+    }
+  /* Allow ld.w rx, (gb, sym@got) when -fpic specially.  */
+  else if (code == UNSPEC)
+    {
+      return (flag_pic == 1
+              && (XINT (addr.disp, 1) == PIC_SYMBOL_PLT
+                  || XINT (addr.disp, 1) == PIC_SYMBOL_GOT))
+    }
+  /* The follow index is for ldr instruction, the ldr cannot
+     load dword data, so the mode size should not be larger than
+     4.  */
+  else if (GET_MODE_SIZE (mode) <= 4)
+    {
+      if (code == REG)
+        return 1;
+      else if (code == MULT || code == ASHIFT)
+        {
+          rtx xiop0 = XEXP (x, 0);
+          rtx xiop1 = XEXP (x, 1);
+
+          /* FIXME can the xiop1 be the reg and xiop0 be the int when mult?  */
+          return (is_csky_address_register_rtx_p (xiop0, strict_p)
+                  && CONST_INT_P (xiop1)
+                  && is_ldr_shift_p (INTVAL (xiop1), code));
+        }
+    }
+
+  return 0;
+}
+
+
+static int
+csky_legitimate_index_p (machine_mode mode, rtx index, RTX_CODE outer,
+                        int strict_p)
+{
+  if (TARGET_CK801)
+    return ck801_legitimate_index_p (mode, index, outer, strict_p);
+  else if (TARGET_CK802)
+    return ck802_legitimate_index_p (mode, index, outer, strict_p);
+  else
+    return ck810_legitimate_index_p (mode, index, outer, strict_p);
+}
+
+
+/* Recognizes RTL expressions that are valid memory addresses for an
+   instruction.  The MODE argument is the machine mode for the MEM
+   expression that wants to use this address.
+
+   It only recognizes address in canonical form.  LEGITIMIZE_ADDRESS should
+   convert common non-canonical forms to canonical form so that they will
+   be recognized.  */
+
+static bool
+csky_legitimate_address_p (machine_mode, rtx addr, bool strict)
+{
+  enum rtx_code code = GET_CODE (x);
+
+  if (is_csky_address_register_rtx_p (x, strict_p))
+    return 1;
+
+  if (code == PLUS)
+    {
+      rtx xop0 = XEXP (x, 0);
+      rtx xop1 = XEXP (x, 1);
+
+      return ((is_csky_address_register_rtx_p (xop0, strict_p)
+               && csky_legitimate_index_p (mode, xop1, strict_p))
+              || (is_csky_address_register_rtx_p (xop1, strict_p)
+                  && csky_legitimate_index_p (mode, xop0, strict_p)));
+    }
+
+  return 0;
+}
+

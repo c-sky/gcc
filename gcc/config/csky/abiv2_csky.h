@@ -521,4 +521,18 @@ enum reg_class
      || (REGNO) >= FIRST_PSEUDO_REGISTER)
 #endif
 
+
+/******************************************************************
+ *                        Addressing Modes                        *
+ ******************************************************************/
+
+
+/* Recognize any constant value that is a valid address.  */
+#define CONSTANT_ADDRESS_P(X) \
+  ((GET_CODE (X) == LABEL_REF) || (GET_CODE (X) == SYMBOL_REF))
+
+/* Maximum number of registers that can appear in a valid memory address.
+   Shifts in addresses can't be by a register.  */
+#define MAX_REGS_PER_ADDRESS 2
+
 #endif /* GCC_CSKY_H */
