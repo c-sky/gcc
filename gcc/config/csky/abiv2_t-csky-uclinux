@@ -1,0 +1,60 @@
+
+MULTILIB_OPTIONS     = mlittle-endian/mbig-endian
+MULTILIB_DIRNAMES    = little big
+MULTILIB_MATCHES     = mlittle-endian=EL
+MULTILIB_MATCHES     = mbig-endian=EB
+MULTILIB_EXCEPTIONS  =
+
+# For arch
+MULTILIB_OPTIONS     += mcpu=ck801/mcpu=ck802/mcpu=ck803/mcpu=ck810
+MULTILIB_DIRNAMES    += ck801/ck802 ck803 ck810
+
+# For arch ck801
+MULTILIB_MATCHES     += mcpu?ck801=march?ck801
+
+# For arch ck802
+MULTILIB_MATCHES     += mcpu?ck802=march?ck802
+MULTILIB_MATCHES     += mcpu?ck802=mcpu?ck802j
+
+# For arch ck803
+MULTILIB_MATCHES     += mcpu?ck803=march?ck803
+MULTILIB_MATCHES     += mcpu?ck803=mcpu?ck803e
+
+# For arch ck803s
+MULTILIB_MATCHES     += mcpu?ck803=march?ck803s
+MULTILIB_MATCHES     += mcpu?ck803=mcpu?ck803s
+
+# For arch ck810
+MULTILIB_MATCHES     += mcpu?ck810=march?ck810
+MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810f
+MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810e
+MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810ef
+
+# For arch ck807
+MULTILIB_MATCHES     += mcpu?ck810=march?ck807
+MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck807
+
+
+# For option -msoft-float/-mhard-float
+#MULTILIB_OPTIONS     += msoft-float/mhard-float
+#MULTILIB_DIRNAMES    += soft-fp hard-fp
+#MULTILIB_EXCEPTIONS  += *mhard-float/*mno-stm*
+
+
+# For option -mmultiple-stld
+#MULTILIB_OPTIONS    += mno-multiple-stld/mmultiple-stld
+#MULTILIB_DIRNAMES   += no-multiple-stld stm
+#MULTILIB_MATCHES    += mmultiple-stld=mstm
+#MULTILIB_EXCEPTIONS += *mmultiple-stld/*mno-stm*
+
+
+# For option -mno-stm (special for delay slot)
+#MULTILIB_OPTIONS    += mno-stm
+#MULTILIB_DIRNAMES   += nostm
+
+
+#MULTILIB_EXCEPTIONS  += *mcpu=ck803/*mhard-float*
+#MULTILIB_EXCEPTIONS  += *mcpu=ck810/*mhard-float*
+#MULTILIB_EXCEPTIONS  += *mcpu=ck803/*mno-stm*
+#MULTILIB_EXCEPTIONS  += *mcpu=ck810/*mno-stm*
+
