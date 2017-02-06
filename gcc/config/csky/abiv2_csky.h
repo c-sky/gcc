@@ -803,4 +803,42 @@ while (0)
     {"mlittle-endian", "mcpu=ck810f", " msoft-float"}
 
 
+/******************************************************************
+ *                    Miscellaneous Parameters                    *
+ ******************************************************************/
+
+
+/* Specify the machine mode that this machine uses
+   for the index in the tablejump instruction.  */
+#define CASE_VECTOR_MODE SImode
+
+/* Define if operations between registers always perform the operation
+   on the full register even if a narrower mode is specified.  */
+#define WORD_REGISTER_OPERATIONS 1
+
+/* Define if loading in MODE, an integral mode narrower than BITS_PER_WORD
+   will either zero-extend or sign-extend.  The value of this macro should
+   be the code that says which one of the two operations is implicitly
+   done, UNKNOWN if none.  */
+#define LOAD_EXTEND_OP(MODE) ZERO_EXTEND
+
+/* Max number of bytes we can move from memory to memory
+   in one reasonably fast instruction.  */
+#define MOVE_MAX 4
+
+/* Shift counts are truncated to 6-bits (0 to 63) instead of the expected
+   5-bits, so we can not define SHIFT_COUNT_TRUNCATED to true for this
+   target.  */
+#define SHIFT_COUNT_TRUNCATED 0
+
+/* All integers have the same format so truncation is easy.  */
+#define TRULY_NOOP_TRUNCATION(OUTPREC, INPREC)  1
+
+#define CLZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE) ((VALUE) = 32, 1)
+
+/* The machine modes of pointers and functions.  */
+#define Pmode  SImode
+#define FUNCTION_MODE  Pmode
+
+
 #endif /* GCC_CSKY_H */

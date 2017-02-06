@@ -56,7 +56,7 @@ typedef struct GTY(()) csky_stack_frame
 }
 csky_stack_frame;
 
-/*define these macros to describe the function type*/
+/* define these macros to describe the function type.  */
 #define CSKY_FT_TYPE_MASK   ((1 << 3) - 1)
 #define CSKY_FT_UNKNOWN     0               /*Type not been determined */
 #define CSKY_FT_NORMAL      1               /*Normal function */

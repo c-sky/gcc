@@ -162,6 +162,11 @@ struct csky_build_target csky_active_target;
 int csky_arch_base = 0;
 
 
+/* Forward definitions of types.  */
+typedef struct minipool_node    Mnode;
+typedef struct minipool_fixup   Mfix;
+
+
 #define CSKY_ADDISP_MAX_STEP  508
 #define CSKY_SUBISP_MAX_STEP  508
 
@@ -232,6 +237,1381 @@ int csky_arch_base = 0;
 
 #undef  TARGET_ASM_UNALIGNED_SI_OP
 #define TARGET_ASM_UNALIGNED_SI_OP "\t.long\t"
+
+
+/******************************************************************
+ *                    Miscellaneous Parameters                    *
+ ******************************************************************/
+
+
+#undef  TARGET_MACHINE_DEPENDENT_REORG
+#define TARGET_MACHINE_DEPENDENT_REORG csky_reorg
+
+#undef  TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS
+#define TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS csky_allocate_stack_slots_for_args
+
+
+/* Only output argument spill and registers save instructions if needed.  */
+
+static void
+process_csky_function_prologue (FILE *f,
+                                HOST_WIDE_INT frame_size,
+                                int asm_out,
+                                HOST_WIDE_INT *length)
+{
+  struct csky_frame fi;
+  int cfa_offset = 0;
+  unsigned long func_type;
+  int cfa_reg = CSKY_SP_REGNUM;
+  int space_allocated = 0;
+
+  if (length)
+    *length = 0;
+
+  if (csky_naked_function_p() && asm_out)
+    {
+      asm_fprintf(f, "\t#Naked Function: prologue and epilogue
+                      provided by programmer.\n");
+      return;
+    }
+
+  func_type = get_csky_current_func_type();
+  if((func_type & CSKY_FT_INTERRUPT) != 0 && asm_out)
+    {
+      asm_fprintf(f, "\t#Interrupt Service Routine.\n");
+      asm_fprintf(f, "\tnie\n\tipush\n");
+      if (length)
+        *length += 4;
+    }
+
+  get_csky_frame_layout(&fi);
+
+  space_allocated = fi.arg_size + fi.reg_size + fi.local_size
+                    + fi.outbound_size + fi.pad_outbound
+                    + fi.pad_local + fi.pad_reg;
+
+  if (fi.arg_size != 0 && crtl->args.pretend_args_size == 0)
+    {
+      int offset = fi.arg_size + fi.pad_arg - 4;
+      int rn = CSKY_FIRST_PARM_REG + CSKY_NPARM_REGS - 1;
+      int remaining = fi.arg_size;
+
+      if (asm_out)
+        {
+          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
+                       fi.arg_size + fi.pad_arg);
+        }
+      if (length)
+        {
+          *length += 4;
+        }
+      if(dwarf2out_do_frame() && asm_out)
+        {
+          char *l = dwarf2out_cfi_label(false);
+          cfa_offset += fi.arg_size + fi.pad_arg;
+          dwarf2out_def_cfa(l, cfa_reg, cfa_offset);
+        }
+      for (; remaining >= 4; offset -=4, rn--, remaining -= 4)
+        {
+          if (asm_out)
+            {
+              asm_fprintf (f, "\tst.w\t%s, (%s, %d)\n", reg_names[rn],
+                           reg_names[CSKY_SP_REGNUM], offset);
+            }
+          if (length)
+            {
+              *length += 4;
+            }
+          if(dwarf2out_do_frame() && asm_out)
+            {
+              char *l = dwarf2out_cfi_label(false);
+              dwarf2out_reg_save (l, rn, offset - cfa_offset);
+            }
+        }
+    }
+  else if (fi.arg_size != 0)
+    {
+      if (asm_out)
+        {
+          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
+                       fi.arg_size + fi.pad_arg);
+        }
+      if (length)
+        {
+          *length += 4;
+        }
+      if(dwarf2out_do_frame() && asm_out)
+        {
+          char *l = dwarf2out_cfi_label(false);
+          cfa_offset += fi.arg_size + fi.pad_arg;
+          dwarf2out_def_cfa(l, cfa_reg, cfa_offset);
+        }
+    }
+
+  if (target_flags & MASK_BACKTRACE)
+    {
+      csky_backtrace_push_reg (fi,
+                               &cfa_offset,
+                               &cfa_reg,
+                               length,
+                               asm_out,
+                               f);
+    }
+  else if (TARGET_PUSHPOP && can_save_regs_use_pushpop(fi.reg_mask))
+    {
+      int rn = 4;
+      int reg_end = 31;
+      int reg_count = 0;
+
+      if (asm_out)
+        {
+          asm_fprintf (f, "\tpush\t");
+        }
+      if (length)
+        {
+          *length += 4;
+        }
+      /* Find the first regnum */
+      for (; !(fi.reg_mask & (1 << rn)); rn++);
+      /* Output first regname */
+      if (asm_out)
+        {
+          asm_fprintf (f, "%s", reg_names[rn++]);
+        }
+
+      reg_count++;
+      /* Output remain regs */
+      for (; rn <= reg_end; rn++)
+        {
+          if (fi.reg_mask & (1 << rn))
+            {
+              if (asm_out)
+                {
+                  asm_fprintf (f, ", %s", reg_names[rn]);
+                }
+              reg_count ++;
+            }
+        }
+      if (asm_out)
+        {
+          asm_fprintf (f, "\n");
+        }
+      if(dwarf2out_do_frame() && asm_out)
+        {
+          char *l = dwarf2out_cfi_label(false);
+          cfa_offset += reg_count * 4;
+          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
+          rn = 4;
+          reg_count = 0;
+          for (; rn <= reg_end; rn++)
+            {
+              if (fi.reg_mask & (1 << rn))
+                {
+                  dwarf2out_reg_save (l, rn, (reg_count * 4) - cfa_offset);
+                  reg_count++;
+                }
+            }
+        }
+    }
+  else if (fi.reg_size > 0)
+    {
+      int remain = fi.reg_size;
+      int rn = -1;
+      int offset = 0;
+
+      if (asm_out)
+        {
+          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
+                       fi.reg_size + fi.pad_reg);
+        }
+      if (length)
+        {
+          *length += 4;
+        }
+      if(dwarf2out_do_frame() && asm_out)
+        {
+          char *l = dwarf2out_cfi_label(false);
+          cfa_offset += fi.reg_size + fi.pad_reg;
+          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
+        }
+
+      while (remain > 0)
+        {
+          while (!(fi.reg_mask & (1 << ++rn)));
+
+          if (asm_out)
+            {
+              asm_fprintf (f, "\tst.w\t%s, (%s, %d)\n",
+                           reg_names[rn], reg_names[CSKY_SP_REGNUM], offset);
+            }
+          if (length)
+            {
+              *length += 4;
+            }
+          if(dwarf2out_do_frame() && asm_out)
+            {
+              char *l = dwarf2out_cfi_label(false);
+              dwarf2out_reg_save (l, rn, offset - cfa_offset);
+            }
+
+          offset += 4;
+          remain -= 4;
+        }
+    }
+
+  if (frame_pointer_needed)
+    {
+      if (asm_out)
+        {
+          asm_fprintf (f, "\tmov\t%s, %s\n", reg_names[8],
+                       reg_names[CSKY_SP_REGNUM]);
+        }
+      if (length)
+        {
+          *length += 4;
+        }
+      /* FIXME: if define cfa as r8 here, the last adjust for sp cannot
+         be defined, so sp cannot be restored when unwind.  */
+      if(dwarf2out_do_frame() && asm_out)
+        {
+          cfa_reg = 8;
+          char *l = dwarf2out_cfi_label (false);
+          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
+        }
+    }
+  if(fi.local_size + fi.outbound_size)
+    {
+      int size = fi.local_size + fi.outbound_size;
+      if (size > CSKY_SUBI_MAX_STEP * 2)
+        {
+          if (TARGET_CK801)
+            {
+              if (asm_out)
+                {
+                  asm_fprintf (f, "\tlrw\t%s, 0x%x\n", reg_names[4], size);
+                }
+              if (length)
+                {
+                  *length += 4;
+                }
+            }
+          else if(size & 0xffff0000)
+            {
+              if (asm_out)
+                {
+                  asm_fprintf (f, "\tmovih\t%s, 0x%x\n",
+                               reg_names[4], size >> 16);
+                }
+              if (length)
+                {
+                  *length += 4;
+                }
+              if(size & 0xffff)
+                {
+                  if (asm_out)
+                    {
+                      asm_fprintf (f, "\tori\t%s, %s, 0x%x\n",
+                                   reg_names[4], reg_names[4], size & 0xffff);
+                    }
+                  if (length)
+                    {
+                      *length += 4;
+                    }
+                }
+            }
+          else
+            {
+              if (asm_out)
+                {
+                  asm_fprintf (f, "\tmovi\t%s, 0x%x\n", reg_names[4], size);
+                }
+              if (length)
+                {
+                  *length += 4;
+                }
+            }
+
+          if (asm_out)
+            {
+              asm_fprintf (f, "\tsub\t%s, %s\n",
+                           reg_names[CSKY_SP_REGNUM], reg_names[4]);
+            }
+          if (length)
+            {
+              *length += 4;
+            }
+        }
+      else if(size > CSKY_SUBI_MAX_STEP)
+        {
+          if (asm_out)
+            {
+              asm_fprintf (f, "\tsubi\t%s, %d\n",
+                           reg_names[CSKY_SP_REGNUM], CSKY_SUBI_MAX_STEP);
+              asm_fprintf (f, "\tsubi\t%s, %d\n",
+                           reg_names[CSKY_SP_REGNUM],
+                           size - CSKY_SUBI_MAX_STEP);
+            }
+          if (length)
+            {
+              *length += 8;
+            }
+        }
+      else
+        {
+          if (asm_out)
+            {
+              asm_fprintf (f, "\tsubi\t%s, %d\n",
+                           reg_names[CSKY_SP_REGNUM], size);
+            }
+          if (length)
+            {
+              *length += 4;
+            }
+        }
+      cfa_offset += size;
+      if(dwarf2out_do_frame() && !frame_pointer_needed && asm_out)
+        {
+          char *l = dwarf2out_cfi_label(false);
+          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
+        }
+    }
+
+  /* generate .stack_size function-name, size for callgraph,
+   * the default stack size is 0.  */
+  if ((target_flags & MASK_STACK_SIZE)
+      && (space_allocated > 0)
+      && asm_out )
+    {
+      gcc_assert (current_function_decl != NULL);
+      const char * func_name =
+          IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (current_function_decl));
+      if (func_name[0] == '*')
+        asm_fprintf (f, "\t.stack_size %s, %d\n",
+                     &func_name[1], space_allocated);
+      else
+        asm_fprintf (f, "\t.stack_size %s, %d\n", func_name, space_allocated);
+    }
+}
+
+
+const char *
+process_csky_function_epilogue (int asm_out, HOST_WIDE_INT *length)
+{
+  struct csky_frame fi;
+  int begin_reg, end_reg;
+  unsigned long func_type;
+  int use_pop = false;
+
+  func_type = get_csky_current_func_type();
+
+  if (csky_naked_function_p())
+    return "";
+
+  get_csky_frame_layout (&fi);
+  if (length)
+    *length = 0;
+
+  if (target_flags & MASK_BACKTRACE)
+    {
+      use_pop = csky_backtrace_pop_reg (fi,
+                                        length,
+                                        asm_out,
+                                        asm_out_file,
+                                        func_type);
+      if (use_pop == true)
+        return "";
+    }
+  else if (TARGET_PUSHPOP
+           && can_save_regs_use_pushpop(fi.reg_mask)
+           && fi.arg_size == 0
+           && (!(func_type & CSKY_FT_INTERRUPT)))
+    {
+      int rn = 4;
+      int reg_end = 31;
+
+      if (asm_out)
+        asm_fprintf (asm_out_file, "\tpop \t");
+      if (length)
+        *length += 4;
+      /* Find the first regnum */
+      for (; !(fi.reg_mask & (1 << rn)); rn++);
+      /* Output first regname */
+      if (asm_out)
+        asm_fprintf (asm_out_file, "%s", reg_names[rn++]);
+      /* Output remain regs */
+      for (; rn <= reg_end; rn++)
+        {
+          if (fi.reg_mask & (1 << rn) )
+            {
+              if (asm_out)
+                asm_fprintf (asm_out_file, ", %s", reg_names[rn]);
+            }
+        }
+      if (asm_out)
+        asm_fprintf (asm_out_file, "\n");
+
+      /* if lrpop instruction set pc = lr.  */
+      return "";
+    }
+  else if (can_save_regs_use_stm (fi.reg_mask, &begin_reg, &end_reg))
+    {
+      if (frame_pointer_needed && begin_reg != CSKY_FRAME_POINTER_REGNUM)
+        {
+          int off = (end_reg - begin_reg + 1 ) * 4;
+          if (asm_out)
+            {
+              asm_fprintf (asm_out_file, "ld.w\t%s, (%s, %d)\n",
+                           reg_names[CSKY_FRAME_POINTER_REGNUM],
+                           reg_names[CSKY_SP_REGNUM], off);
+            }
+          if (length)
+            *length += 4;
+        }
+      if (asm_out)
+        {
+          asm_fprintf (asm_out_file, "\tldm\t%s-%s,(%s)\n",
+                       reg_names[begin_reg],
+                       reg_names[end_reg],
+                       reg_names[CSKY_SP_REGNUM]);
+          asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
+                       reg_names[CSKY_SP_REGNUM],
+                       fi.reg_size + fi.pad_reg + fi.arg_size + fi.pad_arg);
+        }
+      if (length)
+        *length += 8;
+    }
+  else
+    {
+      int offset = fi.reg_size + fi.pad_reg;
+      int adjust = fi.arg_size + fi.pad_arg + fi.reg_size + fi.pad_reg;
+      int remain = fi.reg_size;
+      int rn = 31;
+
+      if (offset > 0)
+        {
+
+          offset -= fi.pad_reg;
+          offset -= 4;
+
+          while (remain > 0)
+            {
+              while (!(fi.reg_mask & (1 << --rn)));
+
+              if (asm_out)
+                {
+                  asm_fprintf (asm_out_file, "\tld.w\t%s, (%s, %d)\n",
+                               reg_names[rn],
+                               reg_names[CSKY_SP_REGNUM],
+                               offset);
+                }
+              if (length)
+                *length += 4;
+
+              offset -= 4;
+              remain -= 4;
+            }
+          if (asm_out)
+            asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
+                         reg_names[CSKY_SP_REGNUM], adjust);
+          if (length)
+            *length += 4;
+        }
+      else if (adjust)
+        {
+          if (asm_out)
+            asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
+                         reg_names[CSKY_SP_REGNUM], adjust);
+          if (length)
+            *length += 4;
+        }
+    }
+  if(crtl->calls_eh_return)
+    {
+      if (asm_out)
+        asm_fprintf (asm_out_file, "\taddu\t%s, %s\n",
+                     reg_names[CSKY_SP_REGNUM],
+                     reg_names[CSKY_EH_STACKADJ_REGNUM]);
+      if (length)
+        *length += 4;
+    }
+
+  if((func_type & CSKY_FT_INTERRUPT) != 0 && asm_out)
+    {
+      asm_fprintf(asm_out_file, "\tipop\n\tnir\n");
+      if (length)
+        *length += 4;
+    }
+
+  /* Out put rts */
+  if (asm_out && !(func_type & CSKY_FT_INTERRUPT))
+    asm_fprintf (asm_out_file, "\trts\n");
+  if (length)
+    *length += 4;
+
+  return "";
+}
+
+
+/* These typedefs are located at the start of this file, so that
+   they can be used in the prototypes there.  This comment is to
+   remind readers of that fact so that the following structures
+   can be understood more easily.
+
+     typedef struct minipool_node    Mnode;
+     typedef struct minipool_fixup   Mfix;  */
+
+struct minipool_node
+{
+  /* Doubly linked chain of entries.  */
+  Mnode * next;
+  Mnode * prev;
+  /* The maximum offset into the code that this entry can be placed.  While
+     pushing fixes for forward references, all entries are sorted in order
+     of increasing max_address.  */
+  HOST_WIDE_INT max_address;
+  /* Similarly for an entry inserted for a backwards ref.  */
+  HOST_WIDE_INT min_address;
+  /* The number of fixes referencing this entry.  This can become zero
+     if we "unpush" an entry.  In this case we ignore the entry when we
+     come to emit the code.  */
+  int refcount;
+  /* The offset from the start of the minipool.  */
+  HOST_WIDE_INT offset;
+  /* The value in table.  */
+  rtx value;
+  /* The mode of value.  */
+  enum machine_mode mode;
+  /* The size of the value.  With iWMMXt enabled
+     sizes > 4 also imply an alignment of 8-bytes.  */
+  int fix_size;
+};
+
+struct minipool_fixup
+{
+  Mfix *            next;
+  rtx               insn;
+  HOST_WIDE_INT     address;
+  rtx *             loc;
+  enum machine_mode mode;
+  int               fix_size;
+  rtx               value;
+  Mnode *           minipool;
+  HOST_WIDE_INT     forwards;
+  HOST_WIDE_INT     backwards;
+};
+
+static Mnode *  minipool_vector_head;
+static Mnode *  minipool_vector_tail;
+static rtx  minipool_vector_label;
+static HOST_WIDE_INT constpool_label_no = 0;
+
+/* The linked list of all minipool fixes required for this function.  */
+Mfix *      minipool_fix_head;
+Mfix *      minipool_fix_tail;
+/* The fix entry for the current minipool, once it has been placed.  */
+Mfix *      minipool_barrier;
+
+
+/* Record that there is a natural barrier in the insn stream at
+   ADDRESS.  */
+
+static void
+push_csky_minipool_barrier (rtx insn, HOST_WIDE_INT address)
+{
+  Mfix * fix = (Mfix *) obstack_alloc (&minipool_obstack, sizeof (* fix));
+
+  fix->insn = insn;
+  fix->address = address;
+
+  fix->next = NULL;
+  if (minipool_fix_head != NULL)
+    minipool_fix_tail->next = fix;
+  else
+    minipool_fix_head = fix;
+
+  minipool_fix_tail = fix;
+}
+
+
+static bool
+is_csky_epilogue_insn(rtx x)
+{
+    if ((GET_CODE(x) == JUMP_INSN)
+        && (GET_CODE(PATTERN(x)) == UNSPEC_VOLATILE)
+        && (XINT(PATTERN(x), 1) == FLAG_EPILOGUE))
+      return true;
+    else
+      return false;
+}
+
+
+/* Determines if INSN is the start of a jump table.  Returns the end
+   of the TABLE or NULL_RTX.  */
+
+static rtx
+is_csky_jump_table (rtx insn)
+{
+  rtx table;
+
+  if (GET_CODE (insn) == JUMP_INSN
+      && JUMP_LABEL (insn) != NULL
+      && ((table = next_real_insn (JUMP_LABEL (insn)))
+      == next_real_insn (insn))
+      && table != NULL
+      && GET_CODE (table) == JUMP_INSN
+      && (GET_CODE (PATTERN (table)) == ADDR_VEC
+      || GET_CODE (PATTERN (table)) == ADDR_DIFF_VEC))
+    return table;
+
+  return NULL_RTX;
+}
+
+
+static HOST_WIDE_INT
+get_csky_jump_table_size (rtx insn)
+{
+  /* ADDR_VECs only take room if read-only data does into the text
+     section.  */
+  if (JUMP_TABLES_IN_TEXT_SECTION || readonly_data_section == text_section)
+    {
+      rtx body = PATTERN (insn);
+      int elt = GET_CODE (body) == ADDR_DIFF_VEC ? 1 : 0;
+      HOST_WIDE_INT size;
+      HOST_WIDE_INT modesize;
+
+      modesize = GET_MODE_SIZE (GET_MODE (body));
+      size = modesize * XVECLEN (body, elt);
+      switch (modesize)
+        {
+        case 1:
+          /* Round up size  of TBB table to a halfword boundary.  */
+          size = (size + 1) & ~(HOST_WIDE_INT)1;
+          break;
+        case 2:
+          /* No padding necessary for TBH.  */
+          break;
+        case 4:
+          break;
+        default:
+          gcc_unreachable ();
+        }
+      return size;
+    }
+
+  return 0;
+}
+
+
+/* Scan INSN and note any of its operands that need fixing.
+   If DO_PUSHES is false we do not actually push any of the fixups
+   needed.  The function returns TRUE if any fixups were needed/pushed.
+*/
+
+static bool
+note_csky_invalid_constants (rtx insn, HOST_WIDE_INT address, int do_pushes)
+{
+  bool result = false;
+  int opno;
+
+  extract_insn (insn);
+
+  if (!constrain_operands (1))
+    fatal_insn_not_found (insn);
+
+  if (recog_data.n_alternatives == 0)
+    return false;
+
+  /* Fill in recog_op_alt with information about the constraints of
+     this insn.  */
+  preprocess_constraints ();
+
+  for (opno = 0; opno < recog_data.n_operands; opno++)
+    {
+      /* Things we need to fix can only occur in inputs.  */
+      if (recog_data.operand_type[opno] != OP_IN)
+        continue;
+
+      /* If this alternative is a memory reference, then any mention
+         of constants in this alternative is really to fool reload
+         into allowing us to accept one there.  We need to fix them up
+         now so that we output the right code.  */
+      if (recog_op_alt[opno][which_alternative].memory_ok)
+        {
+          rtx op = recog_data.operand[opno];
+
+          if (CONSTANT_P (op))
+            {
+              if (do_pushes)
+                push_csky_minipool_fix (insn, address,
+                                        recog_data.operand_loc[opno],
+                                        recog_data.operand_mode[opno], op);
+              result = true;
+            }
+        }
+    }
+
+  return result;
+}
+
+
+/* Add a constant to the minipool for a forward reference.  Returns the
+   node added or NULL if the constant will not fit in this pool.  */
+
+static Mnode *
+add_csky_minipool_forward_ref (Mfix *fix)
+{
+  /* If set, max_mp is the first pool_entry that has a lower
+     constraint than the one we are trying to add.  */
+  Mnode *       max_mp = NULL;
+  HOST_WIDE_INT max_address = fix->address + fix->forwards;
+  Mnode *       mp;
+
+  /* If the minipool starts before the end of FIX->INSN then this FIX
+     can not be placed into the current pool.  Furthermore, adding the
+     new constant pool entry may cause the pool to start FIX_SIZE bytes
+     earlier.  */
+  if (minipool_vector_head
+      && (fix->address + get_attr_length (fix->insn)
+          >= minipool_vector_head->max_address - fix->fix_size))
+    return NULL;
+
+  /* Scan the pool to see if a constant with the same value has
+     already been added.  While we are doing this, also note the
+     location where we must insert the constant if it doesn't already
+     exist.  */
+  for (mp = minipool_vector_head; mp != NULL; mp = mp->next)
+    {
+      if (GET_CODE (fix->value) == GET_CODE (mp->value)
+          && fix->mode == mp->mode
+          && (GET_CODE (fix->value) != CODE_LABEL
+              || (CODE_LABEL_NUMBER (fix->value)
+                  == CODE_LABEL_NUMBER (mp->value)))
+          && rtx_equal_p (fix->value, mp->value))
+        {
+          /* More than one fix references this entry.  */
+          mp->refcount++;
+          return mp;
+        }
+
+      /* Note the insertion point if necessary.  */
+      if (max_mp == NULL && mp->max_address > max_address)
+        max_mp = mp;
+    }
+
+  /* The value is not currently in the minipool, so we need to create
+     a new entry for it.  If MAX_MP is NULL, the entry will be put on
+     the end of the list since the placement is less constrained than
+     any existing entry.  Otherwise, we insert the new fix before
+     MAX_MP and, if necessary, adjust the constraints on the other
+     entries.  */
+  mp = XNEW (Mnode);
+  mp->fix_size = fix->fix_size;
+  mp->mode = fix->mode;
+  mp->value = fix->value;
+  mp->refcount = 1;
+  /* Not yet required for a backwards ref.  */
+  mp->min_address = -65536;
+
+  if (max_mp == NULL)
+    {
+      mp->max_address = max_address;
+      mp->next = NULL;
+      mp->prev = minipool_vector_tail;
+
+      if (mp->prev == NULL)
+        {
+          minipool_vector_head = mp;
+          minipool_vector_label = gen_csky_constpool_label(
+            gen_rtx_CONST_INT(VOIDmode, constpool_label_no++));
+        }
+      else
+        mp->prev->next = mp;
+
+      minipool_vector_tail = mp;
+    }
+  else
+    {
+      if (max_address > max_mp->max_address - mp->fix_size)
+        mp->max_address = max_mp->max_address - mp->fix_size;
+      else
+        mp->max_address = max_address;
+
+      mp->next = max_mp;
+      mp->prev = max_mp->prev;
+      max_mp->prev = mp;
+      if (mp->prev != NULL)
+        mp->prev->next = mp;
+      else
+        minipool_vector_head = mp;
+    }
+
+  /* Save the new entry.  */
+  max_mp = mp;
+
+  /* Scan over the preceding entries and adjust their addresses as
+     required.  */
+  while (mp->prev != NULL
+         && mp->prev->max_address > mp->max_address - mp->prev->fix_size)
+    {
+      mp->prev->max_address = mp->max_address - mp->prev->fix_size;
+      mp = mp->prev;
+    }
+
+  return max_mp;
+}
+
+
+/* Return the cost of forcibly inserting a barrier after INSN.  */
+
+static int
+get_csky_barrier_cost (rtx insn)
+{
+  /* Basing the location of the pool on the loop depth is preferable,
+     but at the moment, the basic block information seems to be
+     corrupt by this stage of the compilation.  */
+  int base_cost = 50;
+  rtx next = next_nonnote_insn (insn);
+
+  if (next != NULL && GET_CODE (next) == CODE_LABEL)
+    base_cost -= 20;
+
+  switch (GET_CODE (insn))
+    {
+    case CODE_LABEL:
+      /* It will always be better to place the table before the label, rather
+     than after it.  */
+      return 50;
+
+    case INSN:
+    case CALL_INSN:
+      return base_cost;
+
+    case JUMP_INSN:
+      return base_cost - 10;
+
+    default:
+      return base_cost + 10;
+    }
+}
+
+
+/* Find the best place in the insn stream in the range
+   (FIX->address,MAX_ADDRESS) to forcibly insert a minipool barrier.
+   Create the barrier by inserting a jump and add a new fix entry for
+   it.  */
+static Mfix *
+create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
+                         HOST_WIDE_INT min_address, HOST_WIDE_INT max_address)
+{
+  rtx barrier;
+  rtx from;
+  if (fix)
+    from = fix->insn;
+  else
+    from = get_insns();
+  /* The instruction after which we will insert the jump.  */
+  rtx selected = NULL;
+  int selected_cost;
+  /* The address at which the jump instruction will be placed.  */
+  HOST_WIDE_INT selected_address;
+  Mfix * new_fix;
+  HOST_WIDE_INT count;
+  if (fix)
+    count = fix->address;
+  else
+    count = min_address;
+  HOST_WIDE_INT max_count = max_address;
+  rtx label = gen_label_rtx ();
+
+  selected_cost = get_csky_barrier_cost (from);
+
+  while (from && count < max_count)
+    {
+      rtx tmp;
+      int new_cost;
+
+      /* Count the length of this insn.  */
+      count += get_attr_length (from);
+
+      /* If there is a jump table, add its length.  */
+      tmp = is_csky_jump_table (from);
+      if (tmp != NULL)
+        {
+          count += get_csky_jump_table_size (tmp);
+
+          /* Jump tables aren't in a basic block, so base the cost on
+             the dispatch insn.  If we select this location, we will
+             still put the pool after the table.  */
+          new_cost = get_csky_barrier_cost (from);
+
+          if (count < max_count
+              && (!selected || new_cost <= selected_cost))
+            {
+              selected = tmp;
+              selected_cost = new_cost;
+              selected_address = count;
+            }
+
+          /* Continue after the dispatch table.  */
+          from = NEXT_INSN (tmp);
+          continue;
+        }
+
+      new_cost = get_csky_barrier_cost (from);
+
+      if (count < max_count
+          && (!selected || new_cost <= selected_cost))
+        {
+          selected = from;
+          selected_cost = new_cost;
+          selected_address = count;
+        }
+
+      from = NEXT_INSN (from);
+    }
+
+  /* Make sure that we found a place to insert the jump.  */
+  gcc_assert (selected);
+
+  /* Create a new JUMP_INSN that branches around a barrier.  */
+  from = emit_jump_insn_after (gen_jump (label), selected);
+  JUMP_LABEL (from) = label;
+  barrier = emit_barrier_after (from);
+  emit_label_after (label, barrier);
+
+  /* Create a minipool barrier entry for the new barrier.  */
+  new_fix = (Mfix *) obstack_alloc (&minipool_obstack, sizeof (* new_fix));
+  new_fix->insn = barrier;
+  new_fix->address = selected_address;
+  if (fix)
+    {
+      new_fix->next = fix->next;
+      fix->next = new_fix;
+    }
+  else
+    new_fix->next = fix_next;
+
+  return new_fix;
+}
+
+
+/* Print a symbolic form of X to the debug file, F.  */
+
+static void
+print_csky_value (FILE *f, rtx x)
+{
+  switch (GET_CODE (x))
+    {
+    case CONST_INT:
+      fprintf (f, HOST_WIDE_INT_PRINT_HEX, INTVAL (x));
+      return;
+
+    case CONST_DOUBLE:
+      fprintf (f, "<0x%lx,0x%lx>", (long)XWINT (x, 2), (long)XWINT (x, 3));
+      return;
+
+    case CONST_VECTOR:
+      {
+        int i;
+
+        fprintf (f, "<");
+        for (i = 0; i < CONST_VECTOR_NUNITS (x); i++)
+          {
+            fprintf (f, HOST_WIDE_INT_PRINT_HEX,
+                     INTVAL (CONST_VECTOR_ELT (x, i)));
+            if (i < (CONST_VECTOR_NUNITS (x) - 1))
+              fputc (',', f);
+          }
+        fprintf (f, ">");
+      }
+      return;
+
+    case CONST_STRING:
+      fprintf (f, "\"%s\"", XSTR (x, 0));
+      return;
+
+    case SYMBOL_REF:
+      fprintf (f, "`%s'", XSTR (x, 0));
+      return;
+
+    case LABEL_REF:
+      fprintf (f, "L%d", INSN_UID (XEXP (x, 0)));
+      return;
+
+    case CONST:
+      print_csky_value (f, XEXP (x, 0));
+      return;
+
+    case PLUS:
+      print_csky_value (f, XEXP (x, 0));
+      fprintf (f, "+");
+      print_csky_value (f, XEXP (x, 1));
+      return;
+
+    case PC:
+      fprintf (f, "pc");
+      return;
+
+    default:
+      fprintf (f, "????");
+      return;
+    }
+}
+
+
+/* Record INSN, which will need fixing up to load a value from the
+   minipool.  ADDRESS is the offset of the insn since the start of the
+   function; LOC is a pointer to the part of the insn which requires
+   fixing; VALUE is the constant that must be loaded, which is of type
+   MODE.  */
+
+static void
+push_csky_minipool_fix (rtx insn, HOST_WIDE_INT address, rtx *loc,
+                        enum machine_mode mode, rtx value)
+{
+  #define CSKY_ELRW16_RANGE  1400
+  #define CSKY_LRW16_RANGE   700
+  #define CSKY_CONSTANT_POOL_RANGE (TARGET_ELRW ? CSKY_ELRW16_RANGE
+                                                : CSKY_LRW16_RANGE)
+
+  /* Fixes less than a word need padding out to a word boundary.  */
+  #define CSKY_MINIPOOL_FIX_SIZE(mode) \
+    (GET_MODE_SIZE ((mode)) >= 4 ? GET_MODE_SIZE ((mode)) : 4)
+
+  Mfix * fix = (Mfix *) obstack_alloc (&minipool_obstack, sizeof (* fix));
+
+  fix->insn = insn;
+  fix->address = address;
+  fix->loc = loc;
+  fix->mode = mode;
+  fix->fix_size = CSKY_MINIPOOL_FIX_SIZE (mode);
+  fix->value = value;
+  fix->forwards = CSKY_CONSTANT_POOL_RANGE;
+  fix->backwards = 0;
+  fix->minipool = NULL;
+
+  /* If an insn doesn't have a range defined for it, then it isn't
+     expecting to be reworked by this code.  Better to stop now than
+     to generate duff assembly code.  */
+  gcc_assert (fix->forwards || fix->backwards);
+
+  if (dump_file)
+    {
+      fprintf (dump_file,
+               ";; %smode fixup for i%d; addr %lu, range (%ld,%ld): ",
+               GET_MODE_NAME (mode),
+               INSN_UID (insn), (unsigned long) address,
+               -1 * (long)fix->backwards, (long)fix->forwards);
+      print_csky_value (dump_file, fix->value);
+      fprintf (dump_file, "\n");
+    }
+
+  /* Add it to the chain of fixes.  */
+  fix->next = NULL;
+
+  if (minipool_fix_head != NULL)
+    minipool_fix_tail->next = fix;
+  else
+    minipool_fix_head = fix;
+
+  minipool_fix_tail = fix;
+}
+
+
+static void
+assign_csky_minipool_offsets (Mfix *barrier)
+{
+  HOST_WIDE_INT offset = 0;
+  Mnode *mp;
+
+  minipool_barrier = barrier;
+
+  for (mp = minipool_vector_head; mp != NULL; mp = mp->next)
+    {
+      mp->offset = offset;
+
+      if (mp->refcount > 0)
+        offset += mp->fix_size;
+    }
+}
+
+
+/* Output the literal table.  */
+
+static HOST_WIDE_INT
+dump_csky_minipool (rtx scan)
+{
+  Mnode * mp;
+  Mnode * nmp;
+  HOST_WIDE_INT pool_length = 0;
+
+  if (dump_file)
+    fprintf (dump_file,
+             ";; Emitting minipool after insn %u;
+              address %ld; align %d (bytes)\n",
+             INSN_UID (scan), (unsigned long) minipool_barrier->address, 4);
+
+  scan = emit_insn_after (gen_align_4 (), scan);
+  scan = emit_insn_after (minipool_vector_label, scan);
+
+  for (mp = minipool_vector_head; mp != NULL; mp = nmp)
+    {
+      if (mp->refcount > 0)
+        {
+          if (dump_file)
+            {
+              fprintf (dump_file, ";;  Offset %u, min %ld, max %ld ",
+                       (unsigned) mp->offset, (unsigned long) mp->min_address,
+                       (unsigned long) mp->max_address);
+              print_csky_value (dump_file, mp->value);
+              fputc ('\n', dump_file);
+            }
+
+          switch (mp->fix_size)
+            {
+#ifdef HAVE_consttable_4
+            case 4:
+              scan = emit_insn_after (gen_consttable_4 (mp->value), scan);
+              pool_length += 4;
+              break;
+#endif
+            default:
+              gcc_unreachable ();
+            }
+        }
+
+      nmp = mp->next;
+      free (mp);
+    }
+
+  minipool_vector_head = minipool_vector_tail = NULL;
+  scan = emit_barrier_after (scan);
+
+  return pool_length;
+}
+
+
+static void
+adjust_csky_minipool_address(HOST_WIDE_INT func_size)
+{
+  Mnode * mp;
+  for (mp = minipool_vector_head; mp; mp = mp->next)
+    mp->max_address -= func_size;
+
+  return;
+}
+
+
+static void
+csky_reorg (void)
+{
+  /* Restore the warn_return_type if it has been altered. */
+  if (saved_warn_return_type != -1)
+    {
+      if (--saved_warn_return_type_count == 0)
+        {
+          warn_return_type =saved_warn_return_type;
+          saved_warn_return_type = -1;
+        }
+    }
+
+    /* TODO */
+    if (!(TARGET_CK802 || TARGET_CK801) || !TARGET_CONSTANT_POOL) return;
+
+    /* The following algorithm dumps constant pool to the right point. */
+    rtx insn;
+    HOST_WIDE_INT address;
+    HOST_WIDE_INT tmp_len, prolog_len;
+    Mfix * fix;
+
+    minipool_fix_head = minipool_fix_tail = NULL;
+    process_csky_function_prologue(NULL, get_frame_size(), 0, &tmp_len);
+    address = prolog_len = tmp_len;
+
+    /* The first insn must always be a note, or the code below won't
+       scan it properly.  */
+    insn = get_insns ();
+    gcc_assert (GET_CODE (insn) == NOTE);
+
+    /* Scan the insns and record the operands that will need fixing.  */
+    for (insn = next_nonnote_insn (insn); insn; insn = next_nonnote_insn (insn))
+      {
+        if (GET_CODE (insn) == BARRIER)
+          push_csky_minipool_barrier (insn, address);
+        else if (is_csky_epilogue_insn(insn))
+          {
+            process_csky_function_epilogue(0, &tmp_len);
+            address += tmp_len;
+          }
+        else if (INSN_P (insn))
+          {
+            rtx table;
+
+            note_csky_invalid_constants (insn, address, true);
+            address += get_attr_length (insn);
+
+            /* If the insn is a vector jump, add the size of the table
+             and skip the table.  */
+            if ((table = is_csky_jump_table (insn)) != NULL)
+              {
+                address += get_csky_jump_table_size (table);
+                insn = table;
+              }
+          }
+      }
+
+    fix = minipool_fix_head;
+
+    /* Now scan the fixups and perform the required changes.  */
+    while (fix)
+      {
+        Mfix * ftmp;
+        Mfix * fdel;
+        Mfix * last_added_fix;
+        Mfix * last_barrier = NULL;
+        Mfix * this_fix;
+        Mnode * mp;
+        bool reach_end = false;
+        bool has_pending_const = false;
+
+        /* check if there is any pending constant not processd */
+        for (mp = minipool_vector_head; mp; mp = mp->next)
+          {
+            if (mp->refcount > 0)
+              {
+                has_pending_const = true;
+                break;
+              }
+          }
+
+        /* if no pending constant, jump over barrier insn at the beginning */
+        if (has_pending_const == false)
+          {
+            while (fix && (GET_CODE (fix->insn) == BARRIER))
+              fix = fix->next;
+            if (fix == NULL)
+              break;
+          }
+
+        last_added_fix = NULL;
+
+        for (ftmp = fix; ftmp; ftmp = ftmp->next)
+          {
+            if (GET_CODE (ftmp->insn) == BARRIER)
+              {
+                if (minipool_vector_head
+                    && ftmp->address >= minipool_vector_head->max_address)
+                  break;
+
+                last_barrier = ftmp;
+              }
+            else if ((ftmp->minipool = add_csky_minipool_forward_ref (ftmp)) == NULL)
+              break;
+
+            last_added_fix = ftmp;  /* Keep track of the last fix added.  */
+          }
+
+        if (ftmp == NULL) reach_end = true;
+
+        /* If the last added fix is a barrier, dump minipool after it.  */
+        if (last_added_fix && GET_CODE (last_added_fix->insn) == BARRIER)
+          {
+            ftmp = last_barrier;
+          }
+        else
+          {
+            /* ftmp is first fix that we can't fit into this pool.
+               Insert a new barrier in the code somewhere between the previous
+               fix and this one, and arrange to jump around it.  */
+            HOST_WIDE_INT max_address;
+
+            /* The last item on the list of fixes must be a barrier, so
+               we can never run off the end of the list of fixes without
+               last_barrier being set.  */
+            gcc_assert (ftmp);
+
+            max_address = minipool_vector_head->max_address;
+            /* Check that there isn't another fix that is in range that
+               we couldn't fit into this pool because the pool was
+               already too large: we need to put the pool before such an
+               instruction.  The pool itself may come just after the
+               fix because create_csky_fix_barrier also allows space for a
+               jump instruction.  */
+            if (ftmp->address < max_address)
+              max_address = ftmp->address + 1;
+            last_barrier = create_csky_fix_barrier (last_added_fix, ftmp,
+                                                    prolog_len, max_address);
+          }
+
+        assign_csky_minipool_offsets (last_barrier);
+
+        /* Scan over the fixes we have identified for this pool, fixing them
+           up and adding the constants to the pool itself.  */
+        for (this_fix = fix; this_fix && ftmp != this_fix;
+             this_fix = this_fix->next)
+          {
+            if (GET_CODE (this_fix->insn) != BARRIER)
+              {
+                rtx addr = plus_constant (
+                        gen_rtx_LABEL_REF (VOIDmode, minipool_vector_label),
+                        this_fix->minipool->offset);
+                rtx insn_body = PATTERN (this_fix->insn);
+                rtx src = XEXP(insn_body, 1);
+                *this_fix->loc = gen_rtx_MEM (this_fix->mode, addr);
+                if (GET_CODE(this_fix->value) == SYMBOL_REF)
+                  {
+                    emit_insn_after (gen_rtx_UNSPEC_VOLATILE (VOIDmode,
+                                     gen_rtvec (1, src),
+                                     VUNSPEC_SYMBOL_REF),
+                                     this_fix->insn);
+                  }
+              }
+          }
+
+        /* if the current insn list is the last part of internal function, only
+         * need to modify the address constraint; Otherwise, dump the minipool. */
+        #define MAX_PROLOG_LENGTH ((4 + 8 + 1 + 4 + 1 + 4) * 4)
+        if (!minipool_vector_head)
+          {
+          }
+        else if (reach_end == true
+                && minipool_vector_head->max_address <= (last_barrier->address
+                                                         + MAX_PROLOG_LENGTH))
+          {
+            dump_csky_minipool (last_barrier->insn);
+          }
+        else if (reach_end == true && will_change_section == true)
+          {
+            dump_csky_minipool (last_barrier->insn);
+          }
+        else if (reach_end == true && is_last_func == true)
+          {
+            dump_csky_minipool (last_barrier->insn);
+          }
+        else if (reach_end == false)
+          {
+            HOST_WIDE_INT pool_len;
+            pool_len = dump_csky_minipool (last_barrier->insn);
+            /* the branch instruction "br .L" inserted.  */
+            address += pool_len + 4;
+
+            for (this_fix = ftmp; this_fix; this_fix = this_fix->next)
+              this_fix->address += pool_len + 4;
+          }
+        else
+          {
+            adjust_csky_minipool_address(address);
+          }
+
+        fix = ftmp;
+        if (fix->next == NULL)
+          break;
+      }
+
+    /* Free the minipool memory.  */
+    obstack_free (&minipool_obstack, minipool_startobj);
+}
+
 
 static int
 get_csky_live_regs (int *count)
@@ -1659,3 +3039,94 @@ csky_print_operand (FILE * stream, rtx x, int code)
     }
 }
 
+
+/* Define a table to map arguement and funtion type.  */
+typedef struct
+{
+  const char *const arg;
+  const unsigned long return_value;
+} isr_attribute_arg;
+
+static const isr_attribute_arg isr_attribute_args[] =
+{
+  {"irq", CSKY_FT_ISR },
+  {"IRQ", CSKY_FT_ISR },
+  {"fiq", CSKY_FT_FIQ },
+  {"FIQ", CSKY_FT_FIQ },
+  {NULL, CSKY_FT_NORMAL }
+};
+
+
+/* Return the function type of the current function, if it has not been
+   determined, return CSKY_FT_UNKNOWN.  */
+
+static unsigned long
+get_csky_isr_type(tree argument)
+{
+  const isr_attribute_arg *ptr;
+  const char *arg;
+
+  /* if arguement is NULL, set default value ISR.  */
+  if(argument == NULL_TREE)
+    return CSKY_FT_ISR;
+
+  if(TREE_VALUE(argument) == NULL_TREE
+     || TREE_CODE(TREE_VALUE(argument)) != STRING_CST)
+    return CSKY_FT_UNKNOWN;
+
+  arg = TREE_STRING_POINTER(TREE_VALUE(argument));
+
+  for(ptr = isr_attribute_args; ptr->arg != NULL; ptr++)
+    {
+      if(strcmp(arg, ptr->arg) == 0)
+        return ptr->return_value;
+    }
+
+  return CSKY_FT_UNKNOWN;
+}
+
+
+static unsigned long
+compute_csky_func_type(void)
+{
+  unsigned long type = CSKY_FT_UNKNOWN;
+  tree a;
+  tree attr;
+
+  gcc_assert(TREE_CODE(current_function_decl) == FUNCTION_DECL);
+
+  attr = DECL_ATTRIBUTES(current_function_decl);
+
+  a = lookup_attribute("naked", attr);
+  if(a != NULL_TREE)
+    type |= CSKY_FT_NAKED;
+
+  a = lookup_attribute("isr", attr);
+  if(a == NULL_TREE)
+    a = lookup_attribute("interrupt", attr);
+
+  if(a == NULL_TREE)
+    type |= CSKY_FT_NORMAL;
+  else
+    type |= get_csky_isr_type(TREE_VALUE(a));
+
+  return type;
+}
+
+
+unsigned long
+get_csky_current_func_type(void)
+{
+  if(CSKY_FUNCTION_TYPE(cfun->machine->func_type) == CSKY_FT_UNKNOWN)
+    cfun->machine->func_type = compute_csky_func_type();
+
+  return cfun->machine->func_type;
+}
+
+
+bool
+csky_allocate_stack_slots_for_args(void)
+{
+  /* naked functions should not allocate stack slots for arguments.  */
+  return !IS_NAKED(get_csky_current_func_type());
+}
