@@ -40,6 +40,36 @@
 
 #define CSKY_CONSTPOOL_LABEL_PREFIX   "LCP"
 
+/* Helper macro for constraints and predicates.  */
+#define VALUE_BETWEEN(VALUE, LOW, HIGH)    \
+  ((VALUE) >= (LOW) && (VALUE) <= (HIGH))
+
+#define CSKY_CONST_OK_FOR_I(VALUE)  \
+  (VALUE_BETWEEN((VALUE), 0, 65535))
+
+#define CSKY_CONST_OK_FOR_Ub(VALUE)  \
+  (exact_log2 (VALUE & 0xFFFFFFFF) >= 0)
+
+#define CSKY_CONST_OK_FOR_Uc(VALUE)          \
+  ((VALUE) == (HOST_WIDE_INT)-1              \
+   || (exact_log2 ((VALUE) + 1) >= 0         \
+       && exact_log2 ((VALUE) + 1) <= 31))
+
+#define CSKY_CONST_OK_FOR_MOVIH(VALUE)  \
+  ( ((VALUE) & 0xFFFF) == 0 )
+
+#define CSKY_CONST_OK_FOR_T(VALUE)  \
+  (VALUE_BETWEEN(VALUE, -256, -1))
+
+#define CSKY_CONST_OK_FOR_N(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 1, 256))
+
+/* Constant can gen by bseti(16,30) + subi.  */
+#define CSKY_CONST_OK_FOR_BS(VALUE)                                               \
+  (exact_log2 ((unsigned HOST_WIDE_INT)(VALUE & 0xFFFFF000) + (1 << 12)) >= 1     \
+   && exact_log2 ((unsigned HOST_WIDE_INT)(VALUE & 0xFFFFF000) + (1 << 12)) <= 30 \
+   && ((VALUE) & 0xFFF) != 0)
+
 /* Structure used to hold the function stack frame layout.  */
 typedef struct GTY(()) csky_stack_frame
 {
@@ -56,12 +86,39 @@ typedef struct GTY(()) csky_stack_frame
 }
 csky_stack_frame;
 
-/* define these macros to describe the function type.  */
+/* Define these macros to describe the function type.  */
 #define CSKY_FT_TYPE_MASK   ((1 << 3) - 1)
-#define CSKY_FT_UNKNOWN     0               /*Type not been determined */
-#define CSKY_FT_NORMAL      1               /*Normal function */
-#define CSKY_FT_ISR         4               /*Interrupt service routine */
-#define CSKY_FT_FIQ         5               /*Fast interrupt service routine */
-#define CSKY_FT_EXCEPTION   6               /*Exception handler */
+#define CSKY_FT_UNKNOWN     0               /* Type not been determined */
+#define CSKY_FT_NORMAL      1               /* Normal function */
+#define CSKY_FT_ISR         4               /* Interrupt service routine */
+#define CSKY_FT_FIQ         5               /* Fast interrupt service routine */
+#define CSKY_FT_EXCEPTION   6               /* Exception handler */
+
+struct csky_address
+{
+  rtx base, index, symbol, label, disp;
+  HOST_WIDE_INT scale;
+};
+
+/* A type to distinguish the different forms of outputing
+   inline const.  */
+
+enum csky_inline_const_type
+{
+  IC_UNINLINALE = 0,  /* Not inibale */
+  IC_SINGLE,          /* Single instruction */
+  IC_APPEND_NOT,      /* Signle instruction followed by a not */
+  IC_APPEND_ADDI,     /* Single insn followed by an addi */
+  IC_APPEND_SUBI,     /* Single insn followed by a subi */
+  IC_BGENI_ADDI,      /* Single insn(bgeni) followed by an addi */
+  IC_BGENI_SUBI,      /* Single insn(bgeni) followed by a subi */
+  IC_APPEND_BSETI,    /* Single insn followed by bseti */
+  IC_APPEND_MOVI,     /* Single insn followed by movi */
+  IC_APPEND_BCLRI,    /* Single insn followed by bclri */
+  IC_APPEND_ROTLI,    /* Single insn followed by rotli */
+  IC_APPEND_LSLI,     /* Single insn followed by lsli */
+  IC_APPEND_IXH,      /* Single insn followed by ixh */
+  IC_APPEND_IXW       /* Single insn followed by ixw */
+}
 
 #endif /* GCC_CSKY_PROTOS_H */
