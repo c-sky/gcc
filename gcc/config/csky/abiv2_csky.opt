@@ -1,4 +1,7 @@
 
+HeaderInclude
+config/csky/abiv2_csky_opts.h
+
 march=
 Target RejectNegative ToLower Joined Enum(csky_arch) Var(csky_arch_option)
 Specify the name of the target architecture.
@@ -8,12 +11,12 @@ EnumValue
 Enum(csky_arch) String(native) Value(-1) DriverOnly
 
 mcpu=
-Target RejectNegative ToLower Joined Enum(processor_type) Var(csky_cpu_option) Init(csky_none)
+Target RejectNegative ToLower Joined Enum(csky_processor_type) Var(csky_cpu_option) Init(csky_none)
 Specify the name of the target CPU.
 
-; Other processor_type values are loaded from abiv2_csky_tables.opt
+; Other csky_processor_type values are loaded from abiv2_csky_tables.opt
 EnumValue
-Enum(processor_type) String(native) Value(-1) DriverOnly
+Enum(csky_processor_type) String(native) Value(-1) DriverOnly
 
 mfpu=
 Target RejectNegative Joined Enum(csky_fpu) Var(csky_fpu_index) Save
