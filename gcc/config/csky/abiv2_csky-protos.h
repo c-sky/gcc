@@ -47,6 +47,9 @@
 #define CSKY_CONST_OK_FOR_I(VALUE)  \
   (VALUE_BETWEEN((VALUE), 0, 65535))
 
+#define CSKY_CONST_OK_FOR_K(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 0, 31))
+
 #define CSKY_CONST_OK_FOR_Ub(VALUE)  \
   (exact_log2 (VALUE & 0xFFFFFFFF) >= 0)
 

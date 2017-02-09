@@ -35,6 +35,11 @@
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_Uc (ival)")))
 
+(define_constraint "Ui"
+  "Constant in range 0-31"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_K(ival)")))
+
 (define_constraint "Uo"
   "Constant which is inlinable"
   (and (match_code "const_int")
