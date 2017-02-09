@@ -64,8 +64,29 @@
 #define CSKY_CONST_OK_FOR_T(VALUE)  \
   (VALUE_BETWEEN(VALUE, -256, -1))
 
+#define CSKY_CONST_OK_FOR_US(VALUE) \
+  (VALUE_BETWEEN(VALUE, -8, -1))
+
 #define CSKY_CONST_OK_FOR_N(VALUE)  \
   (VALUE_BETWEEN(VALUE, 1, 256))
+
+#define CSKY_CONST_OK_FOR_L(VALUE)  \
+  (VALUE_BETWEEN((VALUE), 1, 8))
+
+#define CSKY_CONST_OK_FOR_M(VALUE)  \
+  (VALUE_BETWEEN((VALUE), 1, 4096))
+
+#define CSKY_CONST_OK_FOR_P(VALUE)  \
+    ((((VALUE) & 0x3) == 0)         \
+     && VALUE_BETWEEN(VALUE, 4, 508))
+
+#define CSKY_CONST_OK_FOR_Ug(VALUE)  \
+    ((((VALUE) & 0x3) == 0)          \
+     && VALUE_BETWEEN(VALUE, -508, -4))
+
+#define CSKY_CONST_OK_FOR_Uj(VALUE)  \
+    ((((VALUE) & 0x3) == 0)          \
+     && VALUE_BETWEEN(VALUE, 1, 1024))
 
 /* Constant can gen by bseti(16,30) + subi.  */
 #define CSKY_CONST_OK_FOR_BS(VALUE)                                               \

@@ -1,3 +1,7 @@
+
+(define_register_constraint "a" "MINI_REGS" "r0 - r7")
+
+
 (define_register_constraint "c" "C_REGS" "C")
 
 
@@ -8,6 +12,9 @@
 
 
 (define_register_constraint "v" "V_REGS" "Vector REGS")
+
+
+(define_register_constraint "z" "SP_REGS" "sp register only")
 
 
 (define_constraint "R"
@@ -54,3 +61,53 @@
   "Constant in range -256 - (-1)"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_T(ival)")))
+
+(define_constraint "N"
+  "Constant in range 1-256"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_N(ival)")))
+
+(define_constraint "L"
+  "Constant in range 1-8"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_L(ival)")))
+
+(define_constraint "M"
+  "Constant in range 1-4096"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_M(ival)")))
+
+(define_constraint "Us"
+  "Constant in range -8 - -1"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_US(ival)")))
+
+(define_constraint "Um"
+  "Constant in range -1 - (-4096)"
+  (and (match_code "const_int")
+       (match_test "CKSY_CONST_OK_FOR_Um(ival)")))
+
+(define_constraint "Ua"
+  "Constant 0"
+  (and (match_code "const_int")
+       (match_test "ival == 0")))
+
+(define_constraint "Ug"
+  "Constant in range -508 - (-4) and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CONST_OK_FOR_Ug (ival)")))
+
+(define_constraint "Uj"
+  "Constant in range 1 - 1024 and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CONST_OK_FOR_Uj (ival)")))
+
+(define_constraint "P"
+  "Constant in range 4 - 508 and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CONST_OK_FOR_P (ival)")))
+
+(define_constraint "Uq"
+  "Constant in range 0 - 1020 and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CONST_OK_FOR_Uj(ival + 4)")))
