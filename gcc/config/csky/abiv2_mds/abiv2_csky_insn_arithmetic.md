@@ -28,3 +28,32 @@
   lsli %0, %1, %2
   lsl  %0, %1, %2"
 )
+
+
+(define_expand "ashrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "")
+        (ashiftrt:SI (match_operand:SI 1 "register_operand"     "")
+                     (match_operand:SI 2 "csky_arith_K_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_ashrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "=r,r")
+        (ashiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
+                     (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
+  "!TARGET_CK801"
+  "@
+  asr  %0, %1, %2
+  asri %0, %1, %2"
+)
+
+(define_insn "*ck801_ashrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "=a,r")
+        (ashiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
+                     (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
+  "TARGET_CK801"
+  "@
+  asri %0, %1, %2
+  asr  %0, %1, %2"
+)
