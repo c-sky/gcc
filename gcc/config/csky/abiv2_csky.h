@@ -8,6 +8,7 @@
  ******************************************************************/
 
 
+#if !defined(GENERATOR_FILE) && !defined (USED_FOR_TARGET)
 /* A C structure for machine-specific, per-function data.
    This is added to the cfun structure.  */
 typedef struct GTY(()) machine_function
@@ -22,6 +23,7 @@ typedef struct GTY(()) machine_function
   int number_of_regs_before_varargs;
 }
 machine_function;
+#endif
 
 
 /******************************************************************
@@ -665,25 +667,6 @@ enum reg_class
 /* Initialize data used by insn expanders.  This is called from insn_emit,
    once for every function before code is generated.  */
 #define INIT_EXPANDERS  csky_init_expanders ()
-
-#if !defined(GENERATOR_FILE) && !defined (USED_FOR_TARGET)
-/* A C structure for machine-specific, per-function data.
-   This is added to the cfun structure.  */
-typedef struct GTY (()) machine_function
-{
-  /* Record if the function has a variable argument list.  */
-  int uses_anonymous_args;
-
-  /* Records if LR has to be saved for far jumps.  */
-  int far_jump_used;
-
-  /* Record the number of regs before varargs  */
-  int number_of_regs_before_varargs;
-
-  /*Records the type of current function */
-  unsigned long func_type;
-}
-#endif
 
 
 /******************************************************************
