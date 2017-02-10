@@ -3163,6 +3163,15 @@ const_ok_for_cskyv2 (HOST_WIDE_INT value)
 }
 
 
+int
+constant_csky_inlinable (HOST_WIDE_INT value)
+{
+  HOST_WIDE_INT x, y;
+  return !(TARGET_CK802 || TARGET_CK801)
+    && try_csky_constant_tricks (value, &x, &y);
+}
+
+
 /* Try tricks to load a constant inline and return the trick number if
    success (0 is non-inlinable). More information look the comment of
    enum csky_inline_const_type defination.  */

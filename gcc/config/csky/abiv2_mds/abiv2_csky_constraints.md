@@ -50,7 +50,7 @@
 (define_constraint "Uo"
   "Constant which is inlinable"
   (and (match_code "const_int")
-       (match_test "constant_inlinable(ival)")))
+       (match_test "constant_csky_inlinable(ival)")))
 
 (define_constraint "Up"
   "Constant in range 0 - 255"
@@ -85,7 +85,7 @@
 (define_constraint "Um"
   "Constant in range -1 - (-4096)"
   (and (match_code "const_int")
-       (match_test "CKSY_CONST_OK_FOR_Um(ival)")))
+       (match_test "CSKY_CONST_OK_FOR_Um(ival)")))
 
 (define_constraint "Ua"
   "Constant 0"
@@ -95,19 +95,24 @@
 (define_constraint "Ug"
   "Constant in range -508 - (-4) and is divisible by 4"
   (and (match_code "const_int")
-       (match_test "CONST_OK_FOR_Ug (ival)")))
+       (match_test "CSKY_CONST_OK_FOR_Ug (ival)")))
 
 (define_constraint "Uj"
   "Constant in range 1 - 1024 and is divisible by 4"
   (and (match_code "const_int")
-       (match_test "CONST_OK_FOR_Uj (ival)")))
+       (match_test "CSKY_CONST_OK_FOR_Uj (ival)")))
 
 (define_constraint "P"
   "Constant in range 4 - 508 and is divisible by 4"
   (and (match_code "const_int")
-       (match_test "CONST_OK_FOR_P (ival)")))
+       (match_test "CSKY_CONST_OK_FOR_P (ival)")))
 
 (define_constraint "Uq"
   "Constant in range 0 - 1020 and is divisible by 4"
   (and (match_code "const_int")
-       (match_test "CONST_OK_FOR_Uj(ival + 4)")))
+       (match_test "CSKY_CONST_OK_FOR_Uj(ival + 4)")))
+
+(define_constraint "Ux"
+ "satifies the @code{I} multiplied by any power of 2"
+ (and (match_code "const_int")
+      (match_test "shiftable_csky_imm8_const(ival)")))

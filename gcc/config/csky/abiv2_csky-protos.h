@@ -77,16 +77,19 @@
   (VALUE_BETWEEN((VALUE), 1, 4096))
 
 #define CSKY_CONST_OK_FOR_P(VALUE)  \
-    ((((VALUE) & 0x3) == 0)         \
-     && VALUE_BETWEEN(VALUE, 4, 508))
+  ((((VALUE) & 0x3) == 0)           \
+   && VALUE_BETWEEN(VALUE, 4, 508))
 
 #define CSKY_CONST_OK_FOR_Ug(VALUE)  \
-    ((((VALUE) & 0x3) == 0)          \
-     && VALUE_BETWEEN(VALUE, -508, -4))
+  ((((VALUE) & 0x3) == 0)            \
+   && VALUE_BETWEEN(VALUE, -508, -4))
 
 #define CSKY_CONST_OK_FOR_Uj(VALUE)  \
-    ((((VALUE) & 0x3) == 0)          \
-     && VALUE_BETWEEN(VALUE, 1, 1024))
+  ((((VALUE) & 0x3) == 0)            \
+   && VALUE_BETWEEN(VALUE, 1, 1024))
+
+#define CSKY_CONST_OK_FOR_Um(VALUE)  \
+  (VALUE_BETWEEN((VALUE), -4096, -1))
 
 /* Constant can gen by bseti(16,30) + subi.  */
 #define CSKY_CONST_OK_FOR_BS(VALUE)                                               \
@@ -143,6 +146,6 @@ enum csky_inline_const_type
   IC_APPEND_LSLI,     /* Single insn followed by lsli */
   IC_APPEND_IXH,      /* Single insn followed by ixh */
   IC_APPEND_IXW       /* Single insn followed by ixw */
-}
+};
 
 #endif /* GCC_CSKY_PROTOS_H */
