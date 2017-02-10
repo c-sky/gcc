@@ -59,6 +59,62 @@
 )
 
 
+(define_expand "lshrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "")
+        (lshiftrt:SI (match_operand:SI 1 "register_operand"     "")
+                     (match_operand:SI 2 "csky_arith_K_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_lshrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "=r,r")
+        (lshiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
+                     (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
+  "!TARGET_CK801"
+  "@
+  lsr  %0, %1, %2
+  lsri %0, %1, %2"
+)
+
+(define_insn "ck801_lshrsi3"
+  [(set (match_operand:SI              0 "register_operand"     "=a,r")
+        (lshiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
+                     (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
+  "TARGET_CK801"
+  "@
+  lsri %0, %1, %2
+  lsr  %0, %1, %2"
+)
+
+
+(define_expand "rotlsi3"
+  [(set (match_operand:SI            0 "register_operand"     "")
+        (rotate:SI (match_operand:SI 1 "register_operand"     "")
+                   (match_operand:SI 2 "csky_arith_K_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_rotlsi3"
+  [(set (match_operand:SI            0 "register_operand"     "=r,r")
+        (rotate:SI (match_operand:SI 1 "register_operand"     "r,r")
+                   (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
+  "!TARGET_CK801"
+  "@
+  rotl  %0, %1, %2
+  rotli %0, %1, %2"
+)
+
+(define_insn "*ck801_rotlsi3"
+  [(set (match_operand:SI            0 "register_operand"     "=r")
+        (rotate:SI (match_operand:SI 1 "register_operand"     "0")
+                   (match_operand:SI 2 "csky_arith_K_operand" "r")))]
+  "TARGET_CK801"
+  "rotl %0, %1, %2"
+)
+
+
 ;; Add instructions.
 
 (define_expand "addsi3"
