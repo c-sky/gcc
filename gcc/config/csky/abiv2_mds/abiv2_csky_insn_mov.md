@@ -1,10 +1,4 @@
 
-; LENGTH of an instruction (in bytes)
-(define_attr "length" "" (if_then_else
-                         (eq_attr "cpu" "ck801")
-                         (const_int 2)
-                         (const_int 4)))
-
 (define_expand "movsi"
   [(set (match_operand:SI 0 "general_operand" "")
         (match_operand:SI 1 "general_operand" ""))]

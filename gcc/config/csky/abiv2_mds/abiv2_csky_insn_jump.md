@@ -38,3 +38,9 @@
                                     (const_int 4)
                                     (const_int 5))))]
 )
+
+(define_insn "indirect_jump"
+  [(set (pc) (match_operand:SI 0 "register_operand" "r"))]
+  ""
+  "jmp\t%0"
+)

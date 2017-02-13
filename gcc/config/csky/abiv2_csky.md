@@ -3,6 +3,7 @@
 
 (include "abiv2_mds/abiv2_csky_predicates.md")
 
+(include "abiv2_mds/abiv2_csky_insn_attr.md")
 (include "abiv2_mds/abiv2_csky_insn_mov.md")
 (include "abiv2_mds/abiv2_csky_insn_arithmetic.md")
 (include "abiv2_mds/abiv2_csky_insn_jump.md")
