@@ -2007,7 +2007,7 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
    reg_names, and reg_class_contents, to take into account any dependence of
    these register sets on target flags.
 
-   On csky, ck801 has registers r0-r8,r13,r14,r15.
+   On csky, ck801 has registers r0-r7,r13,r14,r15.
    ck802 & ck803s has registers r0-r15.
    Other cpu has registers r0-r31 when -mhigh-registers, otherwise it has
    only r0-r15, ck803 default close this option, others default open.  */
