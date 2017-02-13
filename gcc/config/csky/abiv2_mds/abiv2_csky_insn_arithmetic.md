@@ -13,7 +13,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r,r")
         (ashift:SI (match_operand:SI 1 "register_operand"     "r,r")
                    (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "@
   lsl  %0, %1, %2
   lsli %0, %1, %2"
@@ -23,7 +23,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=a,r")
         (ashift:SI (match_operand:SI 1 "register_operand"     "a,0")
                    (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "@
   lsli %0, %1, %2
   lsl  %0, %1, %2"
@@ -42,7 +42,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=r,r")
         (ashiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
                      (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "@
   asr  %0, %1, %2
   asri %0, %1, %2"
@@ -52,7 +52,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=a,r")
         (ashiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "@
   asri %0, %1, %2
   asr  %0, %1, %2"
@@ -71,7 +71,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=r,r")
         (lshiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
                      (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "@
   lsr  %0, %1, %2
   lsri %0, %1, %2"
@@ -81,7 +81,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=a,r")
         (lshiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "@
   lsri %0, %1, %2
   lsr  %0, %1, %2"
@@ -100,7 +100,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r,r")
         (rotate:SI (match_operand:SI 1 "register_operand"     "r,r")
                    (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "@
   rotl  %0, %1, %2
   rotli %0, %1, %2"
@@ -110,7 +110,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r")
         (rotate:SI (match_operand:SI 1 "register_operand"     "0")
                    (match_operand:SI 2 "csky_arith_K_operand" "r")))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "rotl %0, %1, %2"
 )
 
@@ -165,7 +165,7 @@
   [(set (match_operand:SI          0 "register_operand"  "=r,a,a,a,a,a, !z,!z,!z,a")
         (plus:SI (match_operand:SI 1 "register_operand"  "%0,a,0,a,0,a, 0, 0, 0, !z")
                  (match_operand:SI 2 "nonmemory_operand" "r, a,N,L,T,Us,P, Ug,r, Uq")))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "@
     addu\t%0, %1, %2
     addu\t%0, %1, %2
@@ -184,7 +184,7 @@
   [(set (match_operand:SI          0 "register_operand"  "=r,r,r")
         (plus:SI (match_operand:SI 1 "register_operand"  "%r,r,r")
                  (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
-  "TARGET_FAST && !TARGET_CK801"
+  "CSKY_ARCH_MODE_FAST && !csky_arch_ck801"
   "@
     addu    %0, %1, %2
     addi    %0, %1, %2
@@ -200,7 +200,7 @@
   ""
   "
   {
-    if (TARGET_CK801 && (GET_CODE (operands[2]) != REG))
+    if (csky_arch_ck801 && (GET_CODE (operands[2]) != REG))
         operands[2] = force_reg (DImode, operands[2]);
   }
   "
@@ -211,7 +211,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "%0, r")
                  (match_operand:DI 2 "register_operand" "r,  r")))
    (clobber (reg:CC 33))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "*
   {
     if (TARGET_LITTLE_ENDIAN)
@@ -226,7 +226,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "%0")
                  (match_operand:DI 2 "register_operand" "r")))
    (clobber (reg:CC 33))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "*
   {
     if (TARGET_LITTLE_ENDIAN)
@@ -242,7 +242,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "0")
                  (const_int 1)))
   (clobber (reg:CC 33))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "*
   {
     if(TARGET_LITTLE_ENDIAN)

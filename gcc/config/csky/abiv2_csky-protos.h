@@ -148,4 +148,39 @@ enum csky_inline_const_type
   IC_APPEND_IXW       /* Single insn followed by ixw */
 };
 
+/* Declare for mds */
+extern int constant_csky_inlinable (HOST_WIDE_INT value);
+extern bool shiftable_csky_imm8_const (unsigned HOST_WIDE_INT val);
+
+/* Nonzero if this chip supports the CSKY Architecture ck801 instructions.  */
+extern int csky_arch_ck801;
+
+/* Nonzero if this chip supports the CSKY Architecture smart mode.  */
+extern int csky_arch_mode_smart;
+#define CSKY_ARCH_MODE_FAST !csky_arch_mode_smart
+
+
+/* Active target architecture.  */
+struct csky_build_target
+{
+  /* Name of the target CPU, if known, or NULL if the target CPU was not
+     specified by the user (and inferred from the -march option).  */
+  const char *core_name;
+  /* Name of the target ARCH.  NULL if there is a selected CPU.  */
+  const char *arch_name;
+  /* Preprocessor substring (never NULL).  */
+  const char *arch_pp_name;
+  /* CPU identifier for the core we're compiling for (architecturally).  */
+  enum csky_processor_type arch_core;
+  /* The base architecture value.  */
+  enum csky_base_architecture base_arch;
+  /* Bitmap encapsulating the isa_bits for the target environment.  */
+  sbitmap isa;
+};
+extern struct csky_build_target csky_active_target;
+#define CSKY_TARGET_ARCH(arch) (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
+
+extern char *csky_tolower (char *lo, const char *up);
+
+
 #endif /* GCC_CSKY_PROTOS_H */

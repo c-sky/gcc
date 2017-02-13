@@ -161,6 +161,12 @@ struct csky_build_target csky_active_target;
 /* Nonzero if this chip supports the CSKY Architecture base instructions.  */
 int csky_arch_base = 0;
 
+/* Nonzero if this chip supports the CSKY Architecture ck801 instructions.  */
+int csky_arch_ck801 = 0;
+
+/* Nonzero if this chip supports the CSKY Architecture smart mode.  */
+int csky_arch_mode_smart = 0;
+
 
 /* Forward definitions of types.  */
 typedef struct minipool_node    Mnode;
@@ -2374,6 +2380,12 @@ csky_option_override (void)
   csky_arch_base = bitmap_bit_p (csky_active_target.isa,
                                  CSKY_ISA_FEATURE_GET(base));
 
+  csky_arch_ck801 = bitmap_bit_p (csky_active_target.isa,
+                                  CSKY_ISA_FEATURE_GET(ck801));
+
+  csky_arch_mode_smart = bitmap_bit_p (csky_active_target.isa,
+                                       CSKY_ISA_FEATURE_GET(smart));
+
   /* TODO  */
 
 /* Resynchronize the saved target options.  */
@@ -4133,4 +4145,21 @@ output_ck801_movedouble (rtx operands[],
     }
   else
     gcc_unreachable ();
+}
+
+
+/* Transform UP into lowercase and write the result to LO.
+   You must provide enough space for LO.  Return LO.  */
+
+char *
+csky_tolower (char *lo, const char *up)
+{
+  char *lo0 = lo;
+
+  for (; *up; up++, lo++)
+    *lo = TOLOWER (*up);
+
+  *lo = '\0';
+
+  return lo0;
 }

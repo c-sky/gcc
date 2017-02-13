@@ -21,7 +21,7 @@
 (define_insn "*cskyv2_movsi"
   [(set (match_operand:SI 0 "nonimmediate_operand"        "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v")
         (match_operand:SI 1 "general_operand" "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "* return output_csky_move (insn, operands, SImode);"
   [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")]
 )
@@ -29,7 +29,7 @@
 (define_insn "*ck801_movsi"
  [(set (match_operand:SI 0 "nonimmediate_operand"        "=r,a, a,r ,r,r,m")
        (match_operand:SI 1 "general_operand" "r, Up,T,mi,F,c,r"))]
- "TARGET_CK801"
+ "csky_arch_ck801"
  "* return output_ck801_move (insn, operands, SImode);"
  [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -93,7 +93,7 @@
 (define_insn "*cskyv2_movhi"
   [(set (match_operand:HI 0 "nonimmediate_operand"         "=r,r,r,r,m,*y,*r,*v,*r")
         (match_operand:HI 1 "general_operand"  "r, i,c,m,r,*r,*y,*r,*v"))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "* return output_csky_move (insn, operands, HImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4")]
 )
@@ -101,7 +101,7 @@
 (define_insn "*ck801_movhi"
   [(set (match_operand:HI 0 "nonimmediate_operand"         "=r,a, a,r,r,r,m")
         (match_operand:HI 1 "general_operand"  "r, Up,T,i,m,c,r"))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "* return output_ck801_move (insn, operands, HImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -132,7 +132,7 @@
 (define_insn "*cskyv2_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r,r,r,m,*y,*r,*v,*r,*v")
         (match_operand:QI 1 "general_operand"      "r, i,c,m,r,*r,*y,*r,*v,*v"))]
-  "!TARGET_CK801"
+  "!csky_arch_ck801"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")]
 )
@@ -140,7 +140,7 @@
 (define_insn "*ck801_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:QI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
-  "TARGET_CK801"
+  "csky_arch_ck801"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -168,7 +168,7 @@
 (define_insn "*csky_movdi"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,r,r,r,m,*r,*y,*v,*r,*v")
         (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v"))]
- "!TARGET_CK801"
+ "!csky_arch_ck801"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")]
 )
@@ -176,7 +176,7 @@
 (define_insn "*ck801_movdi"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:DI 1 "general_operand"       "r, Up,T,i,m,F,r"))]
- "TARGET_CK801"
+ "csky_arch_ck801"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "4,4,4,8,8,8,8")]
 )

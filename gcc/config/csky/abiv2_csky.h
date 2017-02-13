@@ -107,7 +107,7 @@ machine_function;
 /* Allocation boundary (in *bits*) for the code of a function.
    we prefer to performance, but we care about much more for size like ck801
    and so on.  */
-#define FUNCTION_BOUNDARY (((TARGET_CK801 || TARGET_CK802) \
+#define FUNCTION_BOUNDARY (((CSKY_TARGET_ARCH(CK801) || CSKY_TARGET_ARCH(CK802)) \
                             && optimize_size) ? 16 : 32)
 
 /* Set this nonzero if move instructions will actually fail to work
@@ -175,7 +175,7 @@ machine_function;
 #define ARG_POINTER_REGNUM    32
 
 /* TODO  */
-#define STATIC_CHAIN_REGNUM   (TARGET_CK801 ? 7 : 12)
+#define STATIC_CHAIN_REGNUM   (CSKY_TARGET_ARCH(CK801) ? 7 : 12)
 
 
 /* Eliminating Frame Pointer and Arg Pointer  */
@@ -543,119 +543,97 @@ enum reg_class
  ******************************************************************/
 
 
-#define TARGET_CPU_CPP_BUILTINS()                   \
-    do                                              \
-    {                                               \
-        builtin_define ("__csky__=2");              \
-        builtin_define ("__CSKY__=2");              \
-        builtin_define ("__ckcore__=2");            \
-        builtin_define ("__CKCORE__=2");            \
-                                                    \
-        builtin_define ("__CSKYABIV2__");           \
-        builtin_define ("__cskyabiv2__");           \
-        builtin_define ("__CSKYABI__=2");           \
-        builtin_define ("__cskyabi__=2");           \
-                                                    \
-        builtin_define ("NO_TRAMPOLINES");          \
-                                                    \
-        if (TARGET_LITTLE_ENDIAN)                   \
-        {                                           \
-            builtin_define ("__ckcoreLE__");        \
-            builtin_define ("__cskyLE__");          \
-            builtin_define ("__cskyle__");          \
-            builtin_define ("__CSKYLE__");          \
-        }                                           \
-        else                                        \
-        {                                           \
-            builtin_define ("__ckcoreBE__");        \
-            builtin_define ("__cskyBE__");          \
-            builtin_define ("__cskybe__");          \
-            builtin_define ("__CSKYBE__");          \
-        }                                           \
-                                                    \
-        if (TARGET_CK802)                           \
-        {                                           \
-            builtin_define ("__ck802__");           \
-            builtin_define ("__CK802__");           \
-        }                                           \
-        else if (TARGET_CK803)                      \
-        {                                           \
-            builtin_define ("__ck803__");           \
-            builtin_define ("__CK803__");           \
-        }                                           \
-        else if (TARGET_CK810)                      \
-        {                                           \
-            builtin_define ("__ck810__");           \
-            builtin_define ("__CK810__");           \
-        }                                           \
-        else if (TARGET_CK803S)                     \
-        {                                           \
-            builtin_define ("__ck803s__");          \
-            builtin_define ("__CK803S__");          \
-        }                                           \
-        else if (TARGET_CK807)                      \
-        {                                           \
-            builtin_define ("__ck807__");           \
-            builtin_define ("__CK807__");           \
-        }                                           \
-        else if (TARGET_CK801)                      \
-        {                                           \
-            builtin_define ("__ck801__");           \
-            builtin_define ("__CK801__");           \
-        }                                           \
-                                                    \
-        if (TARGET_DSP)                             \
-        {                                           \
-            builtin_define ("__csky_dsp__");        \
-            builtin_define ("__CSKY_DSP__");        \
-        }                                           \
-        if (TARGET_SIMD)                            \
-        {                                           \
-            builtin_define ("__csky_simd__");       \
-            builtin_define ("__CSKY_SIMD__");       \
-        }                                           \
-        if (TARGET_FPUV1)                           \
-        {                                           \
-            builtin_define ("__csky_fpuv1__");      \
-            builtin_define ("__CSKY_FPUV1__");      \
-        }                                           \
-        if (TARGET_FPUV2)                           \
-        {                                           \
-            builtin_define ("__csky_fpuv2__");      \
-            builtin_define ("__CSKY_FPUV2__");      \
-        }                                           \
-        if (TARGET_SECURITY)                        \
-        {                                           \
-            builtin_define ("__csky_security__");   \
-            builtin_define ("__CSKY_SECURITY__");   \
-        }                                           \
-        if (TARGET_CP)                              \
-        {                                           \
-            builtin_define ("__csky_cp__");         \
-            builtin_define ("__CSKY_CP__");         \
-        }                                           \
-        if (TARGET_MP)                              \
-        {                                           \
-            builtin_define ("__csky_mp__");         \
-            builtin_define ("__CSKY_MP__");         \
-        }                                           \
-        if (TARGET_CACHE)                           \
-        {                                           \
-            builtin_define ("__csky_cache__");      \
-            builtin_define ("__CSKY_CACHE__");      \
-        }                                           \
-                                                    \
-        if (TARGET_HARD_FLOAT)                      \
-        {                                           \
-            builtin_define ("__csky_hard_float__"); \
-            builtin_define ("__CSKY_HARD_FLOAT__"); \
-        }                                           \
-        else                                        \
-        {                                           \
-            builtin_define ("__csky_soft_float__"); \
-            builtin_define ("__CSKY_SOFT_FLOAT__"); \
-        }                                           \
-    }                                               \
+#define TARGET_CPU_CPP_BUILTINS()                     \
+    do                                                \
+    {                                                 \
+        builtin_define ("__csky__=2");                \
+        builtin_define ("__CSKY__=2");                \
+        builtin_define ("__ckcore__=2");              \
+        builtin_define ("__CKCORE__=2");              \
+                                                      \
+        builtin_define ("__CSKYABIV2__");             \
+        builtin_define ("__cskyabiv2__");             \
+        builtin_define ("__CSKYABI__=2");             \
+        builtin_define ("__cskyabi__=2");             \
+                                                      \
+        builtin_define ("NO_TRAMPOLINES");            \
+                                                      \
+        if (TARGET_BIG_ENDIAN)                        \
+        {                                             \
+          builtin_define ("__ckcoreBE__");            \
+          builtin_define ("__cskyBE__");              \
+          builtin_define ("__cskybe__");              \
+          builtin_define ("__CSKYBE__");              \
+        }                                             \
+        else                                          \
+        {                                             \
+          builtin_define ("__ckcoreLE__");            \
+          builtin_define ("__cskyLE__");              \
+          builtin_define ("__cskyle__");              \
+          builtin_define ("__CSKYLE__");              \
+        }                                             \
+                                                      \
+        const char *Name = csky_active_target.arch_pp_name;     \
+        char *name = (char *) alloca (1 + strlen (Name));       \
+        char *pp_name = (char *) alloca (1 + strlen (Name) + 4);\                                \
+        sprintf (pp_name, "__%s__", Name);                      \
+        builtin_define(pp_name);                                \
+        sprintf (pp_name, "__%s__", csky_tolower(name, Name));  \
+        builtin_define(pp_name);                                \
+        free(pp_name);free(name);                               \
+                                                      \
+        if (TARGET_DSP)                               \
+        {                                             \
+            builtin_define ("__csky_dsp__");          \
+            builtin_define ("__CSKY_DSP__");          \
+        }                                             \
+        if (TARGET_SIMD)                              \
+        {                                             \
+            builtin_define ("__csky_simd__");         \
+            builtin_define ("__CSKY_SIMD__");         \
+        }                                             \
+        if (TARGET_FPUV1)                             \
+        {                                             \
+            builtin_define ("__csky_fpuv1__");        \
+            builtin_define ("__CSKY_FPUV1__");        \
+        }                                             \
+        if (TARGET_FPUV2)                             \
+        {                                             \
+            builtin_define ("__csky_fpuv2__");        \
+            builtin_define ("__CSKY_FPUV2__");        \
+        }                                             \
+        if (TARGET_SECURITY)                          \
+        {                                             \
+            builtin_define ("__csky_security__");     \
+            builtin_define ("__CSKY_SECURITY__");     \
+        }                                             \
+        if (TARGET_CP)                                \
+        {                                             \
+            builtin_define ("__csky_cp__");           \
+            builtin_define ("__CSKY_CP__");           \
+        }                                             \
+        if (TARGET_MP)                                \
+        {                                             \
+            builtin_define ("__csky_mp__");           \
+            builtin_define ("__CSKY_MP__");           \
+        }                                             \
+        if (TARGET_CACHE)                             \
+        {                                             \
+            builtin_define ("__csky_cache__");        \
+            builtin_define ("__CSKY_CACHE__");        \
+        }                                             \
+                                                      \
+        if (TARGET_HARD_FLOAT)                        \
+        {                                             \
+            builtin_define ("__csky_hard_float__");   \
+            builtin_define ("__CSKY_HARD_FLOAT__");   \
+        }                                             \
+        else                                          \
+        {                                             \
+            builtin_define ("__csky_soft_float__");   \
+            builtin_define ("__CSKY_SOFT_FLOAT__");   \
+        }                                             \
+    }                                                 \
     while (0)
 
 

@@ -24,7 +24,7 @@ enum csky_base_architecture
   CSKY_BASE_ARCH_##ARCH,
 #include "abiv2_csky_arches.def"
 #undef CSKY_ARCH
-   CSKY_BASE_ARCH_MAX
+  CSKY_BASE_ARCH_MAX
 };
 
 /* The various CSKY FPUs.  */
