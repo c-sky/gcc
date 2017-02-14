@@ -155,17 +155,8 @@ static sbitmap csky_isa_all_fpubits;
 /* Active target architecture.  */
 struct csky_build_target csky_active_target;
 
-/* The following are used in the .md file as equivalents to bits
-   in the above two flag variables.  */
-
-/* Nonzero if this chip supports the CSKY Architecture base instructions.  */
-int csky_arch_base = 0;
-
-/* Nonzero if this chip supports the CSKY Architecture ck801 instructions.  */
-int csky_arch_ck801 = 0;
-
-/* Nonzero if this chip supports the CSKY Architecture smart mode.  */
-int csky_arch_mode_smart = 0;
+/* The following are used in the .md file as equivalents to bits.  */
+int csky_arch_isa_features[CSKY_ISA_FEATURE_GET(max)] = {0};
 
 
 /* Forward definitions of types.  */
@@ -2377,14 +2368,15 @@ csky_option_override (void)
 
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */
-  csky_arch_base = bitmap_bit_p (csky_active_target.isa,
-                                 CSKY_ISA_FEATURE_GET(base));
 
-  csky_arch_ck801 = bitmap_bit_p (csky_active_target.isa,
-                                  CSKY_ISA_FEATURE_GET(ck801));
-
-  csky_arch_mode_smart = bitmap_bit_p (csky_active_target.isa,
-                                       CSKY_ISA_FEATURE_GET(smart));
+#undef  CSKY_ISA
+#define CSKY_ISA(NAME, IDENT)                                             \
+  {                                                                       \
+    csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)] =                 \
+      bitmap_bit_p (csky_active_target.isa, CSKY_ISA_FEATURE_GET(IDENT)); \
+  }
+#include "abiv2_csky_isa.def"
+#undef  CSKY_ISA
 
   /* TODO  */
 

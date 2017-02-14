@@ -575,38 +575,29 @@ enum reg_class
                                                       \
         const char *Name = csky_active_target.arch_pp_name;     \
         char *name = (char *) alloca (1 + strlen (Name));       \
-        char *pp_name = (char *) alloca (1 + strlen (Name) + 4);\                                \
+        char *pp_name = (char *) alloca (1 + strlen (Name) + 4);\
         sprintf (pp_name, "__%s__", Name);                      \
         builtin_define(pp_name);                                \
         sprintf (pp_name, "__%s__", csky_tolower(name, Name));  \
         builtin_define(pp_name);                                \
         free(pp_name);free(name);                               \
                                                       \
-        if (TARGET_DSP)                               \
+        if (CSKY_ISA_FEATURE_GET2MD(dsp))             \
         {                                             \
             builtin_define ("__csky_dsp__");          \
             builtin_define ("__CSKY_DSP__");          \
         }                                             \
-        if (TARGET_SIMD)                              \
-        {                                             \
-            builtin_define ("__csky_simd__");         \
-            builtin_define ("__CSKY_SIMD__");         \
-        }                                             \
-        if (TARGET_FPUV1)                             \
-        {                                             \
-            builtin_define ("__csky_fpuv1__");        \
-            builtin_define ("__CSKY_FPUV1__");        \
-        }                                             \
-        if (TARGET_FPUV2)                             \
+        if (CSKY_ISA_FEATURE_GET2MD(vfpv2))           \
         {                                             \
             builtin_define ("__csky_fpuv2__");        \
             builtin_define ("__CSKY_FPUV2__");        \
         }                                             \
-        if (TARGET_SECURITY)                          \
+        if (CSKY_ISA_FEATURE_GET2MD(security))        \
         {                                             \
             builtin_define ("__csky_security__");     \
             builtin_define ("__CSKY_SECURITY__");     \
         }                                             \
+                                                      \
         if (TARGET_CP)                                \
         {                                             \
             builtin_define ("__csky_cp__");           \

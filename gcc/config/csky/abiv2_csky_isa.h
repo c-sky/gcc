@@ -3,32 +3,17 @@
 #define GCC_CSKY_ISA_FEATURE_H
 
 
-#define CSKY_ISA_FEATURE_DEFINE (x) csky_isa_feature ## x
+#define CSKY_ISA_FEATURE_DEFINE(x)  csky_isa_feature ## x
 #define CSKY_ISA_FEATURE_GET(x)     CSKY_ISA_FEATURE_DEFINE(x)
 
 enum csky_isa_feature
   {
-    CSKY_ISA_FEATURE_DEFINE(none),  /* Must be first.  */
-
-    CSKY_ISA_FEATURE_DEFINE(base),  /* Base instructions, base on ck802.  */
-
-    CSKY_ISA_FEATURE_DEFINE(ck803),	/* Extended insns for arch ck803.  */
-    CSKY_ISA_FEATURE_DEFINE(ck803s),/* Extended insns for arch ck803s.  */
-    CSKY_ISA_FEATURE_DEFINE(ck807), /* Extended insns for arch ck807.  */
-    CSKY_ISA_FEATURE_DEFINE(ck810), /* Extended insns for arch ck810.  */
-
-    /* Specific insns mode */
-    CSKY_ISA_FEATURE_DEFINE(ck801), /* ck801 instructions.  */
-    CSKY_ISA_FEATURE_DEFINE(smart), /* TODO.  */
-
-    /* Extended specific functions */
-    CSKY_ISA_FEATURE_DEFINE(dsp),   /* Extended insns for DSP.  */
-
-    /* VFP */
-    CSKY_ISA_FEATURE_DEFINE(vfpv2),
-    CSKY_ISA_FEATURE_DEFINE(fp_dbl),/* Double precision operations supported.  */
-
-    /* Must be last, used to dimension arrays.  */
+    CSKY_ISA_FEATURE_DEFINE(none),
+#undef  CSKY_ISA
+#define CSKY_ISA(NAME, IDENT) \
+    CSKY_ISA_FEATURE_DEFINE(IDENT),
+#include "abiv2_csky_isa.def"
+#undef  CSKY_ISA
     CSKY_ISA_FEATURE_DEFINE(max)
   };
 

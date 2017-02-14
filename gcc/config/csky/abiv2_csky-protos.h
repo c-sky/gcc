@@ -152,12 +152,11 @@ enum csky_inline_const_type
 extern int constant_csky_inlinable (HOST_WIDE_INT value);
 extern bool shiftable_csky_imm8_const (unsigned HOST_WIDE_INT val);
 
-/* Nonzero if this chip supports the CSKY Architecture ck801 instructions.  */
-extern int csky_arch_ck801;
-
-/* Nonzero if this chip supports the CSKY Architecture smart mode.  */
-extern int csky_arch_mode_smart;
-#define CSKY_ARCH_MODE_FAST !csky_arch_mode_smart
+/* The following are used in the .md file as equivalents to bits.  */
+#include "abiv2_csky_isa.h"
+extern int csky_arch_isa_features[];
+#define CSKY_ISA_FEATURE_GET2MD(IDENT) csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)]
+#define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE_GET2MD(smart)
 
 
 /* Active target architecture.  */

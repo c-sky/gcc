@@ -1,0 +1,24 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_ISA(NAME, INTERNAL_IDENT)
+   */
+
+CSKY_ISA("base", base)    /* Base instructions, base on ck802.  */
+
+CSKY_ISA("ck803", ck803)  /* Extended insns for arch ck803.  */
+CSKY_ISA("ck803s", ck803s)/* Extended insns for arch ck803s.  */
+CSKY_ISA("ck807", ck807)  /* Extended insns for arch ck807.  */
+CSKY_ISA("ck810", ck810)  /* Extended insns for arch ck810.  */
+
+/* Specific insns mode */
+CSKY_ISA("ck801", ck801)  /* ck801 instructions.  */
+CSKY_ISA("smart", smart)  /* TODO.  */
+CSKY_ISA("security", security) /* do nothing, just forward to as.  */
+
+/* Extended specific insns */
+CSKY_ISA("dsp", dsp)      /* Extended insns for DSP.  */
+
+/* VFP */
+CSKY_ISA("vfpv2", vfpv2)
+CSKY_ISA("fp_dbl", fp_dbl)/* Double precision operations supported.  */
