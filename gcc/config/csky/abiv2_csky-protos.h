@@ -18,7 +18,6 @@
 #define CSKY_CC_REGNUM                33
 #define CSKY_HI_REGNUM                34
 #define CSKY_LO_REGNUM                35
-#define CSKY_SP_REGNUM                14
 #define CSKY_LR_REGNUM                15
 #define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
 #define CSKY_GB_REGNUM                28
@@ -151,11 +150,21 @@ enum csky_inline_const_type
 /* Declare for mds */
 extern int constant_csky_inlinable (HOST_WIDE_INT value);
 extern bool shiftable_csky_imm8_const (unsigned HOST_WIDE_INT val);
+extern const char *output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
+                                     enum machine_mode mode ATTRIBUTE_UNUSED);
+extern const char *output_csky_movedouble (rtx operands[],
+                                           enum machine_mode mode ATTRIBUTE_UNUSED);
+extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
+                                      enum machine_mode mode ATTRIBUTE_UNUSED);
+
+extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);
+extern rtx csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED);
 
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
 extern int csky_arch_isa_features[];
-#define CSKY_ISA_FEATURE_GET2MD(IDENT) csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)]
+#define CSKY_ISA_FEATURE_GET2MD(IDENT) \
+  csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)]
 #define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE_GET2MD(smart)
 
 
@@ -177,7 +186,8 @@ struct csky_build_target
   sbitmap isa;
 };
 extern struct csky_build_target csky_active_target;
-#define CSKY_TARGET_ARCH(arch) (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
+#define CSKY_TARGET_ARCH(arch) \
+  (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
 
 extern char *csky_tolower (char *lo, const char *up);
 

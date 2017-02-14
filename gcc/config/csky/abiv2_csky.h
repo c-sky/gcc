@@ -3,6 +3,9 @@
 #define GCC_CSKY_H
 
 
+#define CSKY_SP_REGNUM                14
+
+
 /******************************************************************
  *     Defining data structures for per-function information      *
  ******************************************************************/
@@ -483,6 +486,10 @@ enum reg_class
   {0x00000000, 0x0FF00001, 0x00000030 },  /* RESERVE_REGS      */    \
   {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F },  /* ALL_REGS          */    \
 }
+
+/* return register class from regno.  */
+extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
+#define REGNO_REG_CLASS(REGNO) regno_reg_class[REGNO]
 
 /* The class value fo index registers, and the one for base regs.  */
 #define INDEX_REG_CLASS  (TARGET_MU ? GENERAL_REGS : NO_REGS)

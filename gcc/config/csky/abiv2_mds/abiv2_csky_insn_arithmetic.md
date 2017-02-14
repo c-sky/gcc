@@ -214,9 +214,9 @@
   "!CSKY_ISA_FEATURE_GET2MD(ck801)"
   "*
   {
-    if (TARGET_LITTLE_ENDIAN)
-      return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
-    return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
+    if (TARGET_BIG_ENDIAN)
+      return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
+    return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
   }"
   [(set_attr "length" "12")]
 )
@@ -229,9 +229,9 @@
   "CSKY_ISA_FEATURE_GET2MD(ck801)"
   "*
   {
-    if (TARGET_LITTLE_ENDIAN)
-      return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
-    return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
+    if (TARGET_BIG_ENDIAN)
+      return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
+    return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
   }"
   [(set_attr "length" "6")]
 )
@@ -245,9 +245,9 @@
   "!CSKY_ISA_FEATURE_GET2MD(ck801)"
   "*
   {
-    if(TARGET_LITTLE_ENDIAN)
-      return \"addi\t%0, %0, 1\;cmpnei\t%0, 0\;incf\t%R0, %R0, 1\";
-    return \"addi\t%R0, %R0, 1\;cmpnei\t%R0, 0\;incf\t%0, %0, 1\";
+    if(TARGET_BIG_ENDIAN)
+      return \"addi\t%R0, %R0, 1\;cmpnei\t%R0, 0\;incf\t%0, %0, 1\";
+    return \"addi\t%0, %0, 1\;cmpnei\t%0, 0\;incf\t%R0, %R0, 1\";
   }"
   [(set_attr "length" "12")]
 )

@@ -5,6 +5,9 @@
 (define_register_constraint "c" "C_REGS" "C")
 
 
+(define_register_constraint "y" "HILO_REGS" "HI & LO")
+
+
 (define_register_constraint "l" "LO_REGS" "lo register only")
 
 
