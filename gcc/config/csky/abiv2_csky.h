@@ -246,6 +246,18 @@ machine_function;
 
 
 /******************************************************************
+ *                Trampolines for Nested Functions                *
+ ******************************************************************/
+
+
+/* Length in units of the trampoline for entering a nested function.  */
+#define TRAMPOLINE_SIZE         12
+
+/* Alignment required for a trampoline in bits.  */
+#define TRAMPOLINE_ALIGNMENT    16
+
+
+/******************************************************************
  *              Register Usage & Register Classes                 *
  ******************************************************************/
 

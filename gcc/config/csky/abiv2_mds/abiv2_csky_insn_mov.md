@@ -8,7 +8,7 @@
     if (can_create_pseudo_p () && MEM_P (operands[0]))
       {
         operands[1] = force_reg (SImode, operands[1]);
-        emit_insn(gen_rtx_SET (VOIDmode, operands[0], operands[1]));
+        emit_insn(gen_rtx_SET (operands[0], operands[1]));
         DONE;
       }
     /* Recognize the case where operand[1] is a reference to thread-local

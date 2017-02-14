@@ -10,7 +10,7 @@
 
 (define_insn "*csky_jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
-  "!TARGET_CK801"
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
   "jbr  %l0"
 )
 
@@ -18,7 +18,7 @@
 ;;      from br32, use a better way here.
 (define_insn "*ck801_jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
-  "TARGET_CK801"
+  "CSKY_ISA_FEATURE_GET2MD(ck801)"
   "*{
     if (get_attr_length(insn) != 5)
       return \"jbr\\t%l0\";

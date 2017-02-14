@@ -1,7 +1,7 @@
 
 ; LENGTH of an instruction (in bytes)
 (define_attr "length" "" (if_then_else
-                         (eq_attr "cpu" "ck801")
+                         (match_test "CSKY_TARGET_ARCH(CK801)")
                          (const_int 2)
                          (const_int 4)))
 
