@@ -46,6 +46,9 @@
 
 #include "abiv2_csky_internal.h"
 
+/* This file should be included last.  */
+#include "target-def.h"
+
 
 /* Array of the smallest class containing reg number REGNO, indexed by
    REGNO.  Used by REGNO_REG_CLASS.  */
@@ -294,10 +297,10 @@ typedef struct minipool_fixup   Mfix;
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);
-static void push_csky_minipool_fix (rtx, HOST_WIDE_INT, rtx *,
-                                    enum machine_mode, rtx);
+static void push_csky_minipool_fix (rtx_insn *, HOST_WIDE_INT, rtx *,
+                                    machine_mode, rtx);
 static bool csky_decompose_address (rtx addr, struct csky_address * out);
-void csky_print_operand_address (FILE * stream, rtx x);
+void csky_print_operand_address (FILE * stream, machine_mode mode, rtx x);
 void csky_print_operand (FILE * stream, rtx x, int code);
 static enum csky_inline_const_type
 try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
@@ -1377,7 +1380,7 @@ print_csky_value (FILE *f, rtx x)
 
 static void
 push_csky_minipool_fix (rtx_insn *insn, HOST_WIDE_INT address, rtx *loc,
-                        enum machine_mode mode, rtx value)
+                        machine_mode mode, rtx value)
 {
   #define CSKY_ELRW16_RANGE  1400
   #define CSKY_LRW16_RANGE   700
@@ -2311,9 +2314,9 @@ csky_class_max_nregs (reg_class_t rclass, machine_mode mode)
     If no intermediate register is required, it should return NO_REGS. If more than
     one intermediate register is required, describe the one that is closest in the
     copy chain to the reload register.  */
-enum reg_class
+reg_class_t
 csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
-                       enum reg_class rclass,
+                       reg_class_t rclass,
                        enum machine_mode mode ATTRIBUTE_UNUSED,
                        secondary_reload_info * sri ATTRIBUTE_UNUSED)
 {
@@ -2520,7 +2523,7 @@ csky_option_override (void)
    is checked above.  */
 
 static bool
-csky_cannot_force_const_mem (rtx x)
+csky_cannot_force_const_mem (machine_mode mode, rtx x)
 {
   /* TODO impelent the TLS related function later.  */
 #if 0
@@ -2535,7 +2538,7 @@ csky_cannot_force_const_mem (rtx x)
 static bool
 csky_legitimate_constant_p (machine_mode mode, rtx x)
 {
-  return (!csky_cannot_force_const_mem (x)
+  return (!csky_cannot_force_const_mem (mode, x)
           && CONSTANT_P (x));
 }
 
@@ -2861,7 +2864,7 @@ csky_init_expanders (void)
 /* Must not copy any rtx that uses a pc-relative address.  */
 
 static bool
-csky_cannot_copy_insn_p (rtx insn)
+csky_cannot_copy_insn_p (rtx_insn *insn)
 {
   subrtx_iterator::array_type array;
   FOR_EACH_SUBRTX (iter, array, PATTERN (insn), ALL)
@@ -3041,7 +3044,7 @@ csky_output_constpool_label (FILE * stream, rtx x)
 /* Print the operand address in X to the STREAM.  */
 
 void
-csky_print_operand_address (FILE * stream, rtx x)
+csky_print_operand_address (FILE * stream, machine_mode mode, rtx x)
 {
 
   struct csky_address addr;
@@ -3148,7 +3151,7 @@ csky_print_operand (FILE * stream, rtx x, int code)
           break;
         case MEM:
           csky_print_operand_address
-            (stream, XEXP (adjust_address (x, SImode, 4), 0));
+            (stream, GET_MODE (x), XEXP (adjust_address (x, SImode, 4), 0));
           break;
         default:
           gcc_unreachable ();
@@ -4266,3 +4269,6 @@ symbolic_csky_address_p (rtx x)
       return 0;
     }
 }
+
+
+struct gcc_target targetm = TARGET_INITIALIZER;
