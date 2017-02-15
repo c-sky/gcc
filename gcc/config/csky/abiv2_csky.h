@@ -5,6 +5,27 @@
 
 #define CSKY_SP_REGNUM                14
 
+/* Active target architecture.  */
+struct csky_build_target
+{
+  /* Name of the target CPU, if known, or NULL if the target CPU was not
+     specified by the user (and inferred from the -march option).  */
+  const char *core_name;
+  /* Name of the target ARCH.  NULL if there is a selected CPU.  */
+  const char *arch_name;
+  /* Preprocessor substring (never NULL).  */
+  const char *arch_pp_name;
+  /* CPU identifier for the core we're compiling for (architecturally).  */
+  enum csky_processor_type arch_core;
+  /* The base architecture value.  */
+  enum csky_base_architecture base_arch;
+  /* Bitmap encapsulating the isa_bits for the target environment.  */
+  sbitmap isa;
+};
+extern struct csky_build_target csky_active_target;
+#define CSKY_TARGET_ARCH(arch) \
+  (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
+
 
 /******************************************************************
  *     Defining data structures for per-function information      *
@@ -432,6 +453,8 @@ machine_function;
    !((MODE1) == DFmode && (MODE1) != (MODE2) || \
      (MODE2) == DFmode && (MODE1) != (MODE2)))
 
+#define SLOW_BYTE_ACCESS 0
+
 /*  Register classes.  */
 enum reg_class
 {
@@ -492,7 +515,7 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define REGNO_REG_CLASS(REGNO) regno_reg_class[REGNO]
 
 /* The class value fo index registers, and the one for base regs.  */
-#define INDEX_REG_CLASS  (TARGET_MU ? GENERAL_REGS : NO_REGS)
+#define INDEX_REG_CLASS  ((CSKY_TARGET_ARCH(CK803)) ? GENERAL_REGS : NO_REGS)
 #define BASE_REG_CLASS  GENERAL_REGS
 
 /* TODO is it necessary to set it to MINI_REGS to emit more 16bits
@@ -811,5 +834,7 @@ while (0)
 #define Pmode  SImode
 #define FUNCTION_MODE  Pmode
 
+
+#define FUNCTION_PROFILER(FILE, LABELNO)
 
 #endif /* GCC_CSKY_H */

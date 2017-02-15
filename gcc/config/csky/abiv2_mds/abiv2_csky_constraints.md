@@ -20,6 +20,11 @@
 (define_register_constraint "z" "SP_REGS" "sp register only")
 
 
+(define_constraint "S"
+  "Symbol reference"
+  (match_test "symbolic_csky_address_p(op)"))
+
+
 (define_constraint "R"
   "memory operands whose address only accept label_ref"
   (and (match_code "mem")

@@ -3,7 +3,6 @@
 #define GCC_CSKY_INTERNAL_H
 
 
-#include "sbitmap.h"
 #include "abiv2_csky_isa.h"
 #include "abiv2_csky_opts.h"
 

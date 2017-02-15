@@ -34,6 +34,12 @@
 #define CSKY_GENERAL_REGNO_P(N) \
   (((N) < CSKY_NGPR_REGS && (N) >= 0))
 
+#define CSKY_VREG_P(N)    \
+  ((unsigned int)((int) (N) - CSKY_FIRST_VFP_REGNUM) < CSKY_FIRST_VFP_REGNUM)
+
+#define CSKY_HILO_REG_P(N)   \
+  ((N == CSKY_HI_REGNUM) || (N == CSKY_LO_REGNUM))
+
 #define CSKY_NUM_REGS(MODE) \
   CSKY_NUM_WORDS(GET_MODE_SIZE (MODE))
 
@@ -112,6 +118,27 @@ typedef struct GTY(()) csky_stack_frame
 }
 csky_stack_frame;
 
+/* FIXME the csky_frame should be transforming to csky_stack_frame.  */
+struct csky_frame
+{
+    int arg_size;			/* stdarg spills (bytes) */
+    int reg_size;			/* non-volatile reg saves (bytes) */
+    int reg_mask;			/* non-volatile reg saves */
+    int local_size;		/* locals */
+    int outbound_size;		/* arg overflow on calls out */
+    int pad_outbound;
+    int pad_local;
+    int pad_reg;
+    int pad_arg;
+  /* Describe the steps we'll use to grow it.  */
+#define	MAX_STACK_GROWS	4	/* gives us some spare space */
+    int growth[MAX_STACK_GROWS];
+    int arg_offset;
+    int reg_offset;
+    int reg_growth;
+    int local_growth;
+};
+
 /* Define these macros to describe the function type.  */
 #define CSKY_FT_TYPE_MASK   ((1 << 3) - 1)
 #define CSKY_FT_UNKNOWN     0               /* Type not been determined */
@@ -119,6 +146,9 @@ csky_stack_frame;
 #define CSKY_FT_ISR         4               /* Interrupt service routine */
 #define CSKY_FT_FIQ         5               /* Fast interrupt service routine */
 #define CSKY_FT_EXCEPTION   6               /* Exception handler */
+#define CSKY_FT_INTERRUPT   (1 << 2)        /*overlap CSKY_FT_ISR */
+#define CSKY_FT_NAKED       (1 << 3)        /*No prologue and epilogue */
+#define CSKY_FUNCTION_TYPE(t)   (t & CSKY_FT_TYPE_MASK)
 
 struct csky_address
 {
@@ -156,9 +186,12 @@ extern const char *output_csky_movedouble (rtx operands[],
                                            enum machine_mode mode ATTRIBUTE_UNUSED);
 extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
+extern int symbolic_csky_address_p (rtx);
 
 extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);
 extern rtx csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED);
+extern void csky_init_expanders (void);
+extern HOST_WIDE_INT csky_initial_elimination_offset (int, int);
 
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
@@ -168,26 +201,6 @@ extern int csky_arch_isa_features[];
 #define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE_GET2MD(smart)
 
 
-/* Active target architecture.  */
-struct csky_build_target
-{
-  /* Name of the target CPU, if known, or NULL if the target CPU was not
-     specified by the user (and inferred from the -march option).  */
-  const char *core_name;
-  /* Name of the target ARCH.  NULL if there is a selected CPU.  */
-  const char *arch_name;
-  /* Preprocessor substring (never NULL).  */
-  const char *arch_pp_name;
-  /* CPU identifier for the core we're compiling for (architecturally).  */
-  enum csky_processor_type arch_core;
-  /* The base architecture value.  */
-  enum csky_base_architecture base_arch;
-  /* Bitmap encapsulating the isa_bits for the target environment.  */
-  sbitmap isa;
-};
-extern struct csky_build_target csky_active_target;
-#define CSKY_TARGET_ARCH(arch) \
-  (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
 
 extern char *csky_tolower (char *lo, const char *up);
 
