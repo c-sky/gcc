@@ -206,6 +206,7 @@
   "
 )
 
+;; TODO calculate the length more precisely
 (define_insn "*cskyv2_adddi3"
   [(set (match_operand:DI          0 "register_operand" "=&r,&r")
         (plus:DI (match_operand:DI 1 "register_operand" "%0, r")
@@ -218,7 +219,7 @@
       return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
     return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
   }"
-  [(set_attr "length" "12")]
+  [(set_attr "length" "12,12")]
 )
 
 (define_insn "*ck801_adddi3"

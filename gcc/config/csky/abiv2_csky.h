@@ -461,6 +461,7 @@ enum reg_class
   NO_REGS,
   MINI_REGS,
   SP_REGS,
+  LOW_REGS,
   GENERAL_REGS,
   C_REGS,
   HI_REGS,
@@ -481,6 +482,7 @@ enum reg_class
   "NO_REGS",            \
   "MINI_REGS",          \
   "SP_REGS",            \
+  "LOW_REGS",           \
   "GENERAL_REGS",       \
   "C_REGS",             \
   "HI_REGS",            \
@@ -499,6 +501,7 @@ enum reg_class
   {0x00000000, 0x00000000, 0x00000000 },  /* NO_REGS           */    \
   {0x000000FF, 0x00000000, 0x00000000 },  /* MINI_REGS         */    \
   {0x00004000, 0x00000000, 0x00000000 },  /* SP_REGS           */    \
+  {0x0000FFFF, 0x00000000, 0x00000000 },  /* LOW_REGS          */    \
   {0xFFFFFFFF, 0x00000000, 0x00000000 },  /* GENERAL_REGS      */    \
   {0x00000000, 0x00000002, 0x00000000 },  /* C_REGS            */    \
   {0x00000000, 0x00000004, 0x00000000 },  /* HI_REG            */    \

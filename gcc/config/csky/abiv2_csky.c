@@ -54,17 +54,14 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
   /* Registers r0-r7.  */
   MINI_REGS,     MINI_REGS,     MINI_REGS,     MINI_REGS,
   MINI_REGS,     MINI_REGS,     MINI_REGS,     MINI_REGS,
-  /* Registers r8-r13.  */
-  GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
-  GENERAL_REGS, GENERAL_REGS,
-  /* SP register.  */
-  SP_REGS,
-  /* Registers r15-r31.  */
+  /* Registers r8-r15.  */
+  LOW_REGS,      LOW_REGS,      LOW_REGS,      LOW_REGS,
+  LOW_REGS,      LOW_REGS,      SP_REGS,       LOW_REGS,
+  /* Registers r16-r31.  */
   GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
   GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
   GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
   GENERAL_REGS, GENERAL_REGS, GENERAL_REGS, GENERAL_REGS,
-  GENERAL_REGS,
   /* Reserved.  */
   RESERVE_REGS,
   /* CC,HI,LO registers.  */
@@ -304,7 +301,7 @@ static int
 csky_naked_function_p (void)
 {
   return (lookup_attribute ("naked",
-			   DECL_ATTRIBUTES (current_function_decl))
+                            DECL_ATTRIBUTES (current_function_decl))
           != NULL_TREE);
 }
 
@@ -4243,6 +4240,8 @@ csky_tolower (char *lo, const char *up)
   return lo0;
 }
 
+
+/* TODO this symbolic judge makes the scope too wide.  */
 int
 symbolic_csky_address_p (rtx x)
 {

@@ -25,3 +25,18 @@
 
     return 0;
   })
+
+
+;; Nonzero if OP is legal address for function call
+
+(define_predicate "csky_call_address_operand"
+  (match_code "reg,subreg,symbol_ref")
+  {
+    if (!flag_pic && (GET_CODE (op) == SYMBOL_REF))
+      return 1;
+
+    if (register_operand (op, mode))
+      return 1;
+
+    return 0;
+  })

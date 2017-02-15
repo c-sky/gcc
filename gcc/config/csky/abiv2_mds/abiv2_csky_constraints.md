@@ -2,6 +2,9 @@
 (define_register_constraint "a" "MINI_REGS" "r0 - r7")
 
 
+(define_register_constraint "b" "LOW_REGS"  "r0 - r15")
+
+
 (define_register_constraint "c" "C_REGS" "C")
 
 

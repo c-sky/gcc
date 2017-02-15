@@ -10,7 +10,7 @@
 
    (FLAG_PUSH              8)
    (FLAG_POP               9)
-   (FLAG_EPILOGUE          10)         
+   (FLAG_EPILOGUE          10)
 
    (UNSPEC_TLS_BASE        19)
    (UNSPEC_TLS             20)
@@ -26,9 +26,9 @@
 ])
 
 (define_constants
-  [(VUNSPEC_ALIGN         0)
-  (VUNSPEC_POOL_LABEL     1)
-  (VUNSPEC_POOL_4         2)
-  (VUNSPEC_SYMBOL_REF     3)
+  [(VUNSPEC_ALIGN          0)
+   (VUNSPEC_POOL_LABEL     1)
+   (VUNSPEC_POOL_4         2)
+   (VUNSPEC_SYMBOL_REF     3)
 ])
 
