@@ -5,6 +5,12 @@
 
 #define CSKY_SP_REGNUM                14
 
+
+#ifndef TARGET_CPU_DEFAULT
+#define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810)
+#endif
+
+
 /* Active target architecture.  */
 struct csky_build_target
 {
@@ -24,7 +30,7 @@ struct csky_build_target
 };
 extern struct csky_build_target csky_active_target;
 #define CSKY_TARGET_ARCH(arch) \
-  (csky_active_target.base_arch == CSKY_BASE_ARCH_ ## arch)
+  (csky_active_target.base_arch == CSKY_TARGET_ARCH_GET(arch))
 
 
 /******************************************************************

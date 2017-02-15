@@ -2371,8 +2371,8 @@ csky_configure_build_target (struct csky_build_target *target,
                              struct gcc_options *opts_set,
                              bool warn_compatible)
 {
-  const struct processors *csky_selected_arch = NULL;
-  const struct processors *csky_selected_cpu = NULL;
+  const struct csky_processors *csky_selected_arch = NULL;
+  const struct csky_processors *csky_selected_cpu = NULL;
   const struct csky_fpu_desc *csky_selected_fpu = NULL;
 
   bitmap_clear (target->isa);
@@ -2424,11 +2424,13 @@ csky_configure_build_target (struct csky_build_target *target,
   if (opts->x_csky_fpu_index != TARGET_FPU_auto)
     {
       csky_selected_fpu = &all_fpus[opts->x_csky_fpu_index];
-      auto_sbitmap fpu_bits (CSKY_ISA_FEATURE_GET(max));
-
+      sbitmap fpu_bits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
       csky_initialize_isa (fpu_bits, csky_selected_fpu->isa_bits);
+
       bitmap_and_compl (target->isa, target->isa, csky_isa_all_fpubits);
       bitmap_ior (target->isa, target->isa, fpu_bits);
+
+      sbitmap_free(fpu_bits);
     }
   else if (target->core_name == NULL)
     /* To support this we need to be able to parse FPU feature options
@@ -2468,7 +2470,7 @@ csky_option_override (void)
       ok = opt_enum_arg_to_value (OPT_mfpu_, target_fpu_name, &fpu_index,
                                   CL_TARGET);
       gcc_assert (ok);
-      csky_fpu_index = (enum fpu_type) fpu_index;
+      csky_fpu_index = (enum csky_fpu_type) fpu_index;
     }
 
   /* Create the default target_options structure.  We need this early

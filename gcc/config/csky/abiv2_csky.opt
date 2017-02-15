@@ -3,7 +3,7 @@ HeaderInclude
 config/csky/abiv2_csky_opts.h
 
 march=
-Target RejectNegative ToLower Joined Enum(csky_arch) Var(csky_arch_option)
+Target RejectNegative ToLower Joined Enum(csky_arch) Var(csky_arch_option) Save
 Specify the name of the target architecture.
 
 ; Other csky_arch values are loaded from abiv2_csky_tables.opt
@@ -11,7 +11,7 @@ EnumValue
 Enum(csky_arch) String(native) Value(-1) DriverOnly
 
 mcpu=
-Target RejectNegative ToLower Joined Enum(csky_processor_type) Var(csky_cpu_option) Init(csky_none)
+Target RejectNegative ToLower Joined Enum(csky_processor_type) Var(csky_cpu_option) Init(TARGET_CPU_csky_none) Save
 Specify the name of the target CPU.
 
 ; Other csky_processor_type values are loaded from abiv2_csky_tables.opt
@@ -19,7 +19,7 @@ EnumValue
 Enum(csky_processor_type) String(native) Value(-1) DriverOnly
 
 mfpu=
-Target RejectNegative Joined Enum(csky_fpu) Var(csky_fpu_index) Save
+Target RejectNegative Joined Enum(csky_fpu) Var(csky_fpu_index) Init(TARGET_FPU_auto) Save
 Specify the name of the target floating point hardware/format.
 
 mdouble-float
