@@ -296,6 +296,13 @@ static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);
 static void push_csky_minipool_fix (rtx, HOST_WIDE_INT, rtx *,
                                     enum machine_mode, rtx);
+static bool csky_decompose_address (rtx addr, struct csky_address * out);
+void csky_print_operand_address (FILE * stream, rtx x);
+void csky_print_operand (FILE * stream, rtx x, int code);
+static enum csky_inline_const_type
+try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
+                          HOST_WIDE_INT * y);
+
 
 static int
 csky_naked_function_p (void)
@@ -2621,9 +2628,10 @@ csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
               HOST_WIDE_INT new_ld_offset = offset
                 & CSKY_LD16_OFFSET_MASK (mode);
 
-              xop0 = force_operand (plus_constant (xop0, offset - new_ld_offset),
-                                   NULL_RTX);
-              x = plus_constant (xop0, new_ld_offset);
+              xop0 = force_operand (plus_constant (Pmode, xop0,
+                                                   offset - new_ld_offset),
+                                    NULL_RTX);
+              x = plus_constant (Pmode, xop0, new_ld_offset);
             }
           else if (offset < 0 && offset >= (-CSKY_SUBI_MAX_IMM))
             x = force_operand (x, NULL_RTX);
@@ -2658,7 +2666,7 @@ csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
       base = INTVAL (x) & ~mask;
       index = INTVAL (x) & mask;
       base_reg = force_reg (SImode, GEN_INT (base));
-      x = plus_constant (base_reg, index);
+      x = plus_constant (Pmode, base_reg, index);
     }
 
   return x;
@@ -2751,8 +2759,8 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   else if (code == UNSPEC)
     {
       return (flag_pic == 1
-              && (XINT (addr.disp, 1) == PIC_SYMBOL_PLT
-                  || XINT (addr.disp, 1) == PIC_SYMBOL_GOT))
+              && (XINT (index, 1) == PIC_SYMBOL_PLT
+                  || XINT (index, 1) == PIC_SYMBOL_GOT));
     }
   /* The follow index is for ldr instruction, the ldr cannot
      load dword data, so the mode size should not be larger than
@@ -2763,8 +2771,8 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
         return 1;
       else if (code == MULT || code == ASHIFT)
         {
-          rtx xiop0 = XEXP (x, 0);
-          rtx xiop1 = XEXP (x, 1);
+          rtx xiop0 = XEXP (index, 0);
+          rtx xiop1 = XEXP (index, 1);
 
           /* FIXME can the xiop1 be the reg and xiop0 be the int when mult?  */
           return (is_csky_address_register_rtx_p (xiop0, strict_p)
@@ -2778,15 +2786,14 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
 
 
 static int
-csky_legitimate_index_p (machine_mode mode, rtx index, RTX_CODE outer,
-                        int strict_p)
+csky_legitimate_index_p (machine_mode mode, rtx index, int strict_p)
 {
   if (CSKY_TARGET_ARCH(CK801))
-    return ck801_legitimate_index_p (mode, index, outer, strict_p);
+    return ck801_legitimate_index_p (mode, index, strict_p);
   else if (CSKY_TARGET_ARCH(CK802))
-    return ck802_legitimate_index_p (mode, index, outer, strict_p);
+    return ck802_legitimate_index_p (mode, index, strict_p);
   else
-    return ck810_legitimate_index_p (mode, index, outer, strict_p);
+    return ck810_legitimate_index_p (mode, index, strict_p);
 }
 
 
@@ -2799,7 +2806,7 @@ csky_legitimate_index_p (machine_mode mode, rtx index, RTX_CODE outer,
    be recognized.  */
 
 static bool
-csky_legitimate_address_p (machine_mode, rtx addr, bool strict)
+csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
 {
   enum rtx_code code = GET_CODE (addr);
 
@@ -2853,21 +2860,19 @@ csky_init_expanders (void)
 
 /* Must not copy any rtx that uses a pc-relative address.  */
 
-static int
-csky_note_pic_base (rtx * x, void *date ATTRIBUTE_UNUSED)
-{
-  if (GET_CODE (*x) == UNSPEC
-      && ((XINT (*x, 1) == UNSPEC_TLS_LABEL) ||
-          (XINT (*x, 1) == PIC_SYMBOL_GOTPC_GRS)))
-    return 1;
-  return 0;
-}
-
-
 static bool
 csky_cannot_copy_insn_p (rtx insn)
 {
-  return for_each_rtx (&PATTERN (insn), csky_note_pic_base, NULL);
+  subrtx_iterator::array_type array;
+  FOR_EACH_SUBRTX (iter, array, PATTERN (insn), ALL)
+    {
+      const_rtx x = *iter;
+      if (GET_CODE (x) == UNSPEC
+          && (XINT (x, 1) == UNSPEC_TLS_LABEL
+              || XINT (x, 1) == PIC_SYMBOL_GOTPC_GRS))
+        return true;
+    }
+  return false;
 }
 
 
@@ -2955,7 +2960,7 @@ csky_decompose_address (rtx addr, struct csky_address * out)
 
   if (scale_rtx && !CONST_INT_P (scale_rtx))
     {
-      tmp = scale_rtx;
+      rtx tmp = scale_rtx;
       scale_rtx = index;
       index = tmp;
     }
@@ -3159,7 +3164,7 @@ csky_print_operand (FILE * stream, rtx x, int code)
           fputs (reg_names[REGNO (x)], stream);
           break;
         case MEM:
-          output_address (XEXP (x, 0));
+          output_address (GET_MODE (x), XEXP (x, 0));
           break;
         case UNSPEC:
           csky_output_pic_addr_const (stream, x, code);
@@ -3223,7 +3228,7 @@ bool
 csky_allocate_stack_slots_for_args(void)
 {
   /* naked functions should not allocate stack slots for arguments.  */
-  return !IS_NAKED(get_csky_current_func_type());
+  return !CSKY_FUNCTION_IS_NAKED(get_csky_current_func_type());
 }
 
 
@@ -3312,7 +3317,7 @@ try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
     {
       *x = (value & 0xfffff000);
       *y = (value & 0xfff);
-      return IC_BEGNI_ADDI;
+      return IC_BGENI_ADDI;
     }
 
   /* Generate bgeni + subi.  */
@@ -3320,7 +3325,7 @@ try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
     {
       *x = ((value & 0xfffff000) + (1 << 12));
       *y = (0x1000 - (value & 0xfff));
-      return IC_BEGNI_SUBI;
+      return IC_BGENI_SUBI;
     }
 
   /* One immediate generate instruction, and one bseti or bclri.  */
@@ -3572,7 +3577,7 @@ output_csky_inline_const (enum machine_mode mode, rtx operands[])
                dst_fmt, dst_fmt, value, value);
       break;
     /* Add instruction 'subi', the last instruction is bgeni.  */
-    case IC_BEGNI_SUBI:
+    case IC_BGENI_SUBI:
       sprintf (buf, "%s\n\tsubi\t%s, %s, %%2\t// %ld 0x%x", load_op,
                dst_fmt, dst_fmt, value, value);
       break;
@@ -3761,7 +3766,7 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           if (GET_CODE (src) == CONST_DOUBLE && GET_MODE (src) == SFmode)
             {
               d = CONST_DOUBLE_REAL_VALUE (src);
-              REAL_VALUE_TO_TARGET_SINGLE (d, l);
+              REAL_VALUE_TO_TARGET_SINGLE (*d, l);
               operands[1] = GEN_INT (l);
               src = operands[1];
             }
@@ -3900,7 +3905,7 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           long l;
 
           d = CONST_DOUBLE_REAL_VALUE (src);
-          REAL_VALUE_TO_TARGET_SINGLE (d, l);
+          REAL_VALUE_TO_TARGET_SINGLE (*d, l);
           operands[1] = GEN_INT (l);
           src = operands[1];
 

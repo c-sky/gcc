@@ -148,7 +148,9 @@ struct csky_frame
 #define CSKY_FT_EXCEPTION   6               /* Exception handler */
 #define CSKY_FT_INTERRUPT   (1 << 2)        /*overlap CSKY_FT_ISR */
 #define CSKY_FT_NAKED       (1 << 3)        /*No prologue and epilogue */
-#define CSKY_FUNCTION_TYPE(t)   (t & CSKY_FT_TYPE_MASK)
+#define CSKY_FUNCTION_TYPE(t)         (t & CSKY_FT_TYPE_MASK)
+#define CSKY_FUNCTION_IS_INTERRUPT(t) (t & CSKY_FT_INTERRUPT)
+#define CSKY_FUNCTION_IS_NAKED(t)     (t & CSKY_FT_NAKED)
 
 struct csky_address
 {
@@ -161,7 +163,7 @@ struct csky_address
 
 enum csky_inline_const_type
 {
-  IC_UNINLINALE = 0,  /* Not inibale */
+  IC_UNINLINABLE = 0, /* Not inibale */
   IC_SINGLE,          /* Single instruction */
   IC_APPEND_NOT,      /* Signle instruction followed by a not */
   IC_APPEND_ADDI,     /* Single insn followed by an addi */
