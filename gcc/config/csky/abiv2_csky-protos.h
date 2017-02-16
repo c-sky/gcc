@@ -203,8 +203,4 @@ extern int csky_arch_isa_features[];
 #define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE_GET2MD(smart)
 
 
-
-extern char *csky_tolower (char *lo, const char *up);
-
-
 #endif /* GCC_CSKY_PROTOS_H */

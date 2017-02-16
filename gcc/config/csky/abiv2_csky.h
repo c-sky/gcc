@@ -11,26 +11,14 @@
 #endif
 
 
-/* Active target architecture.  */
-struct csky_build_target
-{
-  /* Name of the target CPU, if known, or NULL if the target CPU was not
-     specified by the user (and inferred from the -march option).  */
-  const char *core_name;
-  /* Name of the target ARCH.  NULL if there is a selected CPU.  */
-  const char *arch_name;
-  /* Preprocessor substring (never NULL).  */
-  const char *arch_pp_name;
-  /* CPU identifier for the core we're compiling for (architecturally).  */
-  enum csky_processor_type arch_core;
-  /* The base architecture value.  */
-  enum csky_base_architecture base_arch;
-  /* Bitmap encapsulating the isa_bits for the target environment.  */
-  sbitmap isa;
-};
-extern struct csky_build_target csky_active_target;
+/* The highest CSKY architecture version supported by the target.  */
+extern enum csky_base_architecture csky_base_arch;
 #define CSKY_TARGET_ARCH(arch) \
-  (csky_active_target.base_arch == CSKY_TARGET_ARCH_GET(arch))
+  (csky_base_arch == CSKY_TARGET_ARCH_GET(arch))
+
+extern const char *csky_arch_name;
+
+extern char *csky_tolower (char *lo, const char *up);
 
 
 /******************************************************************
@@ -624,7 +612,7 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
           builtin_define ("__CSKYLE__");              \
         }                                             \
                                                       \
-        const char *Name = csky_active_target.arch_pp_name;     \
+        const char *Name = csky_arch_name;                      \
         char *name = (char *) alloca (1 + strlen (Name));       \
         char *pp_name = (char *) alloca (1 + strlen (Name) + 4);\
         sprintf (pp_name, "__%s__", Name);                      \

@@ -203,6 +203,11 @@ struct csky_build_target csky_active_target;
 /* The following are used in the .md file as equivalents to bits.  */
 int csky_arch_isa_features[CSKY_ISA_FEATURE_GET(max)] = {0};
 
+/* The highest CSKY architecture version supported by the target.  */
+enum csky_base_architecture csky_base_arch = CSKY_TARGET_ARCH_GET(NONE);
+
+const char *csky_arch_name = NULL;
+
 
 /* Forward definitions of types.  */
 typedef struct minipool_node    Mnode;
@@ -2495,6 +2500,10 @@ csky_option_override (void)
 #ifdef SUBTARGET_OVERRIDE_OPTIONS
   SUBTARGET_OVERRIDE_OPTIONS;
 #endif
+
+  csky_arch_name = csky_active_target.arch_pp_name;
+
+  csky_base_arch = csky_active_target.base_arch;
 
   /* TODO: target_flags  */
 
