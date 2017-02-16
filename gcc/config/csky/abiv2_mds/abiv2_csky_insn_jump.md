@@ -40,7 +40,10 @@
 )
 
 (define_insn "indirect_jump"
-  [(set (pc) (match_operand:SI 0 "register_operand" "r"))]
+  [(set (pc) (match_operand:SI 0 "register_operand" "b,r"))]
   ""
-  "jmp\t%0"
+  "@
+    jmp\t%0
+    jmp\t%0"
+  [(set_attr "length" "2,4")]
 )

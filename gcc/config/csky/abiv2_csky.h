@@ -434,7 +434,7 @@ machine_function;
 /*  reserved  */                                                \
      36,   37,   38,   39,   40,   41,   42,   43,              \
      44,   45,   46,   47,   48,   49,   50,   51,              \
-/*   sp   tls   reserved     c    vfp   reserved    epc */      \
+/*   sp   tls   reserved     c     reserved         epc */      \
      14,   31,   32,         33,   68,   69,         70  }
 
 /* Return number of consecutive hard regs needed starting at reg REGNO
@@ -631,7 +631,6 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
         builtin_define(pp_name);                                \
         sprintf (pp_name, "__%s__", csky_tolower(name, Name));  \
         builtin_define(pp_name);                                \
-        free(pp_name);free(name);                               \
                                                       \
         if (CSKY_ISA_FEATURE_GET2MD(dsp))             \
         {                                             \
