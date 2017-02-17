@@ -93,6 +93,10 @@
   ((((VALUE) & 0x3) == 0)            \
    && VALUE_BETWEEN(VALUE, 1, 1024))
 
+#define CSKY_CONST_OK_FOR_Ul(VALUE)  \
+  ((((VALUE) & 0x3) == 0)            \
+   && VALUE_BETWEEN(VALUE, -1024, -4))
+
 #define CSKY_CONST_OK_FOR_Um(VALUE)  \
   (VALUE_BETWEEN((VALUE), -4096, -1))
 

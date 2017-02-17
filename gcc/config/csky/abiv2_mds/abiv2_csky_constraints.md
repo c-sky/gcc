@@ -109,9 +109,14 @@
        (match_test "CSKY_CONST_OK_FOR_Ug (ival)")))
 
 (define_constraint "Uj"
-  "Constant in range 1 - 1024 and is divisible by 4"
+  "Constant in range 4 - 1024 and is divisible by 4"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_Uj (ival)")))
+
+(define_constraint "Ul"
+  "Constant in range -1024 - (-4) and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Ul (ival)")))
 
 (define_constraint "P"
   "Constant in range 4 - 508 and is divisible by 4"
@@ -122,6 +127,11 @@
   "Constant in range 0 - 1020 and is divisible by 4"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_Uj(ival + 4)")))
+
+(define_constraint "Ur"
+  "Constant in range 0 - -1020 and is divisible by 4"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Uj(-ival + 4)")))
 
 (define_constraint "Ux"
  "satifies the @code{I} multiplied by any power of 2"

@@ -116,6 +116,9 @@
 
 
 ;; Add instructions.
+;; FIXME there is no need to consider subtraction instructions
+;; in addition, neither to consider addition instructions in
+;; subtraction.
 
 (define_expand "addsi3"
   [(set (match_operand:SI          0 "register_operand" "")
@@ -126,9 +129,9 @@
 )
 
 (define_insn "*smart_addsi3"
- [(set (match_operand:SI          0 "register_operand"  "=a,r,a,a,a,a, r, r,r")
-       (plus:SI (match_operand:SI 1 "register_operand"  "%a,0,0,a,0,a, r, r,r")
-                (match_operand:SI 2 "nonmemory_operand" "a, r,N,L,T,Us,Ua,M,Um")))]
+ [(set (match_operand:SI          0 "register_operand"  "=a,a,a,a,a,a, a, r,r")
+       (plus:SI (match_operand:SI 1 "register_operand"  "%a,0,0,a,0,a, a, r,r")
+                (match_operand:SI 2 "nonmemory_operand" "a, a,N,L,T,Us,Ua,M,Um")))]
  "TARGET_SMART && operands[0] != stack_pointer_rtx
   && operands[1] != stack_pointer_rtx"
  "@
@@ -141,13 +144,13 @@
      mov\t%0, %1
      addi\t%0, %1, %2
      subi\t%0, %1, %M2"
+  [(set_attr "length" "2,2,2,2,2,2,2,4,4")]
 )
-
 
 (define_insn "*smart_addsi3_sp"
   [(set (match_operand:SI          0 "register_operand"  "=z,z, z,a, z,a,r")
         (plus:SI (match_operand:SI 1 "register_operand"  "0, 0, 0,z, a,z,r")
-                 (match_operand:SI 2 "nonmemory_operand" "P, Ug,r,Ug,a,a,M")))]
+                 (match_operand:SI 2 "nonmemory_operand" "P, Ug,r,Uq,a,a,M")))]
   "TARGET_SMART && (operands[0] == stack_pointer_rtx
                     || operands[1] == stack_pointer_rtx)"
   "@
@@ -159,7 +162,6 @@
      addu\t%0, %1, %2
      addi\t%0, %1, %2"
 )
-
 
 (define_insn "*ck801_addsi3"
   [(set (match_operand:SI          0 "register_operand"  "=r,a,a,a,a,a, !z,!z,!z,a")
@@ -179,7 +181,6 @@
     addi\t%0, %1, %2"
 )
 
-
 (define_insn "*fast_addsi3"
   [(set (match_operand:SI          0 "register_operand"  "=r,r,r")
         (plus:SI (match_operand:SI 1 "register_operand"  "%r,r,r")
@@ -190,7 +191,6 @@
     addi    %0, %1, %2
     subi    %0, %1, %M2"
 )
-
 
 (define_expand "adddi3"
   [(parallel [(set (match_operand:DI 0 "register_operand" "")
@@ -249,6 +249,144 @@
     if(TARGET_BIG_ENDIAN)
       return \"addi\t%R0, %R0, 1\;cmpnei\t%R0, 0\;incf\t%0, %0, 1\";
     return \"addi\t%0, %0, 1\;cmpnei\t%0, 0\;incf\t%R0, %R0, 1\";
+  }"
+  [(set_attr "length" "12")]
+)
+
+
+;; sub instructions.
+
+(define_expand "subsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (minus:SI (match_operand:SI 1 "register_operand" "")
+                  (match_operand:SI 2 "nonmemory_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*smart_subsi3"
+  [(set (match_operand:SI           0 "register_operand"    "=a,a,a,a,a,a ,a")
+        (minus:SI (match_operand:SI 1 "register_operand"    "a, 0,0,a,0,a ,a")
+                  (match_operand:SI 2 "nonmemory_operand"   "a, a,N,L,T,Us,Ua")))]
+  "TARGET_SMART && operands[0] != stack_pointer_rtx
+   && operands[1] != stack_pointer_rtx"
+  "@
+    subu\t%0, %1, %2
+    subu\t%0, %1, %2
+    subi\t%0, %1, %2
+    subi\t%0, %1, %2
+    addi\t%0, %1, %M2
+    addi\t%0, %1, %M2
+    mov\t%0, %1"
+  [(set_attr "length" "2,2,2,2,2,2,2")]
+)
+
+(define_insn "*smart_subsi3_sp"
+  [(set (match_operand:SI           0 "register_operand"  "=z,z, z,a, a,r")
+        (minus:SI (match_operand:SI 1 "register_operand"  "0, 0, 0,z, a,r")
+                  (match_operand:SI 2 "nonmemory_operand" "P, Ug,a,Ur,a,M")))]
+  "TARGET_SMART && (operands[0] == stack_pointer_rtx
+                    || operands[1] == stack_pointer_rtx)"
+  "@
+    subi\t%0, %1, %2
+    addi\t%0, %1, %M2
+    subu\t%0, %1, %2
+    addi\t%0, %1, %M2
+    subu\t%0, %1, %2
+    subi\t%0, %1, %2"
+  [(set_attr "length" "2,2,2,2,2,4")]
+)
+
+(define_insn "*ck801_subsi3"
+  [(set (match_operand:SI           0 "register_operand"    "=a,a,a,a,a,a")
+        (minus:SI (match_operand:SI 1 "register_operand"    "0, a,0,a,0,a")
+                  (match_operand:SI 2 "nonmemory_operand"   "a, a,N,L,T,Us")))]
+  "CSKY_ISA_FEATURE_GET2MD(ck801)
+   && operands[0] != stack_pointer_rtx
+   && operands[1] != stack_pointer_rtx"
+  "@
+    subu\t%0, %1, %2
+    subu\t%0, %1, %2
+    subi\t%0, %1, %2
+    subi\t%0, %1, %2
+    addi\t%0, %1, %M2
+    addi\t%0, %1, %M2"
+)
+
+(define_insn "*ck801_subsi3_sp"
+  [(set (match_operand:SI           0 "register_operand"  "=a,z,z, z")
+        (minus:SI (match_operand:SI 1 "register_operand"  "z, 0,0, 0")
+                  (match_operand:SI 2 "nonmemory_operand" "Ur,P,Ug,r")))]
+  "CSKY_ISA_FEATURE_GET2MD(ck801)
+   && (operands[0] == stack_pointer_rtx
+       || operands[1] == stack_pointer_rtx)"
+  "@
+    addi    %0, %1, %M2
+    subi    %0, %1, %2
+    addi    %0, %1, %M2
+    subu    %0, %1, %2"
+)
+
+(define_insn "*fast_subsi3"
+  [(set (match_operand:SI           0 "register_operand"  "=r,r,r")
+        (minus:SI (match_operand:SI 1 "register_operand"  "r, r,r")
+                  (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
+ "!(CSKY_ISA_FEATURE_GET2MD(ck801) || TARGET_SMART)"
+ "@
+    subu    %0, %1, %2
+    subi    %0, %1, %2
+    addi    %0, %1, %M2"
+)
+
+(define_expand "subdi3"
+  [(parallel [(set (match_operand:DI 0 "register_operand" "")
+                  (minus:DI (match_operand:DI 1 "register_operand" "")
+                            (match_operand:DI 2 "register_operand" "")))
+              (clobber (reg:CC 33))])]
+  ""
+  ""
+)
+
+;; TODO calculate the length more precisely
+(define_insn "*cskyv2_subdi3"
+  [(set (match_operand:DI           0 "register_operand" "=&r,&r,&r")
+        (minus:DI (match_operand:DI 1 "register_operand" "0,  r,r")
+                  (match_operand:DI 2 "register_operand" "r,  0,r")))
+  (clobber (reg:CC 33))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    if (TARGET_BIG_ENDIAN)
+      return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
+    return \"cmphs\t%0, %0\;subc\t%0, %1, %2\;subc\t%R0, %R1, %R2\";
+  }"
+  [(set_attr "length" "12,12,12")]
+)
+
+(define_insn "*ck801_subdi3"
+  [(set (match_operand:DI           0 "register_operand" "=&r")
+        (minus:DI (match_operand:DI 1 "register_operand" "0")
+                  (match_operand:DI 2 "register_operand" "r")))
+   (clobber (reg:CC 33))]
+  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    if (TARGET_BIG_ENDIAN)
+      return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
+    return \"cmphs\t%0, %0\;subc\t%0, %1, %2\;subc\t%R0, %R1, %R2\";
+  }"
+  [(set_attr "length" "6")]
+)
+
+;; special case for "longlong -= 1"
+(define_insn "*cskyv2_adddi1_1"
+  [(set (match_operand:DI          0 "register_operand" "=&r")
+        (plus:DI (match_operand:DI 1 "register_operand" "0")
+                 (const_int -1)))
+  (clobber (reg:CC 33))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    if(TARGET_BIG_ENDIAN)
+      return \"cmpnei\t%R0, 0\;decf\t%0, %0, 1\;subi\t%R0, %R0, 1\";
+    return \"cmpnei\t%0, 0\;decf\t%R0, %R0, 1\;subi\t%0, %0, 1\";
   }"
   [(set_attr "length" "12")]
 )
