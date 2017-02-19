@@ -19,16 +19,16 @@
 )
 
 (define_insn "*cskyv2_movsi"
-  [(set (match_operand:SI 0 "nonimmediate_operand"        "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v")
-        (match_operand:SI 1 "general_operand" "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
+  [(set (match_operand:SI 0 "nonimmediate_operand"  "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v")
+        (match_operand:SI 1 "general_operand"       "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
   "!CSKY_ISA_FEATURE_GET2MD(ck801)"
   "* return output_csky_move (insn, operands, SImode);"
   [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")]
 )
 
 (define_insn "*ck801_movsi"
- [(set (match_operand:SI 0 "nonimmediate_operand"        "=r,a, a,r ,r,r,m")
-       (match_operand:SI 1 "general_operand" "r, Up,T,mi,F,c,r"))]
+ [(set (match_operand:SI 0 "nonimmediate_operand"   "=r,a, a,r ,r,r,m")
+       (match_operand:SI 1 "general_operand"        "r, Up,T,mi,F,c,r"))]
  "CSKY_ISA_FEATURE_GET2MD(ck801)"
  "* return output_ck801_move (insn, operands, SImode);"
  [(set_attr "length" "2,2,2,4,4,2,4")]
@@ -91,16 +91,16 @@
 )
 
 (define_insn "*cskyv2_movhi"
-  [(set (match_operand:HI 0 "nonimmediate_operand"         "=r,r,r,r,m,*y,*r,*v,*r")
-        (match_operand:HI 1 "general_operand"  "r, i,c,m,r,*r,*y,*r,*v"))]
+  [(set (match_operand:HI 0 "nonimmediate_operand"  "=r,r,r,r,m,*y,*r,*v,*r")
+        (match_operand:HI 1 "general_operand"       "r, i,c,m,r,*r,*y,*r,*v"))]
   "!CSKY_ISA_FEATURE_GET2MD(ck801)"
   "* return output_csky_move (insn, operands, HImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4")]
 )
 
 (define_insn "*ck801_movhi"
-  [(set (match_operand:HI 0 "nonimmediate_operand"         "=r,a, a,r,r,r,m")
-        (match_operand:HI 1 "general_operand"  "r, Up,T,i,m,c,r"))]
+  [(set (match_operand:HI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
+        (match_operand:HI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
   "CSKY_ISA_FEATURE_GET2MD(ck801)"
   "* return output_ck801_move (insn, operands, HImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]

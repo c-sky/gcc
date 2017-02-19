@@ -2765,7 +2765,7 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
 
       if (INTVAL (index) <= CSKY_LD32_MAX_OFFSET (SImode)
           && INTVAL (index) >= 0)
-        return (INTVAL (index) % GET_MODE_SIZE (mode));
+        return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
     }
   /* Allow ld.w rx, (gb, sym@got) when -fpic specially.  */
   else if (code == UNSPEC)

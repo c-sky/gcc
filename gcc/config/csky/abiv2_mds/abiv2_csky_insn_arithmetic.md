@@ -390,3 +390,26 @@
   }"
   [(set_attr "length" "12")]
 )
+
+
+;; ------------------------------------------------------------------------
+;; Multiplication insns
+;; ------------------------------------------------------------------------
+
+
+(define_insn "mulsi3"
+  [(set (match_operand:SI          0 "register_operand" "=r")
+        (mult:SI (match_operand:SI 1 "register_operand" "%r")
+                 (match_operand:SI 2 "register_operand" "r")))]
+  ""
+  "mult\t%0, %1, %2"
+)
+
+(define_insn "*ck801_mulsi3"
+  [(set (match_operand:SI          0 "register_operand" "=r")
+        (mult:SI (match_operand:SI 1 "register_operand" "%0")
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "mult\t%0, %1, %2"
+)
+
