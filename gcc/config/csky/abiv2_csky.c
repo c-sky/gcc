@@ -4280,4 +4280,148 @@ symbolic_csky_address_p (rtx x)
 }
 
 
+/* Generate compare rtl insn for comparison instruction.
+   Retrun true if the comparison CODE has turn to negative
+   side. For example, it will return ture when LEU turns
+   to GTU.  */
+
+bool
+gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
+{
+  bool invert;  /* Return this value to declare whether the
+                   comparison CODE has turn to negative side.  */
+  rtx cc_reg = gen_rtx_REG (CCmode, CSKY_CC_REGNUM);
+
+  if (GET_CODE (op1) == CONST_INT)
+    {
+      HOST_WIDE_INT val = INTVAL (op1);
+
+      switch (code)
+        {
+        case GTU:
+          /* Unsigned (GTU 0) is the same as (NE 0); everything else is converted
+             below to LEU (reversed cmphs).  */
+          if (val == 0)
+            code = NE;
+          /* Check whether (GTU A imm) can become (GEU A  imm + 1).  */
+          else
+            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+                 && CSKY_CONST_OK_FOR_J (val + 1))
+                || (!(CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                    && CSKY_CONST_OK_FOR_Uk (val + 1)))
+            {
+              op1 = GEN_INT (val + 1);
+              code = GEU;
+            }
+          break;
+        /* Check whether (LE A imm) can become (LT A imm + 1),
+           or (GT A imm) can become (GE A imm + 1).  */
+        case GT:
+        case LE:
+          if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+               && CSKY_CONST_OK_FOR_J (val + 1))
+              || (!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART
+                  && CSKY_CONST_OK_FOR_Uk (val + 1)))
+            {
+              op1 = GEN_INT (val + 1);
+              code = code == LE ? LT : GE;
+            }
+          break;
+
+        default:
+          break;
+        }
+    }
+
+  if (CONSTANT_P (op1) && GET_CODE (op1) != CONST_INT)
+    op1 = force_reg (GET_MODE (op1), op1);
+
+  /* cmpnei: 0-31 (K immediate)
+     ti: 1-32 (J immediate, 0 using btsti x,31).  */
+  invert = false;
+  switch (code)
+    {
+      /* Use inverted condition, cmpne.  */
+      case EQ:
+        code = NE;
+        invert = true;
+      /* Use normal condition, cmpne.  */
+      case NE:
+        if (GET_CODE (op1) == CONST_INT
+            && (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+                 && !csky_literal_K_operand (op1, SImode))
+                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                    && !csky_literal_I_operand (op1, SImode))))
+          op1 = force_reg (SImode, op1);
+      break;
+
+      /* Use inverted condition, reversed cmplt.  */
+      case LE:
+        code = GT;
+        invert = true;
+      /* Use normal condition, reversed cmplt.  */
+      case GT:
+        if (GET_CODE (op1) == CONST_INT)
+          op1 = force_reg (SImode, op1);
+      break;
+
+      /* Use inverted condition, cmplt.  */
+      case GE:
+        code = LT;
+        invert = true;
+      /* Use normal condition, cmplt.  */
+      case LT:
+        /* covered by btsti x,31.  */
+        if (GET_CODE (op1) == CONST_INT && INTVAL (op1) == 0)
+          {
+            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+                 && !csky_literal_J_operand (op1, SImode))
+                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                    && !csky_literal_Uk_operand (op1, SImode)))
+              {
+                op1 = force_reg (SImode, op1);
+              }
+          }
+        break;
+
+      /* Use inverted condition, cmple.  */
+      case GTU:
+        /* We coped with unsigned > 0 above.  */
+        gcc_assert (GET_CODE (op1) != CONST_INT || INTVAL (op1) != 0);
+        code = LEU;
+        invert = true;
+      /* Use normal condition, reversed cmphs.  */
+      case LEU:
+        if (GET_CODE (op1) == CONST_INT && INTVAL (op1) != 0)
+          op1 = force_reg (SImode, op1);
+        break;
+
+      /* Use inverted condition, cmphs.  */
+      case LTU:
+        code = GEU;
+        invert = true;
+      /* Use normal condition, cmphs.  */
+      case GEU:
+        if (GET_CODE (op1) == CONST_INT && INTVAL (op1) != 0)
+          {
+            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+                 && !csky_literal_J_operand (op1, SImode))
+                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                    && !csky_literal_Uk_operand (op1, SImode)))
+              {
+                op1 = force_reg (SImode, op1);
+              }
+          }
+      break;
+
+    default:
+      break;
+    }
+
+  emit_insn (gen_rtx_SET (cc_reg,
+                          gen_rtx_fmt_ee (code, CCmode, op0, op1)));
+  return invert;
+}
+
+
 struct gcc_target targetm = TARGET_INITIALIZER;

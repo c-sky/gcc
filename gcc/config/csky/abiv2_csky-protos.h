@@ -100,6 +100,12 @@
 #define CSKY_CONST_OK_FOR_Um(VALUE)  \
   (VALUE_BETWEEN((VALUE), -4096, -1))
 
+#define CSKY_CONST_OK_FOR_J(VALUE)  \
+  (VALUE_BETWEEN((VALUE), 1, 32))
+
+#define CSKY_CONST_OK_FOR_Uk(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 1, 65536))
+
 /* Constant can gen by bseti(16,30) + subi.  */
 #define CSKY_CONST_OK_FOR_BS(VALUE)                                               \
   (exact_log2 ((unsigned HOST_WIDE_INT)(VALUE & 0xFFFFF000) + (1 << 12)) >= 1     \
@@ -193,6 +199,9 @@ extern const char *output_csky_movedouble (rtx operands[],
 extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
 extern int symbolic_csky_address_p (rtx);
+#ifdef RTX_CODE
+extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
+#endif /* RTX_CODE */
 
 extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);
 extern rtx csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED);

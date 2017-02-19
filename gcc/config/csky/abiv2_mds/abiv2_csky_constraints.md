@@ -137,3 +137,18 @@
  "satifies the @code{I} multiplied by any power of 2"
  (and (match_code "const_int")
       (match_test "shiftable_csky_imm8_const(ival)")))
+
+(define_constraint "Uk"
+  "Constant in range 1 - 65536"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Uk(ival)")))
+
+(define_constraint "J"
+  "Constant in range 1- 32"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_J(ival)")))
+
+(define_constraint "K"
+  "Constant in range 0-31"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_K(ival)")))
