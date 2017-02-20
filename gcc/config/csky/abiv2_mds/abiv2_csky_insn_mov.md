@@ -260,3 +260,44 @@
         (const_int 4))
   )]
 )
+
+(define_expand "cstoresi4"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (match_operator   1 "ordered_comparison_operator"
+          [(match_operand:SI 2 "csky_compare_operand" "")
+           (match_operand:SI 3 "nonmemory_operand" "")]))]
+  ""
+  "
+  {
+    bool invert;
+
+    invert = gen_csky_compare (GET_CODE (operands[1]),
+                               operands[2], operands[3]);
+
+    if (invert)
+      emit_insn (gen_mvcv (operands[0]));
+    else {
+      if (CSKY_ISA_FEATURE_GET2MD(ck801)) {
+        emit_insn (gen_movsi(operands[0], const0_rtx));
+        emit_insn (gen_ck801_addc(operands[0], operands[0], operands[0]));
+      } else {
+        emit_insn (gen_mvc (operands[0]));
+      }
+    }
+    DONE;
+  }"
+)
+
+(define_insn "mvc"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (ne:SI (reg:CC 33) (const_int 0)))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "mvc\t%0"
+)
+
+(define_insn "mvcv"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (eq:SI (reg:CC 33) (const_int 0)))]
+  ""
+  "mvcv\t%0"
+)

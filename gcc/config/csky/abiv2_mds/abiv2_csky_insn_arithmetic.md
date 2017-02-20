@@ -501,3 +501,15 @@
                       (const_int 8))
   )]
 )
+
+/* FIXME this insn is now only used in 801 store, can it use
+   for 801 conditional add const 1?  */
+(define_insn "ck801_addc"
+  [(set (match_operand:SI                   0 "register_operand" "=r")
+        (plus:SI (ne:SI (reg:CC 33) (const_int 0))
+                 (plus:SI (match_operand:SI 1 "register_operand" "%0")
+                          (match_operand:SI 2 "register_operand" "r"))))
+  (clobber (reg:CC 33))]
+ "CSKY_ISA_FEATURE_GET2MD(ck801)"
+ "addc\t%0, %1, %2"
+)
