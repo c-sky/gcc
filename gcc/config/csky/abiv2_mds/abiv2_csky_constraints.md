@@ -143,6 +143,11 @@
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_Uk(ival)")))
 
+(define_constraint "Uh"
+  "Constant in range -31 - 0"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Uh (ival)")))
+
 (define_constraint "J"
   "Constant in range 1- 32"
   (and (match_code "const_int")

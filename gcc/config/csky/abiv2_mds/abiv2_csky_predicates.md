@@ -89,3 +89,14 @@
 
     return 0;
   })
+
+(define_predicate "csky_literal_K_Uh_operand"
+  (match_code "const_int")
+  {
+    if (CONST_INT_P (op)
+        && (CSKY_CONST_OK_FOR_K (INTVAL(op))
+            || CSKY_CONST_OK_FOR_Uh (INTVAL(op))))
+          return 1;
+
+    return 0;
+  })

@@ -396,7 +396,6 @@
 ;; Multiplication insns
 ;; ------------------------------------------------------------------------
 
-
 (define_insn "mulsi3"
   [(set (match_operand:SI          0 "register_operand" "=r")
         (mult:SI (match_operand:SI 1 "register_operand" "%r")
@@ -413,3 +412,92 @@
   "mult\t%0, %1, %2"
 )
 
+
+;; ------------------------------------------------------------------------
+;; Conditional add insns
+;; ------------------------------------------------------------------------
+
+(define_expand "addsicc"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand    1 "ordered_comparison_operator" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:SI 3 "csky_literal_K_Uh_operand" "")]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "
+  {
+    bool invert;
+
+    invert = gen_csky_compare (GET_CODE (operands[1]),
+                               XEXP (operands[1], 0),
+                               XEXP (operands[1], 1));
+
+    if (invert)
+      emit_insn (gen_cskyv2_addcc_invert(operands[0],operands[2],operands[3]));
+    else
+      emit_insn (gen_cskyv2_addcc(operands[0],operands[2],operands[3]));
+
+    DONE;
+  }"
+)
+
+(define_insn "cskyv2_addcc"
+  [(set (match_operand:SI                           0 "register_operand"          "=r,r")
+        (if_then_else:SI (ne (reg:CC 33) (const_int 0))
+                         (match_operand:SI          1 "register_operand"          "r,r")
+                         (plus:SI (match_dup 1)
+                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+      switch (which_alternative)
+      {
+         case 0:
+           if (rtx_equal_p (operands[0], operands[1]))
+             return \"incf\t%0, %1, %2\";
+           else
+             return \"movt\t%0, %1\;incf\t%0, %1, %2\";
+         case 1:
+           if (rtx_equal_p (operands[0], operands[1]))
+             return \"decf\t%0, %1, %M2\";
+           else
+             return \"movt\t%0, %1\;decf\t%0, %1, %M2\";
+         default:
+             gcc_unreachable();
+      }
+  }"
+  [(set (attr "length")
+        (if_then_else (eq (match_dup 0) (match_dup 1))
+                      (const_int 4)
+                      (const_int 8))
+  )]
+)
+
+(define_insn "cskyv2_addcc_invert"
+  [(set (match_operand:SI                           0 "register_operand"          "=r,r")
+        (if_then_else:SI (eq (reg:CC 33) (const_int 0))
+                         (match_operand:SI          1 "register_operand"          "r,r")
+                         (plus:SI (match_dup 1)
+                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    switch (which_alternative)
+    {
+      case 0:
+        if (rtx_equal_p (operands[0], operands[1]))
+          return \"inct\t%0, %1, %2\";
+        else
+          return \"movf\t%0, %1\;inct\t%0, %1, %2\";
+      case 1:
+        if (rtx_equal_p (operands[0], operands[1]))
+          return \"dect\t%0, %1, %M2\";
+        else
+          return \"movf\t%0, %1\;dect\t%0, %1, %M2\";
+      default:
+          gcc_unreachable();
+    }
+  }"
+  [(set (attr "length")
+        (if_then_else (eq (match_dup 0) (match_dup 1))
+                      (const_int 4)
+                      (const_int 8))
+  )]
+)

@@ -106,6 +106,9 @@
 #define CSKY_CONST_OK_FOR_Uk(VALUE)  \
   (VALUE_BETWEEN(VALUE, 1, 65536))
 
+#define CSKY_CONST_OK_FOR_Uh(VALUE)  \
+  (VALUE_BETWEEN(VALUE, -31, 0))
+
 /* Constant can gen by bseti(16,30) + subi.  */
 #define CSKY_CONST_OK_FOR_BS(VALUE)                                               \
   (exact_log2 ((unsigned HOST_WIDE_INT)(VALUE & 0xFFFFF000) + (1 << 12)) >= 1     \

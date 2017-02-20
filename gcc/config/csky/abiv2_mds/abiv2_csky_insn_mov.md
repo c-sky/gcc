@@ -207,9 +207,9 @@
                                XEXP (operands[1], 1));
 
     if (invert)
-      emit_insn(gen_movf(operands[0],operands[2],operands[3]));
+      emit_insn (gen_movf(operands[0],operands[2],operands[3]));
     else
-      emit_insn(gen_movt(operands[0],operands[2],operands[3]));
+      emit_insn (gen_movt(operands[0],operands[2],operands[3]));
     DONE;
   }")
 
