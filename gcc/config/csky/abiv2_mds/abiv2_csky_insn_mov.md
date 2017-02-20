@@ -1,4 +1,7 @@
 
+;; ------------------------------------------------------------------------
+;; Mov insns
+;; ------------------------------------------------------------------------
 (define_expand "movsi"
   [(set (match_operand:SI 0 "general_operand" "")
         (match_operand:SI 1 "general_operand" ""))]
@@ -179,4 +182,81 @@
  "CSKY_ISA_FEATURE_GET2MD(ck801)"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "4,4,4,8,8,8,8")]
+)
+
+
+;; ------------------------------------------------------------------------
+;; Conditional mov insns
+;; ------------------------------------------------------------------------
+
+(define_expand "movsicc"
+  [(set (match_operand 0 "register_operand" "")
+        (if_then_else:SI (match_operand    1 "ordered_comparison_operator" "")
+                         (match_operand:SI 2 "nonmemory_operand" "")
+                         (match_operand:SI 3 "nonmemory_operand" "")))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "
+  {
+    bool invert;
+
+    /* FIXME the float comparsion is not needed being considered here
+       since it will call the libgcc function. If we want to handle it,
+       describe the movsfcc and movdfcc.  */
+    invert = gen_csky_compare (GET_CODE (operands[1]),
+                               XEXP (operands[1], 0),
+                               XEXP (operands[1], 1));
+
+    if (invert)
+      emit_insn(gen_movf(operands[0],operands[2],operands[3]));
+    else
+      emit_insn(gen_movt(operands[0],operands[2],operands[3]));
+    DONE;
+  }")
+
+(define_insn "movt"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (if_then_else:SI (ne (reg:CC 33) (const_int 0))
+                         (match_operand:SI 1 "nonmemory_operand" "r")
+                         (match_operand:SI 2 "nonmemory_operand" "r")))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    if ( rtx_equal_p (operands[0], operands[1]) )
+      return \"movf\t%0, %2\";
+    else if ( rtx_equal_p (operands[0], operands[2]) )
+      return \"movt\t%0, %1\";
+    else
+      return \"movt\t%0, %1\;movf\t%0, %2\";
+  }"
+  [(set (attr "length")
+        (if_then_else
+          (and (ne (match_dup 0) (match_dup 1))
+               (ne (match_dup 0) (match_dup 2))
+          )
+        (const_int 8)
+        (const_int 4))
+   )]
+)
+
+(define_insn "movf"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (if_then_else:SI (eq (reg:CC 33) (const_int 0))
+                         (match_operand:SI 1 "nonmemory_operand" "r")
+                         (match_operand:SI 2 "nonmemory_operand" "r")))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "*{
+    if ( rtx_equal_p (operands[0], operands[1]) )
+      return \"movt\t%0, %2\";
+    else if ( rtx_equal_p (operands[0], operands[2]) )
+      return \"movf\t%0, %1\";
+    else
+      return \"movt\t%0, %2\;movf\t%0, %1\";
+  }"
+  [(set (attr "length")
+        (if_then_else
+          (and (ne (match_dup 0) (match_dup 1))
+               (ne (match_dup 0) (match_dup 2))
+          )
+        (const_int 8)
+        (const_int 4))
+  )]
 )

@@ -44,13 +44,13 @@
   "{
     /* TODO PIC related code.  */
 
-     if (GET_CODE (operands[0]) == MEM
-         && ! register_operand (XEXP (operands[0], 0), SImode)
-         && ! symbolic_csky_address_p (XEXP (operands[0], 0))
+     if (GET_CODE (operands[1]) == MEM
+         && ! register_operand (XEXP (operands[1], 0), SImode)
+         && ! symbolic_csky_address_p (XEXP (operands[1], 0))
          /* TODO add condition about PIC.  */)
     {
-      operands[0] = gen_rtx_MEM (GET_MODE (operands[0]),
-                                 force_reg (Pmode, XEXP (operands[0], 0)));
+      operands[1] = gen_rtx_MEM (GET_MODE (operands[1]),
+                                 force_reg (Pmode, XEXP (operands[1], 0)));
     }
   }")
 
@@ -64,7 +64,7 @@
   "@
     jsr\t%1
     jsr\t%1
-    jbsr\t%0"
+    jbsr\t%1"
   [(set_attr "length" "2,4,4")]
 )
 
