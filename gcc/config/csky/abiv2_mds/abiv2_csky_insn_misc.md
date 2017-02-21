@@ -6,6 +6,13 @@
   [(set_attr "length" "2")]
 )
 
+(define_insn "force_register_use"
+  [(unspec:SI [(match_operand:SI 0 "register_operand" "")] UNSPEC_REGISTER_USE)]
+  ""
+  "# %0 needed"
+  [(set_attr "length" "0")]
+)
+
 ;;-------------------------------------------------------------
 ;; Special patterns for dealing with the constant pool
 ;;-------------------------------------------------------------
@@ -32,3 +39,43 @@
   }"
   [(set_attr "length" "0")]
 )
+
+;;-------------------------------------------------------------
+;; prologue & epilogue
+;;-------------------------------------------------------------
+
+(define_expand "prologue"
+  [(clobber (const_int 0))]
+  ""
+  "{
+    csky_expand_prologue ();
+    DONE;
+  }"
+)
+
+(define_expand "epilogue"
+  [(simple_return)]
+  ""
+  "{
+    /* Prevent optimaze */
+    if (crtl->calls_eh_return)
+      emit_insn (gen_force_register_use (gen_rtx_REG (Pmode, 2)));
+
+    csky_expand_epilogue();
+    emit_jump_insn (gen_rtx_UNSPEC_VOLATILE (VOIDmode,
+                                             gen_rtvec (1, ret_rtx),
+                                             FLAG_EPILOGUE));
+  }"
+)
+
+(define_insn "*epilogue_insns"
+  [(unspec_volatile [(return)] FLAG_EPILOGUE)]
+  ""
+  "*
+    return csky_unexpanded_epilogue();
+  "
+)
+
+/* TODO: pushpop */
+
+/* TODO: pic */

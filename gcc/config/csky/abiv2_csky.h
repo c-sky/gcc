@@ -10,6 +10,8 @@
 #define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810)
 #endif
 
+#define TARGET_DEFAULT (MASK_PUSHPOP)
+
 
 /* The highest CSKY architecture version supported by the target.  */
 extern enum csky_base_architecture csky_base_arch;
@@ -178,6 +180,14 @@ machine_function;
    dwarf2 unwind information.  This also enables the table driven
    mechanism.  */
 #define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, CSKY_LR_REGNUM)
+
+
+/* Exception Handling Support  */
+
+
+/* The register that holds the return address in exception handlers.  */
+#define CSKY_EH_STACKADJ_REGNUM 2
+#define EH_RETURN_STACKADJ_RTX  gen_rtx_REG (SImode, CSKY_EH_STACKADJ_REGNUM)
 
 
 /* Registers That Address the Stack Frame  */

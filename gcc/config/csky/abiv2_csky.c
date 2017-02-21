@@ -88,6 +88,7 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
 /* The register number to be used for the PIC offset register.  */
 unsigned csky_pic_register = INVALID_REGNUM;
 
+
 /******************************************************************
  *                         Storage Layout                         *
  ******************************************************************/
@@ -142,6 +143,12 @@ unsigned csky_pic_register = INVALID_REGNUM;
 #undef  TARGET_ASM_CAN_OUTPUT_MI_THUNK
 #define TARGET_ASM_CAN_OUTPUT_MI_THUNK \
   hook_bool_const_tree_hwi_hwi_const_tree_true
+
+#undef  TARGET_ASM_FUNCTION_PROLOGUE
+#define TARGET_ASM_FUNCTION_PROLOGUE csky_output_function_prologue
+
+#undef  TARGET_ASM_FUNCTION_EPILOGUE
+#define TARGET_ASM_FUNCTION_EPILOGUE csky_output_function_epilogue
 
 
 /******************************************************************
@@ -310,15 +317,7 @@ void csky_print_operand (FILE * stream, rtx x, int code);
 static enum csky_inline_const_type
 try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
                           HOST_WIDE_INT * y);
-
-
-static int
-csky_naked_function_p (void)
-{
-  return (lookup_attribute ("naked",
-                            DECL_ATTRIBUTES (current_function_decl))
-          != NULL_TREE);
-}
+static bool is_pushpop_from_csky_live_regs(int mask);
 
 
 static unsigned long
@@ -367,502 +366,15 @@ process_csky_function_prologue (FILE *f,
                                 int asm_out,
                                 HOST_WIDE_INT *length)
 {
-  /* FIXME it should be designed again.  */
-#if 0
-  struct csky_frame fi;
-  int cfa_offset = 0;
-  unsigned long func_type;
-  int cfa_reg = CSKY_SP_REGNUM;
-  int space_allocated = 0;
-
-  if (length)
-    *length = 0;
-
-  if (csky_naked_function_p() && asm_out)
-    {
-      asm_fprintf(f, "\t#Naked Function: prologue and epilogue \
-                      provided by programmer.\n");
-      return;
-    }
-
-  func_type = get_csky_current_func_type();
-  if((func_type & CSKY_FT_INTERRUPT) != 0 && asm_out)
-    {
-      asm_fprintf(f, "\t#Interrupt Service Routine.\n");
-      asm_fprintf(f, "\tnie\n\tipush\n");
-      if (length)
-        *length += 4;
-    }
-
-  get_csky_frame_layout(&fi);
-
-  space_allocated = fi.arg_size + fi.reg_size + fi.local_size
-                    + fi.outbound_size + fi.pad_outbound
-                    + fi.pad_local + fi.pad_reg;
-
-  if (fi.arg_size != 0 && crtl->args.pretend_args_size == 0)
-    {
-      int offset = fi.arg_size + fi.pad_arg - 4;
-      int rn = CSKY_FIRST_PARM_REG + CSKY_NPARM_REGS - 1;
-      int remaining = fi.arg_size;
-
-      if (asm_out)
-        {
-          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
-                       fi.arg_size + fi.pad_arg);
-        }
-      if (length)
-        {
-          *length += 4;
-        }
-      if(dwarf2out_do_frame() && asm_out)
-        {
-          char *l = dwarf2out_cfi_label(false);
-          cfa_offset += fi.arg_size + fi.pad_arg;
-          dwarf2out_def_cfa(l, cfa_reg, cfa_offset);
-        }
-      for (; remaining >= 4; offset -=4, rn--, remaining -= 4)
-        {
-          if (asm_out)
-            {
-              asm_fprintf (f, "\tst.w\t%s, (%s, %d)\n", reg_names[rn],
-                           reg_names[CSKY_SP_REGNUM], offset);
-            }
-          if (length)
-            {
-              *length += 4;
-            }
-          if(dwarf2out_do_frame() && asm_out)
-            {
-              char *l = dwarf2out_cfi_label(false);
-              dwarf2out_reg_save (l, rn, offset - cfa_offset);
-            }
-        }
-    }
-  else if (fi.arg_size != 0)
-    {
-      if (asm_out)
-        {
-          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
-                       fi.arg_size + fi.pad_arg);
-        }
-      if (length)
-        {
-          *length += 4;
-        }
-      if(dwarf2out_do_frame() && asm_out)
-        {
-          char *l = dwarf2out_cfi_label(false);
-          cfa_offset += fi.arg_size + fi.pad_arg;
-          dwarf2out_def_cfa(l, cfa_reg, cfa_offset);
-        }
-    }
-
-  if (target_flags & MASK_BACKTRACE)
-    {
-      csky_backtrace_push_reg (fi,
-                               &cfa_offset,
-                               &cfa_reg,
-                               length,
-                               asm_out,
-                               f);
-    }
-  else if (TARGET_PUSHPOP && can_save_regs_use_pushpop(fi.reg_mask))
-    {
-      int rn = 4;
-      int reg_end = 31;
-      int reg_count = 0;
-
-      if (asm_out)
-        {
-          asm_fprintf (f, "\tpush\t");
-        }
-      if (length)
-        {
-          *length += 4;
-        }
-      /* Find the first regnum */
-      for (; !(fi.reg_mask & (1 << rn)); rn++);
-      /* Output first regname */
-      if (asm_out)
-        {
-          asm_fprintf (f, "%s", reg_names[rn++]);
-        }
-
-      reg_count++;
-      /* Output remain regs */
-      for (; rn <= reg_end; rn++)
-        {
-          if (fi.reg_mask & (1 << rn))
-            {
-              if (asm_out)
-                {
-                  asm_fprintf (f, ", %s", reg_names[rn]);
-                }
-              reg_count ++;
-            }
-        }
-      if (asm_out)
-        {
-          asm_fprintf (f, "\n");
-        }
-      if(dwarf2out_do_frame() && asm_out)
-        {
-          char *l = dwarf2out_cfi_label(false);
-          cfa_offset += reg_count * 4;
-          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
-          rn = 4;
-          reg_count = 0;
-          for (; rn <= reg_end; rn++)
-            {
-              if (fi.reg_mask & (1 << rn))
-                {
-                  dwarf2out_reg_save (l, rn, (reg_count * 4) - cfa_offset);
-                  reg_count++;
-                }
-            }
-        }
-    }
-  else if (fi.reg_size > 0)
-    {
-      int remain = fi.reg_size;
-      int rn = -1;
-      int offset = 0;
-
-      if (asm_out)
-        {
-          asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM],
-                       fi.reg_size + fi.pad_reg);
-        }
-      if (length)
-        {
-          *length += 4;
-        }
-      if(dwarf2out_do_frame() && asm_out)
-        {
-          char *l = dwarf2out_cfi_label(false);
-          cfa_offset += fi.reg_size + fi.pad_reg;
-          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
-        }
-
-      while (remain > 0)
-        {
-          while (!(fi.reg_mask & (1 << ++rn)));
-
-          if (asm_out)
-            {
-              asm_fprintf (f, "\tst.w\t%s, (%s, %d)\n",
-                           reg_names[rn], reg_names[CSKY_SP_REGNUM], offset);
-            }
-          if (length)
-            {
-              *length += 4;
-            }
-          if(dwarf2out_do_frame() && asm_out)
-            {
-              char *l = dwarf2out_cfi_label(false);
-              dwarf2out_reg_save (l, rn, offset - cfa_offset);
-            }
-
-          offset += 4;
-          remain -= 4;
-        }
-    }
-
-  if (frame_pointer_needed)
-    {
-      if (asm_out)
-        {
-          asm_fprintf (f, "\tmov\t%s, %s\n", reg_names[8],
-                       reg_names[CSKY_SP_REGNUM]);
-        }
-      if (length)
-        {
-          *length += 4;
-        }
-      /* FIXME: if define cfa as r8 here, the last adjust for sp cannot
-         be defined, so sp cannot be restored when unwind.  */
-      if(dwarf2out_do_frame() && asm_out)
-        {
-          cfa_reg = 8;
-          char *l = dwarf2out_cfi_label (false);
-          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
-        }
-    }
-  if(fi.local_size + fi.outbound_size)
-    {
-      int size = fi.local_size + fi.outbound_size;
-      if (size > CSKY_SUBI_MAX_STEP * 2)
-        {
-          if (CSKY_TARGET_ARCH(CK801))
-            {
-              if (asm_out)
-                {
-                  asm_fprintf (f, "\tlrw\t%s, 0x%x\n", reg_names[4], size);
-                }
-              if (length)
-                {
-                  *length += 4;
-                }
-            }
-          else if(size & 0xffff0000)
-            {
-              if (asm_out)
-                {
-                  asm_fprintf (f, "\tmovih\t%s, 0x%x\n",
-                               reg_names[4], size >> 16);
-                }
-              if (length)
-                {
-                  *length += 4;
-                }
-              if(size & 0xffff)
-                {
-                  if (asm_out)
-                    {
-                      asm_fprintf (f, "\tori\t%s, %s, 0x%x\n",
-                                   reg_names[4], reg_names[4], size & 0xffff);
-                    }
-                  if (length)
-                    {
-                      *length += 4;
-                    }
-                }
-            }
-          else
-            {
-              if (asm_out)
-                {
-                  asm_fprintf (f, "\tmovi\t%s, 0x%x\n", reg_names[4], size);
-                }
-              if (length)
-                {
-                  *length += 4;
-                }
-            }
-
-          if (asm_out)
-            {
-              asm_fprintf (f, "\tsub\t%s, %s\n",
-                           reg_names[CSKY_SP_REGNUM], reg_names[4]);
-            }
-          if (length)
-            {
-              *length += 4;
-            }
-        }
-      else if(size > CSKY_SUBI_MAX_STEP)
-        {
-          if (asm_out)
-            {
-              asm_fprintf (f, "\tsubi\t%s, %d\n",
-                           reg_names[CSKY_SP_REGNUM], CSKY_SUBI_MAX_STEP);
-              asm_fprintf (f, "\tsubi\t%s, %d\n",
-                           reg_names[CSKY_SP_REGNUM],
-                           size - CSKY_SUBI_MAX_STEP);
-            }
-          if (length)
-            {
-              *length += 8;
-            }
-        }
-      else
-        {
-          if (asm_out)
-            {
-              asm_fprintf (f, "\tsubi\t%s, %d\n",
-                           reg_names[CSKY_SP_REGNUM], size);
-            }
-          if (length)
-            {
-              *length += 4;
-            }
-        }
-      cfa_offset += size;
-      if(dwarf2out_do_frame() && !frame_pointer_needed && asm_out)
-        {
-          char *l = dwarf2out_cfi_label(false);
-          dwarf2out_def_cfa (l, cfa_reg, cfa_offset);
-        }
-    }
-
-  /* generate .stack_size function-name, size for callgraph,
-   * the default stack size is 0.  */
-  if ((target_flags & MASK_STACK_SIZE)
-      && (space_allocated > 0)
-      && asm_out )
-    {
-      gcc_assert (current_function_decl != NULL);
-      const char * func_name =
-          IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (current_function_decl));
-      if (func_name[0] == '*')
-        asm_fprintf (f, "\t.stack_size %s, %d\n",
-                     &func_name[1], space_allocated);
-      else
-        asm_fprintf (f, "\t.stack_size %s, %d\n", func_name, space_allocated);
-    }
-#endif
+  /* TODO: delete this function, need to refine function "csky_reorg"  */
 }
 
 
 const char *
 process_csky_function_epilogue (int asm_out, HOST_WIDE_INT *length)
 {
-  /* FIXME it should be designed again.  */
-#if 0
-  struct csky_frame fi;
-  int begin_reg, end_reg;
-  unsigned long func_type;
-  int use_pop = false;
-
-  func_type = get_csky_current_func_type();
-
-  if (csky_naked_function_p())
-    return "";
-
-  get_csky_frame_layout (&fi);
-  if (length)
-    *length = 0;
-
-  if (target_flags & MASK_BACKTRACE)
-    {
-      use_pop = csky_backtrace_pop_reg (fi,
-                                        length,
-                                        asm_out,
-                                        asm_out_file,
-                                        func_type);
-      if (use_pop == true)
-        return "";
-    }
-  else if (TARGET_PUSHPOP
-           && can_save_regs_use_pushpop(fi.reg_mask)
-           && fi.arg_size == 0
-           && (!(func_type & CSKY_FT_INTERRUPT)))
-    {
-      int rn = 4;
-      int reg_end = 31;
-
-      if (asm_out)
-        asm_fprintf (asm_out_file, "\tpop \t");
-      if (length)
-        *length += 4;
-      /* Find the first regnum */
-      for (; !(fi.reg_mask & (1 << rn)); rn++);
-      /* Output first regname */
-      if (asm_out)
-        asm_fprintf (asm_out_file, "%s", reg_names[rn++]);
-      /* Output remain regs */
-      for (; rn <= reg_end; rn++)
-        {
-          if (fi.reg_mask & (1 << rn) )
-            {
-              if (asm_out)
-                asm_fprintf (asm_out_file, ", %s", reg_names[rn]);
-            }
-        }
-      if (asm_out)
-        asm_fprintf (asm_out_file, "\n");
-
-      /* if lrpop instruction set pc = lr.  */
-      return "";
-    }
-  else if (can_save_regs_use_stm (fi.reg_mask, &begin_reg, &end_reg))
-    {
-      if (frame_pointer_needed && begin_reg != CSKY_FRAME_POINTER_REGNUM)
-        {
-          int off = (end_reg - begin_reg + 1 ) * 4;
-          if (asm_out)
-            {
-              asm_fprintf (asm_out_file, "ld.w\t%s, (%s, %d)\n",
-                           reg_names[CSKY_FRAME_POINTER_REGNUM],
-                           reg_names[CSKY_SP_REGNUM], off);
-            }
-          if (length)
-            *length += 4;
-        }
-      if (asm_out)
-        {
-          asm_fprintf (asm_out_file, "\tldm\t%s-%s,(%s)\n",
-                       reg_names[begin_reg],
-                       reg_names[end_reg],
-                       reg_names[CSKY_SP_REGNUM]);
-          asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
-                       reg_names[CSKY_SP_REGNUM],
-                       fi.reg_size + fi.pad_reg + fi.arg_size + fi.pad_arg);
-        }
-      if (length)
-        *length += 8;
-    }
-  else
-    {
-      int offset = fi.reg_size + fi.pad_reg;
-      int adjust = fi.arg_size + fi.pad_arg + fi.reg_size + fi.pad_reg;
-      int remain = fi.reg_size;
-      int rn = 31;
-
-      if (offset > 0)
-        {
-
-          offset -= fi.pad_reg;
-          offset -= 4;
-
-          while (remain > 0)
-            {
-              while (!(fi.reg_mask & (1 << --rn)));
-
-              if (asm_out)
-                {
-                  asm_fprintf (asm_out_file, "\tld.w\t%s, (%s, %d)\n",
-                               reg_names[rn],
-                               reg_names[CSKY_SP_REGNUM],
-                               offset);
-                }
-              if (length)
-                *length += 4;
-
-              offset -= 4;
-              remain -= 4;
-            }
-          if (asm_out)
-            asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
-                         reg_names[CSKY_SP_REGNUM], adjust);
-          if (length)
-            *length += 4;
-        }
-      else if (adjust)
-        {
-          if (asm_out)
-            asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
-                         reg_names[CSKY_SP_REGNUM], adjust);
-          if (length)
-            *length += 4;
-        }
-    }
-  if(crtl->calls_eh_return)
-    {
-      if (asm_out)
-        asm_fprintf (asm_out_file, "\taddu\t%s, %s\n",
-                     reg_names[CSKY_SP_REGNUM],
-                     reg_names[CSKY_EH_STACKADJ_REGNUM]);
-      if (length)
-        *length += 4;
-    }
-
-  if((func_type & CSKY_FT_INTERRUPT) != 0 && asm_out)
-    {
-      asm_fprintf(asm_out_file, "\tipop\n\tnir\n");
-      if (length)
-        *length += 4;
-    }
-
-  /* Out put rts */
-  if (asm_out && !(func_type & CSKY_FT_INTERRUPT))
-    asm_fprintf (asm_out_file, "\trts\n");
-  if (length)
-    *length += 4;
-
+  /* TODO: delete this function, need to refine function "csky_reorg"  */
   return "";
-#endif
 }
 
 
@@ -4421,6 +3933,383 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
   emit_insn (gen_rtx_SET (cc_reg,
                           gen_rtx_fmt_ee (code, CCmode, op0, op1)));
   return invert;
+}
+
+
+const char *
+output_csky_return_instruction(void)
+{
+  unsigned long func_type = get_csky_current_func_type();
+
+  if (CSKY_FUNCTION_IS_NAKED(func_type))
+    return "";
+
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+    return "";
+
+  if (CSKY_FUNCTION_IS_INTERRUPT(func_type))
+    return "ipop\n\tnir\n";
+  else
+    return "rts\n";
+}
+
+
+static bool is_pushpop_from_csky_live_regs(int mask)
+{
+  int i, num_regs;
+  int end_reg = -1;
+
+  for (i = 0, num_regs = 0; i <= 32; i++)
+    if(mask & (1 << i))
+      num_regs++;
+
+  if(num_regs == 0)
+    return false;
+
+  for(i = 11; i >= 4; i--)
+    {
+      if (end_reg == -1 && (mask & (1 << i)))
+        end_reg = i;
+
+      if ((end_reg != -1) && !(mask & (1 << i)))
+        return false;
+    }
+
+  end_reg = -1;
+  for(i = 17; i >= 16; i--)
+    {
+      if (end_reg == -1 && (mask & (1 << i)))
+        end_reg = i;
+
+      if ((end_reg != -1) && !(mask & (1 << i)))
+        return false;
+    }
+
+  for(i = 0; i <= 3; i++)
+    if ((mask & (1 << i)))
+      return false;
+
+  for(i = 12; i <= 14; i++)
+    if ((mask & (1 << i)))
+      return false;
+
+  /* r15 in the list */
+
+  for(i = 18; i <= 27; i++)
+    if ((mask & (1 << i)))
+      return false;
+
+  /* r28 in the list */
+
+  for(i = 29; i <= 31; i++)
+    if ((mask & (1 << i)))
+      return false;
+
+  return true;
+}
+
+
+void csky_expand_prologue(void)
+{
+  rtx insn;
+  int offset = 0;
+  unsigned long func_type = get_csky_current_func_type();
+
+  if (CSKY_FUNCTION_IS_NAKED(func_type))
+    return;
+
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+
+  #if 0
+  if (fi.arg_size != 0)
+    {
+      offset = fi.arg_size + fi.pad_arg;
+      insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                 GEN_INT(-offset)));
+      RTX_FRAME_RELATED_P (insn) = 1;
+    }
+
+  /* If we have a parameter passed partially in regs and partially in memory,
+     the registers will have been stored to memory already in function.c.  So
+     we only need to do something here for varargs functions.  */
+  if (fi.arg_size != 0 && crtl->args.pretend_args_size == 0)
+    {
+      int rn = CSKY_FIRST_PARM_REG + CSKY_NPARM_REGS - 1;
+      int remain = fi.arg_size;
+
+      for (offset -= 4; remain >= 4; offset -= 4, rn--, remain -= 4)
+        {
+          rtx dst = gen_rtx_MEM (SImode,
+                                 plus_constant (Pmode,
+                                                stack_pointer_rtx,
+                                                offset));
+          insn = emit_insn (gen_movsi (dst, gen_rtx_REG (SImode, rn)));
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+    }
+  #endif
+
+  /* TODO: backtrace */
+  if (0 /* target_flags & MASK_BACKTRACE */)
+    {
+
+    }
+  /* TODO: pushpop */
+  else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+    {
+
+    }
+  else if (fi.reg_size > 0)
+    {
+      offset = fi.reg_size + fi.pad_reg;
+
+      insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                 GEN_INT(-offset)));
+      RTX_FRAME_RELATED_P (insn) = 1;
+
+      int remain = fi.reg_size;
+      int rn = -1;
+      for (offset = 0; remain > 0; offset += 4, remain -= 4)
+        {
+          while (!(fi.reg_mask & (1 << ++rn)));
+
+          rtx dst = gen_rtx_MEM (SImode,
+                                 plus_constant (Pmode,
+                                                stack_pointer_rtx,
+                                                offset));
+          insn = emit_insn (gen_movsi (dst, gen_rtx_REG (SImode, rn)));
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+    }
+
+  if (frame_pointer_needed)
+    {
+      insn = emit_insn(gen_movsi(frame_pointer_rtx, stack_pointer_rtx));
+      RTX_FRAME_RELATED_P (insn) = 1;
+    }
+
+  if (fi.local_size + fi.outbound_size)
+    {
+      offset = fi.local_size + fi.outbound_size;
+
+      insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                 GEN_INT(-offset)));
+      RTX_FRAME_RELATED_P (insn) = 1;
+    }
+
+  #if 0 /* TODO: pic  */
+  if (flag_pic && fi.reg_mask & (1 << PIC_OFFSET_TABLE_REGNUM))
+    {
+
+    }
+  #endif
+}
+
+
+void csky_expand_epilogue(void)
+{
+  int offset = 0;
+  unsigned long func_type = get_csky_current_func_type();
+
+  if (CSKY_FUNCTION_IS_NAKED(func_type))
+    return;
+
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+
+  if (frame_pointer_needed)
+    {
+      emit_insn (gen_movsi (stack_pointer_rtx, frame_pointer_rtx));
+    }
+  else
+    {
+      offset = fi.local_size + fi.outbound_size;
+      emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                           GEN_INT(offset)));
+    }
+
+  /* TODO: backtrace */
+  if (0 /* target_flags & MASK_BACKTRACE */)
+    {
+
+    }
+  /* TODO: pushpop */
+  else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+    {
+
+    }
+  /* TODO: stm */
+  else if (0 /* is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg) */)
+    {
+
+    }
+  else
+    {
+      offset = fi.reg_size + fi.pad_reg;
+      int adjust = fi.arg_size + fi.pad_arg + offset;
+
+      int remain = fi.reg_size;
+      int rn = 31;
+      if (offset)
+        {
+          for (offset -= fi.pad_reg, offset -= 4;
+               remain > 0;
+               offset -= 4, remain -= 4)
+            {
+              while (!(fi.reg_mask & (1 << --rn)));
+
+              rtx src = gen_rtx_MEM (SImode,
+                                     plus_constant (Pmode,
+                                                    stack_pointer_rtx,
+                                                    offset));
+              emit_insn (gen_movsi (gen_rtx_REG (SImode, rn), src));
+            }
+        }
+      if (adjust)
+        {
+          emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                               GEN_INT(adjust)));
+        }
+    }
+
+  #if 0
+  if(crtl->calls_eh_return)
+    {
+      emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                           EH_RETURN_STACKADJ_RTX));
+    }
+  #endif
+}
+
+
+static void
+csky_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
+{
+  unsigned long func_type = get_csky_current_func_type ();
+
+  switch ((int) CSKY_FUNCTION_TYPE (func_type))
+    {
+    default:
+    case CSKY_FT_NORMAL:
+      break;
+    case CSKY_FT_INTERRUPT:
+      asm_fprintf (f, "\t# Interrupt Service Routine.\n");
+      break;
+    case CSKY_FT_FIQ:
+      asm_fprintf (f, "\t# Fast Interrupt Service Routine.\n");
+      break;
+    case CSKY_FT_EXCEPTION:
+      asm_fprintf (f, "\t# CSKY Exception Handler.\n");
+      break;
+    case CSKY_FT_NAKED:
+      asm_fprintf (f, "\t# Naked Function: prologue and epilogue \
+                      provided by programmer.\n");
+      return;
+    }
+
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+
+  int offset = 0;
+  if (fi.arg_size != 0)
+    {
+      offset = fi.arg_size + fi.pad_arg;
+      asm_fprintf (f, "\tsubi\t%s, %d\n", reg_names[CSKY_SP_REGNUM], offset);
+    }
+  if (fi.arg_size != 0 && crtl->args.pretend_args_size == 0)
+    {
+      int rn = CSKY_FIRST_PARM_REG + CSKY_NPARM_REGS - 1;
+      int remain = fi.arg_size;
+
+      for (offset -= 4; remain >= 4; offset -= 4, rn--, remain -= 4)
+        {
+          asm_fprintf (f, "\tst.w\t%s, (%s, %d)\n", reg_names[rn],
+                       reg_names[CSKY_SP_REGNUM], offset);
+        }
+    }
+
+  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+    {
+      int rn = 4;
+      int reg_end = 31;
+      asm_fprintf (f, "\tpush\t");
+
+      for (; rn <= reg_end; rn++)
+        {
+          if (!(fi.reg_mask & (1 << rn)))
+            continue;
+          asm_fprintf (f, "%s", reg_names[rn]);
+          if (fi.reg_mask & (1 << (rn + 1)))
+            asm_fprintf (f, ", ");
+        }
+      asm_fprintf (f, "\n");
+    }
+
+  int space_allocated = fi.arg_size + fi.reg_size + fi.local_size
+                        + fi.outbound_size + fi.pad_outbound
+                        + fi.pad_local + fi.pad_reg;
+
+  /* generate .stack_size function-name, size for callgraph,
+   * the default stack size is 0.  */
+  if ((target_flags & MASK_STACK_SIZE) && (space_allocated > 0))
+    {
+      gcc_assert (current_function_decl != NULL);
+      const char * func_name =
+          IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (current_function_decl));
+      if (func_name[0] == '*')
+        asm_fprintf (f, "\t.stack_size %s, %d\n",
+                     &func_name[1], space_allocated);
+      else
+        asm_fprintf (f, "\t.stack_size %s, %d\n", func_name, space_allocated);
+    }
+}
+
+
+static void
+csky_output_function_epilogue (FILE *file ATTRIBUTE_UNUSED,
+                               HOST_WIDE_INT frame_size ATTRIBUTE_UNUSED)
+{
+
+}
+
+
+const char *csky_unexpanded_epilogue(void)
+{
+  unsigned long func_type = get_csky_current_func_type();
+
+  if (CSKY_FUNCTION_IS_NAKED(func_type))
+    return "";
+
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+
+  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+    {
+      int rn = 4;
+      int reg_end = 31;
+      asm_fprintf (asm_out_file, "\tpop\t");
+
+      for (; rn <= reg_end; rn++)
+        {
+          if (!(fi.reg_mask & (1 << rn)))
+            continue;
+          asm_fprintf (asm_out_file, "%s", reg_names[rn]);
+          if (fi.reg_mask & (1 << (rn + 1)))
+            asm_fprintf (asm_out_file, ", ");
+        }
+      asm_fprintf (asm_out_file, "\n");
+    }
+
+  if(crtl->calls_eh_return)
+    {
+      asm_fprintf (asm_out_file, "\taddu\t%s, %s\n", reg_names[CSKY_SP_REGNUM],
+                   reg_names[CSKY_EH_STACKADJ_REGNUM]);
+    }
+
+  return "";
 }
 
 

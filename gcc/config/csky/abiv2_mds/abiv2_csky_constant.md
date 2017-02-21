@@ -21,7 +21,7 @@
    ; and stack frame generation.  Operand 0 is the
    ; register to "use"
    ; As USE insns are not meaningful after reload,
-   (UNSPEC_PROLOGUE_USE    23)
+   (UNSPEC_REGISTER_USE    23)
    (UNSPEC_CSKY_CASESI     24)
 ])
 

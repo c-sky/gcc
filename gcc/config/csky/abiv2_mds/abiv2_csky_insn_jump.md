@@ -178,3 +178,12 @@
   "CSKY_ISA_FEATURE_GET2MD(ck803)"
   "<inst>\t%0, %l1"
 )
+
+
+(define_insn "*csky_simple_return"
+  [(simple_return)]
+  "reload_completed"
+  "*
+    return output_csky_return_instruction();
+  "
+)

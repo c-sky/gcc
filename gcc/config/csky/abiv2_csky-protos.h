@@ -131,27 +131,6 @@ typedef struct GTY(()) csky_stack_frame
 }
 csky_stack_frame;
 
-/* FIXME the csky_frame should be transforming to csky_stack_frame.  */
-struct csky_frame
-{
-    int arg_size;			/* stdarg spills (bytes) */
-    int reg_size;			/* non-volatile reg saves (bytes) */
-    int reg_mask;			/* non-volatile reg saves */
-    int local_size;		/* locals */
-    int outbound_size;		/* arg overflow on calls out */
-    int pad_outbound;
-    int pad_local;
-    int pad_reg;
-    int pad_arg;
-  /* Describe the steps we'll use to grow it.  */
-#define	MAX_STACK_GROWS	4	/* gives us some spare space */
-    int growth[MAX_STACK_GROWS];
-    int arg_offset;
-    int reg_offset;
-    int reg_growth;
-    int local_growth;
-};
-
 /* Define these macros to describe the function type.  */
 #define CSKY_FT_TYPE_MASK   ((1 << 3) - 1)
 #define CSKY_FT_UNKNOWN     0               /* Type not been determined */
@@ -159,8 +138,8 @@ struct csky_frame
 #define CSKY_FT_ISR         4               /* Interrupt service routine */
 #define CSKY_FT_FIQ         5               /* Fast interrupt service routine */
 #define CSKY_FT_EXCEPTION   6               /* Exception handler */
-#define CSKY_FT_INTERRUPT   (1 << 2)        /*overlap CSKY_FT_ISR */
-#define CSKY_FT_NAKED       (1 << 3)        /*No prologue and epilogue */
+#define CSKY_FT_INTERRUPT   (1 << 2)        /* overlap CSKY_FT_ISR */
+#define CSKY_FT_NAKED       (1 << 3)        /* No prologue and epilogue */
 #define CSKY_FUNCTION_TYPE(t)         (t & CSKY_FT_TYPE_MASK)
 #define CSKY_FUNCTION_IS_INTERRUPT(t) (t & CSKY_FT_INTERRUPT)
 #define CSKY_FUNCTION_IS_NAKED(t)     (t & CSKY_FT_NAKED)
@@ -210,6 +189,10 @@ extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);
 extern rtx csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED);
 extern void csky_init_expanders (void);
 extern HOST_WIDE_INT csky_initial_elimination_offset (int, int);
+extern void csky_expand_prologue(void);
+extern void csky_expand_epilogue(void);
+extern const char *output_csky_return_instruction(void);
+extern const char *csky_unexpanded_epilogue(void);
 
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
