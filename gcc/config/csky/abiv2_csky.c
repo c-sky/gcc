@@ -311,7 +311,6 @@ static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);
 static void push_csky_minipool_fix (rtx_insn *, HOST_WIDE_INT, rtx *,
                                     machine_mode, rtx);
-static bool csky_decompose_address (rtx addr, struct csky_address * out);
 void csky_print_operand_address (FILE * stream, machine_mode mode, rtx x);
 void csky_print_operand (FILE * stream, rtx x, int code);
 static enum csky_inline_const_type
@@ -2217,7 +2216,7 @@ ck801_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   if (code == CONST_INT
       && INTVAL (index) <= CSKY_LD16_MAX_OFFSET (mode)
       && INTVAL (index) >= 0)
-    return (INTVAL (index) % GET_MODE_SIZE (mode));
+    return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
 
   return 0;
 }
@@ -2238,7 +2237,7 @@ ck802_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   if (code == CONST_INT
       && INTVAL (index) <= CSKY_LD32_MAX_OFFSET(mode)
       && INTVAL (index) >= 0)
-    return (INTVAL (index) % GET_MODE_SIZE (mode));
+    return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
 
   return 0;
 }
@@ -2403,8 +2402,8 @@ csky_cannot_copy_insn_p (rtx_insn *insn)
 /* Extract the parts of an RTL expression that is a valid memory address
    for an instruction.  Return FALSE if it is a invalid memory address.  */
 
-static bool
-csky_decompose_address (rtx addr, struct csky_address * out)
+bool
+decompose_csky_address (rtx addr, struct csky_address * out)
 {
   rtx base = NULL_RTX, index = NULL_RTX, disp = NULL_RTX;
   HOST_WIDE_INT scale = 1;
@@ -2570,7 +2569,7 @@ csky_print_operand_address (FILE * stream, machine_mode mode, rtx x)
 
   struct csky_address addr;
 
-  csky_decompose_address (x, &addr);
+  decompose_csky_address (x, &addr);
 
   if (addr.label && addr.disp && GET_CODE (addr.disp) == CONST_INT)
     {
@@ -3229,7 +3228,7 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
       /* The situation mov memory to reg.  */
       else if (GET_CODE (src) == MEM)
         {
-          csky_decompose_address (XEXP (src, 0), &op1);
+          decompose_csky_address (XEXP (src, 0), &op1);
 
           if (op1.index)
             {
@@ -3317,7 +3316,7 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
     }
   else if (GET_CODE (dst) == MEM)
     {
-      csky_decompose_address (XEXP (dst, 0), &op0);
+      decompose_csky_address (XEXP (dst, 0), &op0);
 
       if (op0.index)
         {
@@ -3380,7 +3379,7 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
         }
       else if (GET_CODE (src) == MEM)
         {
-          csky_decompose_address (XEXP (src, 0), &op1);
+          decompose_csky_address (XEXP (src, 0), &op1);
 
           /* Generate lrw rx, [LABEL], it is happened when compiler generates
              constant pool and use lrw to get the const in memory.  */
@@ -3532,7 +3531,7 @@ output_csky_movedouble (rtx operands[],
           int basereg = -1;
           struct csky_address op0;
 
-          csky_decompose_address (XEXP (src, 0), &op0);
+          decompose_csky_address (XEXP (src, 0), &op0);
 
           if (GET_CODE (memexp) == LABEL_REF)
             return "lrw\t%0, [%1]\n\tlrw\t%R0, [%R1]";
@@ -3603,7 +3602,7 @@ output_csky_movedouble (rtx operands[],
       int basereg = -1;
       struct csky_address op0;
 
-      csky_decompose_address (XEXP (dst, 0), &op0);
+      decompose_csky_address (XEXP (dst, 0), &op0);
 
       if (GET_CODE (memexp) == REG)
         basereg = REGNO (memexp);
@@ -3668,7 +3667,7 @@ output_ck801_movedouble (rtx operands[],
           int basereg = -1;
           struct csky_address op0;
 
-          csky_decompose_address (XEXP (src, 0), &op0);
+          decompose_csky_address (XEXP (src, 0), &op0);
 
           if (GET_CODE (memexp) == LABEL_REF)
             return "lrw\t%0, [%1]\n\tlrw\t%R0, [%R1]";
@@ -3725,7 +3724,7 @@ output_ck801_movedouble (rtx operands[],
       int basereg = -1;
       struct csky_address op0;
 
-      csky_decompose_address (XEXP (dst, 0), &op0);
+      decompose_csky_address (XEXP (dst, 0), &op0);
 
       if (GET_CODE (memexp) == REG)
         basereg = REGNO (memexp);

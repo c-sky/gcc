@@ -513,3 +513,148 @@
  "CSKY_ISA_FEATURE_GET2MD(ck801)"
  "addc\t%0, %1, %2"
 )
+
+
+;; ------------------------------------------------------------------------
+;; Extzv insns
+;; ------------------------------------------------------------------------
+
+(define_expand "extzvsi"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "")
+                         (match_operand:SI 2 "const_int_operand" "")
+                         (match_operand:SI 3 "const_int_operand" "")))]
+  ""
+  "{
+    /* If the cpu has xtrb but donot have zext, we use xtrb if could.
+       Now only ck802 will do this job.  */
+    if (CSKY_ISA_FEATURE_GET2MD(base) && !CSKY_ISA_FEATURE_GET2MD(ck803)
+        && (INTVAL (operands[2]) == 8)
+        && (INTVAL (operands[3]) % 8 == 0))
+      {
+        rtx xtrb = gen_rtx_SET (operands[0],
+                                gen_rtx_ZERO_EXTRACT (SImode,
+                                                      operands[1],
+                                                      operands[2],
+                                                      operands[3]));
+        emit (gen_rtx_PARALLEL (VOIDmode,
+                                gen_rtvec (2, xtrb,
+                                gen_hard_reg_clobber (CCmode, 33))));
+        DONE;
+      }
+    else if (!CSKY_ISA_FEATURE_GET2MD (ck803))
+      {
+        /* Use lsri and lsli to do extzv when donot have zext.  */
+        rtx lshft = GEN_INT (32 - (INTVAL (operands[2])
+                             + INTVAL (operands[3])));
+        rtx rshft = GEN_INT (32 - INTVAL (operands[2]));
+        rtx tmp1 = gen_reg_rtx (SImode);
+        rtx tmp2 = gen_reg_rtx (SImode);
+
+        emit_insn (gen_rtx_SET (tmp1, operands[1]));
+        emit_insn (gen_rtx_SET (tmp2, gen_rtx_ASHIFT (SImode, tmp1, lshft)));
+        emit_insn (gen_rtx_SET (operands[0],
+                                gen_rtx_LSHIFTRT (SImode, tmp2, rshft)));
+        DONE;
+      }
+    else
+      {
+        emit_insn (gen_cskyv2_extzv (operands[0], operands[1],
+                                     operands[2], operands[3]));
+        DONE;
+      }
+}")
+
+(define_insn "cskyv2_extzv"
+  [(set (match_operand:SI                  0 "register_operand" "=r")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "r")
+                         (match_operand:SI 2 "csky_literal_K_operand" "K")
+                         (match_operand:SI 3 "csky_literal_K_operand" "K")))]
+  "CSKY_ISA_FEATURE_GET2MD(ck803)"
+  "*{
+    operands[2] = GEN_INT (INTVAL (operands[3]) + INTVAL (operands[2]) - 1);
+    return \"zext\t%0, %1, %2, %3\";
+  }"
+)
+
+(define_insn "*cskyv2_xtrb0"
+  [(set (match_operand:SI                  0 "register_operand" "=r,r")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "0,r")
+                         (const_int 8)
+                         (const_int 24)))
+        (clobber (reg:CC 33))]
+  ""
+  "@
+    lsri\t%0, %0, 24
+    xtrb0\t%0, %1"
+)
+
+(define_insn "*cskyv2_xtrb1"
+  [(set (match_operand:SI                  0 "register_operand" "=r")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "r")
+                         (const_int 8)
+                         (const_int 16)))
+        (clobber (reg:CC 33))]
+  ""
+  "xtrb1\t%0, %1"
+)
+
+(define_insn "*cskyv2_xtrb2"
+  [(set (match_operand:SI                  0 "register_operand" "=r")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "r")
+                         (const_int 8)
+                         (const_int 8)))
+        (clobber (reg:CC 33))]
+  ""
+  "xtrb2\t%0, %1"
+)
+
+
+;; -------------------------------------------------------------------------
+;; Zero extension instructions
+;; -------------------------------------------------------------------------
+
+(define_insn "zero_extendhisi2"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  ""
+  "zexth\t%0, %1"
+)
+
+(define_insn "*cskyv2_zextend_ldh"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "m")))]
+  ""
+  "ld.h\t%0, %1"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "zero_extendqisi2"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "zextb\t%0, %1"
+)
+
+(define_insn "*cskyv2_zextend_ldb"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "m")))]
+  ""
+  "ld.b\t%0, %1"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "zero_extendqihi2"
+  [(set (match_operand:HI                 0 "register_operand" "=r")
+        (zero_extend:HI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "zextb\t%0, %1"
+)
+
+(define_insn "*cskyv2_zextend_ldbhi"
+  [(set (match_operand:HI                 0 "register_operand"   "=r")
+        (zero_extend:HI (match_operand:QI 1 "csky_addr_reg_disp" "m")))]
+  ""
+  "ld.b\t%0, %1"
+  [(set_attr "length" "4")]
+)

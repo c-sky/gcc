@@ -181,6 +181,7 @@ extern const char *output_csky_movedouble (rtx operands[],
 extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
 extern int symbolic_csky_address_p (rtx);
+extern bool decompose_csky_address (rtx, struct csky_address *);
 #ifdef RTX_CODE
 extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
 #endif /* RTX_CODE */
