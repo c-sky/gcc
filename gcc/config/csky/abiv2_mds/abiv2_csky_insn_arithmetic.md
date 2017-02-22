@@ -658,3 +658,39 @@
   "ld.b\t%0, %1"
   [(set_attr "length" "4")]
 )
+
+;; -------------------------------------------------------------------------
+;; clzm2 instructions
+;; -------------------------------------------------------------------------
+
+(define_insn "clzsi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (clz:SI (match_operand:SI 1 "register_operand" "r")))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "ff1  %0,%1"
+)
+
+;; -------------------------------------------------------------------------
+;; one_cmplm2 instructions
+;; -------------------------------------------------------------------------
+
+(define_expand "one_cmplsi2"
+  [(set (match_operand:SI         0 "register_operand" "")
+        (not:SI (match_operand:SI 1 "register_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*csky_one_cmplsi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (not:SI (match_operand:SI 1 "register_operand" "r")))]
+  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "not %0, %1"
+)
+
+(define_insn "*ck801_one_cmplsi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (not:SI (match_operand:SI 1 "register_operand" "0")))]
+  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "not %0, %1"
+)
