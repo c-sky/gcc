@@ -4,15 +4,14 @@
       CSKY_ISA(NAME, INTERNAL_IDENT)
    */
 
-CSKY_ISA("base", base)    /* Base instructions, base on ck802.  */
-
-CSKY_ISA("ck803", ck803)  /* Extended insns for arch ck803.  */
-CSKY_ISA("ck803s", ck803s)/* Extended insns for arch ck803s.  */
-CSKY_ISA("ck807", ck807)  /* Extended insns for arch ck807.  */
-CSKY_ISA("ck810", ck810)  /* Extended insns for arch ck810.  */
+CSKY_ISA("ck801", E1)    /* Extended insns for arch ck801  from base.   */
+CSKY_ISA("ck802", E2)    /* Extended insns for arch ck802  from base.   */
+CSKY_ISA("ck803", 2E3)   /* Extended insns for arch ck803  from ck802.  */
+CSKY_ISA("ck803s", 3E3s) /* Extended insns for arch ck803s from ck803.  */
+CSKY_ISA("ck807", 3sE7)  /* Extended insns for arch ck807  from ck803s. */
+CSKY_ISA("ck810", 7E10)  /* Extended insns for arch ck810  from ck807.  */
 
 /* Specific insns mode */
-CSKY_ISA("ck801", ck801)  /* ck801 instructions.  */
 CSKY_ISA("smart", smart)  /* TODO.  */
 CSKY_ISA("security", security) /* do nothing, just forward to as.  */
 

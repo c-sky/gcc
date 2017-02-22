@@ -10,7 +10,7 @@
 
 (define_insn "*csky_jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "jbr  %l0"
 )
 
@@ -18,7 +18,7 @@
 ;;      from br32, use a better way here.
 (define_insn "*ck801_jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "*{
     if (get_attr_length(insn) != 5)
       return \"jbr\\t%l0\";
@@ -62,7 +62,7 @@
   "{
     enum rtx_code code = GET_CODE (operands[0]);
 
-     if (CSKY_ISA_FEATURE_GET2MD(ck803)
+     if (CSKY_ISA_FEATURE(2E3)
          && (code == LE || code == LT || code == GT
              || code == GE || code == EQ || code == NE)
          && operands[2] == const0_rtx )
@@ -88,7 +88,7 @@
   [(set (pc) (if_then_else (ne (reg:CC 33) (const_int 0))
                            (label_ref (match_operand 0 "" ""))
                            (pc)))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "jbt\t%l0"
 )
 
@@ -96,7 +96,7 @@
   [(set (pc) (if_then_else (eq (reg:CC 33) (const_int 0))
                            (label_ref (match_operand 0 "" ""))
                            (pc)))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "jbf\t%l0"
 )
 
@@ -106,7 +106,7 @@
   [(set (pc) (if_then_else (ne (reg:CC 33) (const_int 0))
                            (label_ref (match_operand 0 "" ""))
                            (pc)))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "*
   {
     if (get_attr_length(insn) == 6)
@@ -138,7 +138,7 @@
   [(set (pc) (if_then_else (eq (reg:CC 33) (const_int 0))
                            (label_ref (match_operand 0 "" ""))
                            (pc)))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "*
   {
     if (get_attr_length(insn) == 6)
@@ -175,7 +175,7 @@
                                       (const_int 0))
              (label_ref (match_operand 1 "" ""))
              (pc)))]
-  "CSKY_ISA_FEATURE_GET2MD(ck803)"
+  "CSKY_ISA_FEATURE(2E3)"
   "<inst>\t%0, %l1"
 )
 

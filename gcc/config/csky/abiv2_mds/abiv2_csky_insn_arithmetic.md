@@ -13,7 +13,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r,r")
         (ashift:SI (match_operand:SI 1 "register_operand"     "r,r")
                    (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "@
   lsl  %0, %1, %2
   lsli %0, %1, %2"
@@ -23,7 +23,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=a,r")
         (ashift:SI (match_operand:SI 1 "register_operand"     "a,0")
                    (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "@
   lsli %0, %1, %2
   lsl  %0, %1, %2"
@@ -42,7 +42,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=r,r")
         (ashiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
                      (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "@
   asr  %0, %1, %2
   asri %0, %1, %2"
@@ -52,7 +52,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=a,r")
         (ashiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "@
   asri %0, %1, %2
   asr  %0, %1, %2"
@@ -71,7 +71,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=r,r")
         (lshiftrt:SI (match_operand:SI 1 "register_operand"     "r,r")
                      (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "@
   lsr  %0, %1, %2
   lsri %0, %1, %2"
@@ -81,7 +81,7 @@
   [(set (match_operand:SI              0 "register_operand"     "=a,r")
         (lshiftrt:SI (match_operand:SI 1 "register_operand"     "a,0")
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "@
   lsri %0, %1, %2
   lsr  %0, %1, %2"
@@ -100,7 +100,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r,r")
         (rotate:SI (match_operand:SI 1 "register_operand"     "r,r")
                    (match_operand:SI 2 "csky_arith_K_operand" "r,Ui")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "@
   rotl  %0, %1, %2
   rotli %0, %1, %2"
@@ -110,7 +110,7 @@
   [(set (match_operand:SI            0 "register_operand"     "=r")
         (rotate:SI (match_operand:SI 1 "register_operand"     "0")
                    (match_operand:SI 2 "csky_arith_K_operand" "r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "rotl %0, %1, %2"
 )
 
@@ -132,7 +132,7 @@
  [(set (match_operand:SI          0 "register_operand"  "=a,a,a,a,a,a, a, r,r")
        (plus:SI (match_operand:SI 1 "register_operand"  "%a,0,0,a,0,a, a, r,r")
                 (match_operand:SI 2 "nonmemory_operand" "a, a,N,L,T,Us,Ua,M,Um")))]
- "TARGET_SMART && operands[0] != stack_pointer_rtx
+ "CSKY_ISA_FEATURE(smart) && operands[0] != stack_pointer_rtx
   && operands[1] != stack_pointer_rtx"
  "@
      addu\t%0, %1, %2
@@ -151,7 +151,7 @@
   [(set (match_operand:SI          0 "register_operand"  "=z,z, z,a, z,a,r")
         (plus:SI (match_operand:SI 1 "register_operand"  "0, 0, 0,z, a,z,r")
                  (match_operand:SI 2 "nonmemory_operand" "P, Ug,r,Uq,a,a,M")))]
-  "TARGET_SMART && (operands[0] == stack_pointer_rtx
+  "CSKY_ISA_FEATURE(smart) && (operands[0] == stack_pointer_rtx
                     || operands[1] == stack_pointer_rtx)"
   "@
      addi\t%0, %1, %2
@@ -167,7 +167,7 @@
   [(set (match_operand:SI          0 "register_operand"  "=r,a,a,a,a,a, !z,!z,!z,a")
         (plus:SI (match_operand:SI 1 "register_operand"  "%0,a,0,a,0,a, 0, 0, 0, !z")
                  (match_operand:SI 2 "nonmemory_operand" "r, a,N,L,T,Us,P, Ug,r, Uq")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "@
     addu\t%0, %1, %2
     addu\t%0, %1, %2
@@ -185,7 +185,7 @@
   [(set (match_operand:SI          0 "register_operand"  "=r,r,r")
         (plus:SI (match_operand:SI 1 "register_operand"  "%r,r,r")
                  (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
-  "CSKY_ISA_FEATURE_FAST && !CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE_FAST && CSKY_ISA_FEATURE(E2)"
   "@
     addu    %0, %1, %2
     addi    %0, %1, %2
@@ -200,7 +200,7 @@
   ""
   "
   {
-    if (CSKY_ISA_FEATURE_GET2MD(ck801) && (GET_CODE (operands[2]) != REG))
+    if (CSKY_ISA_FEATURE(E1) && (GET_CODE (operands[2]) != REG))
         operands[2] = force_reg (DImode, operands[2]);
   }
   "
@@ -212,7 +212,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "%0, r")
                  (match_operand:DI 2 "register_operand" "r,  r")))
    (clobber (reg:CC 33))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*
   {
     if (TARGET_BIG_ENDIAN)
@@ -227,7 +227,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "%0")
                  (match_operand:DI 2 "register_operand" "r")))
    (clobber (reg:CC 33))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "*
   {
     if (TARGET_BIG_ENDIAN)
@@ -243,7 +243,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "0")
                  (const_int 1)))
   (clobber (reg:CC 33))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*
   {
     if(TARGET_BIG_ENDIAN)
@@ -268,7 +268,7 @@
   [(set (match_operand:SI           0 "register_operand"    "=a,a,a,a,a,a ,a")
         (minus:SI (match_operand:SI 1 "register_operand"    "a, 0,0,a,0,a ,a")
                   (match_operand:SI 2 "nonmemory_operand"   "a, a,N,L,T,Us,Ua")))]
-  "TARGET_SMART && operands[0] != stack_pointer_rtx
+  "CSKY_ISA_FEATURE(smart) && operands[0] != stack_pointer_rtx
    && operands[1] != stack_pointer_rtx"
   "@
     subu\t%0, %1, %2
@@ -285,7 +285,7 @@
   [(set (match_operand:SI           0 "register_operand"  "=z,z, z,a, a,r")
         (minus:SI (match_operand:SI 1 "register_operand"  "0, 0, 0,z, a,r")
                   (match_operand:SI 2 "nonmemory_operand" "P, Ug,a,Ur,a,M")))]
-  "TARGET_SMART && (operands[0] == stack_pointer_rtx
+  "CSKY_ISA_FEATURE(smart) && (operands[0] == stack_pointer_rtx
                     || operands[1] == stack_pointer_rtx)"
   "@
     subi\t%0, %1, %2
@@ -301,7 +301,7 @@
   [(set (match_operand:SI           0 "register_operand"    "=a,a,a,a,a,a")
         (minus:SI (match_operand:SI 1 "register_operand"    "0, a,0,a,0,a")
                   (match_operand:SI 2 "nonmemory_operand"   "a, a,N,L,T,Us")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)
+  "CSKY_ISA_FEATURE(E1)
    && operands[0] != stack_pointer_rtx
    && operands[1] != stack_pointer_rtx"
   "@
@@ -317,7 +317,7 @@
   [(set (match_operand:SI           0 "register_operand"  "=a,z,z, z")
         (minus:SI (match_operand:SI 1 "register_operand"  "z, 0,0, 0")
                   (match_operand:SI 2 "nonmemory_operand" "Ur,P,Ug,r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)
+  "CSKY_ISA_FEATURE(E1)
    && (operands[0] == stack_pointer_rtx
        || operands[1] == stack_pointer_rtx)"
   "@
@@ -331,7 +331,7 @@
   [(set (match_operand:SI           0 "register_operand"  "=r,r,r")
         (minus:SI (match_operand:SI 1 "register_operand"  "r, r,r")
                   (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
- "!(CSKY_ISA_FEATURE_GET2MD(ck801) || TARGET_SMART)"
+ "!(CSKY_ISA_FEATURE(E1) || CSKY_ISA_FEATURE(smart))"
  "@
     subu    %0, %1, %2
     subi    %0, %1, %2
@@ -353,7 +353,7 @@
         (minus:DI (match_operand:DI 1 "register_operand" "0,  r,r")
                   (match_operand:DI 2 "register_operand" "r,  0,r")))
   (clobber (reg:CC 33))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
     if (TARGET_BIG_ENDIAN)
       return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
@@ -367,7 +367,7 @@
         (minus:DI (match_operand:DI 1 "register_operand" "0")
                   (match_operand:DI 2 "register_operand" "r")))
    (clobber (reg:CC 33))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "*{
     if (TARGET_BIG_ENDIAN)
       return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
@@ -382,7 +382,7 @@
         (plus:DI (match_operand:DI 1 "register_operand" "0")
                  (const_int -1)))
   (clobber (reg:CC 33))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
     if(TARGET_BIG_ENDIAN)
       return \"cmpnei\t%R0, 0\;decf\t%0, %0, 1\;subi\t%R0, %R0, 1\";
@@ -408,7 +408,7 @@
   [(set (match_operand:SI          0 "register_operand" "=r")
         (mult:SI (match_operand:SI 1 "register_operand" "%0")
                  (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "mult\t%0, %1, %2"
 )
 
@@ -422,7 +422,7 @@
    (match_operand    1 "ordered_comparison_operator" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:SI 3 "csky_literal_K_Uh_operand" "")]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "
   {
     bool invert;
@@ -446,7 +446,7 @@
                          (match_operand:SI          1 "register_operand"          "r,r")
                          (plus:SI (match_dup 1)
                                   (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
       switch (which_alternative)
       {
@@ -477,7 +477,7 @@
                          (match_operand:SI          1 "register_operand"          "r,r")
                          (plus:SI (match_dup 1)
                                   (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
     switch (which_alternative)
     {
@@ -510,7 +510,7 @@
                  (plus:SI (match_operand:SI 1 "register_operand" "%0")
                           (match_operand:SI 2 "register_operand" "r"))))
   (clobber (reg:CC 33))]
- "CSKY_ISA_FEATURE_GET2MD(ck801)"
+ "CSKY_ISA_FEATURE(E1)"
  "addc\t%0, %1, %2"
 )
 
@@ -528,7 +528,7 @@
   "{
     /* If the cpu has xtrb but donot have zext, we use xtrb if could.
        Now only ck802 will do this job.  */
-    if (CSKY_ISA_FEATURE_GET2MD(base) && !CSKY_ISA_FEATURE_GET2MD(ck803)
+    if (CSKY_ISA_FEATURE(E2) && !CSKY_ISA_FEATURE(2E3)
         && (INTVAL (operands[2]) == 8)
         && (INTVAL (operands[3]) % 8 == 0))
       {
@@ -542,7 +542,7 @@
                                 gen_hard_reg_clobber (CCmode, 33))));
         DONE;
       }
-    else if (!CSKY_ISA_FEATURE_GET2MD (ck803))
+    else if (!CSKY_ISA_FEATURE (2E3))
       {
         /* Use lsri and lsli to do extzv when donot have zext.  */
         rtx lshft = GEN_INT (32 - (INTVAL (operands[2])
@@ -570,7 +570,7 @@
         (zero_extract:SI (match_operand:SI 1 "register_operand" "r")
                          (match_operand:SI 2 "csky_literal_K_operand" "K")
                          (match_operand:SI 3 "csky_literal_K_operand" "K")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck803)"
+  "CSKY_ISA_FEATURE(2E3)"
   "*{
     operands[2] = GEN_INT (INTVAL (operands[3]) + INTVAL (operands[2]) - 1);
     return \"zext\t%0, %1, %2, %3\";
@@ -666,7 +666,7 @@
 (define_insn "clzsi2"
   [(set (match_operand:SI         0 "register_operand" "=r")
         (clz:SI (match_operand:SI 1 "register_operand" "r")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "ff1  %0,%1"
 )
 
@@ -684,14 +684,14 @@
 (define_insn "*csky_one_cmplsi2"
   [(set (match_operand:SI         0 "register_operand" "=r")
         (not:SI (match_operand:SI 1 "register_operand" "r")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "not %0, %1"
 )
 
 (define_insn "*ck801_one_cmplsi2"
   [(set (match_operand:SI         0 "register_operand" "=r")
         (not:SI (match_operand:SI 1 "register_operand" "0")))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "not %0, %1"
 )
 

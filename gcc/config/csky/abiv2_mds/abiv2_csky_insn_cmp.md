@@ -17,7 +17,7 @@
 (define_insn "*smart_cmpnesi_i"
   [(set (reg:CC 33)  (ne:CC (match_operand:SI 0 "register_operand"       "a")
                             (match_operand:SI 1 "csky_literal_K_operand" "K")))]
-  "TARGET_SMART || CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(smart) || CSKY_ISA_FEATURE(E1)"
   "cmpnei\t%0, %1"
 )
 
@@ -25,7 +25,7 @@
 (define_insn "*fast_cmpnesi_i"
   [(set (reg:CC 33) (ne:CC (match_operand:SI 0 "register_operand"       "r")
                            (match_operand:SI 1 "csky_literal_I_operand" "I")))]
-  "!TARGET_SMART && !CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
   "cmpnei\t%0, %1"
 )
 
@@ -49,7 +49,7 @@
 (define_insn "*smart_cmpltsi_i"
   [(set (reg:CC 33) (lt:CC (match_operand:SI 0 "register_operand"       "a")
                            (match_operand:SI 1 "csky_literal_J_operand" "J")))]
-  "TARGET_SMART || CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(smart) || CSKY_ISA_FEATURE(E1)"
   "cmplti\t%0, %1"
   [(set_attr "length" "2")]
 )
@@ -59,7 +59,7 @@
 (define_insn "*fast_cmpltsi_i"
   [(set (reg:CC 33) (lt:CC (match_operand:SI 0 "register_operand"        "a,r")
                            (match_operand:SI 1 "csky_literal_Uk_operand" "J,Uk")))]
-  "!TARGET_SMART && !CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
   "cmplti\t%0, %1"
   [(set_attr "length" "2,4")]
 )
@@ -68,14 +68,14 @@
 (define_insn "*cskyv2_cmpltsi_0"
   [(set (reg:CC 33) (lt:CC (match_operand:SI 0 "register_operand" "r")
                            (const_int 0)))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "btsti\t%0, 31"
 )
 
 (define_insn "*ck801_cmpltsi_0"
   [(set (reg:CC 33) (lt:CC (match_operand:SI 0 "register_operand" "a")
                            (const_int 0)))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "btsti\t%0, 31"
 )
 
@@ -90,12 +90,12 @@
   ""
   "cmphs\t%0, %1"
   [(set_attr "length" "2,4")]
-) 
+)
 
 (define_insn "*smart_cmpgeusi_i"
   [(set (reg:CC 33) (geu:CC (match_operand:SI 0 "register_operand"       "a")
                             (match_operand:SI 1 "csky_literal_J_operand" "J")))]
-  "TARGET_SMART || CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(smart) || CSKY_ISA_FEATURE(E1)"
   "cmphsi\t%0, %1"
   [(set_attr "length" "2")]
 )
@@ -103,7 +103,7 @@
 (define_insn "*fast_cmpgeusi_i"
   [(set (reg:CC 33) (geu:CC (match_operand:SI 0 "register_operand"        "a,r")
                             (match_operand:SI 1 "csky_literal_Uk_operand" "J,Uk")))]
-  "!TARGET_SMART && !CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
   "cmphsi\t%0, %1"
   [(set_attr "length" "2,4")]
 )
@@ -114,4 +114,4 @@
   ""
   "cmphs\t%1, %0"
   [(set_attr "length" "2,4")]
-) 
+)

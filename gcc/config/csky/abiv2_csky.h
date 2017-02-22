@@ -633,17 +633,17 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
         sprintf (pp_name, "__%s__", csky_tolower(name, Name));  \
         builtin_define(pp_name);                                \
                                                       \
-        if (CSKY_ISA_FEATURE_GET2MD(dsp))             \
+        if (CSKY_ISA_FEATURE(dsp))                    \
         {                                             \
             builtin_define ("__csky_dsp__");          \
             builtin_define ("__CSKY_DSP__");          \
         }                                             \
-        if (CSKY_ISA_FEATURE_GET2MD(vfpv2))           \
+        if (CSKY_ISA_FEATURE(vfpv2))                  \
         {                                             \
             builtin_define ("__csky_fpuv2__");        \
             builtin_define ("__CSKY_FPUV2__");        \
         }                                             \
-        if (CSKY_ISA_FEATURE_GET2MD(security))        \
+        if (CSKY_ISA_FEATURE(security))               \
         {                                             \
             builtin_define ("__csky_security__");     \
             builtin_define ("__CSKY_SECURITY__");     \

@@ -24,7 +24,7 @@
 (define_insn "*cskyv2_movsi"
   [(set (match_operand:SI 0 "nonimmediate_operand"  "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v")
         (match_operand:SI 1 "general_operand"       "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, SImode);"
   [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")]
 )
@@ -32,7 +32,7 @@
 (define_insn "*ck801_movsi"
  [(set (match_operand:SI 0 "nonimmediate_operand"   "=r,a, a,r ,r,r,m")
        (match_operand:SI 1 "general_operand"        "r, Up,T,mi,F,c,r"))]
- "CSKY_ISA_FEATURE_GET2MD(ck801)"
+ "CSKY_ISA_FEATURE(E1)"
  "* return output_ck801_move (insn, operands, SImode);"
  [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -96,7 +96,7 @@
 (define_insn "*cskyv2_movhi"
   [(set (match_operand:HI 0 "nonimmediate_operand"  "=r,r,r,r,m,*y,*r,*v,*r")
         (match_operand:HI 1 "general_operand"       "r, i,c,m,r,*r,*y,*r,*v"))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, HImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4")]
 )
@@ -104,7 +104,7 @@
 (define_insn "*ck801_movhi"
   [(set (match_operand:HI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:HI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "* return output_ck801_move (insn, operands, HImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -135,7 +135,7 @@
 (define_insn "*cskyv2_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r,r,r,m,*y,*r,*v,*r,*v")
         (match_operand:QI 1 "general_operand"      "r, i,c,m,r,*r,*y,*r,*v,*v"))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")]
 )
@@ -143,7 +143,7 @@
 (define_insn "*ck801_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:QI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
-  "CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E1)"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]
 )
@@ -171,7 +171,7 @@
 (define_insn "*csky_movdi"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,r,r,r,m,*r,*y,*v,*r,*v")
         (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v"))]
- "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+ "CSKY_ISA_FEATURE(E2)"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")]
 )
@@ -179,7 +179,7 @@
 (define_insn "*ck801_movdi"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:DI 1 "general_operand"       "r, Up,T,i,m,F,r"))]
- "CSKY_ISA_FEATURE_GET2MD(ck801)"
+ "CSKY_ISA_FEATURE(E1)"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "4,4,4,8,8,8,8")]
 )
@@ -194,7 +194,7 @@
         (if_then_else:SI (match_operand    1 "ordered_comparison_operator" "")
                          (match_operand:SI 2 "nonmemory_operand" "")
                          (match_operand:SI 3 "nonmemory_operand" "")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "
   {
     bool invert;
@@ -218,7 +218,7 @@
         (if_then_else:SI (ne (reg:CC 33) (const_int 0))
                          (match_operand:SI 1 "nonmemory_operand" "r")
                          (match_operand:SI 2 "nonmemory_operand" "r")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
     if ( rtx_equal_p (operands[0], operands[1]) )
       return \"movf\t%0, %2\";
@@ -242,7 +242,7 @@
         (if_then_else:SI (eq (reg:CC 33) (const_int 0))
                          (match_operand:SI 1 "nonmemory_operand" "r")
                          (match_operand:SI 2 "nonmemory_operand" "r")))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "*{
     if ( rtx_equal_p (operands[0], operands[1]) )
       return \"movt\t%0, %2\";
@@ -277,7 +277,7 @@
     if (invert)
       emit_insn (gen_mvcv (operands[0]));
     else {
-      if (CSKY_ISA_FEATURE_GET2MD(ck801)) {
+      if (CSKY_ISA_FEATURE(E1)) {
         emit_insn (gen_movsi(operands[0], const0_rtx));
         emit_insn (gen_ck801_addc(operands[0], operands[0], operands[0]));
       } else {
@@ -291,7 +291,7 @@
 (define_insn "mvc"
   [(set (match_operand:SI 0 "register_operand" "=r")
         (ne:SI (reg:CC 33) (const_int 0)))]
-  "!CSKY_ISA_FEATURE_GET2MD(ck801)"
+  "CSKY_ISA_FEATURE(E2)"
   "mvc\t%0"
 )
 

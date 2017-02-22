@@ -199,9 +199,9 @@ extern void set_csky_return_address (rtx source, rtx scratch);
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
 extern int csky_arch_isa_features[];
-#define CSKY_ISA_FEATURE_GET2MD(IDENT) \
+#define CSKY_ISA_FEATURE(IDENT) \
   csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)]
-#define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE_GET2MD(smart)
+#define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE(smart)
 
 
 #endif /* GCC_CSKY_PROTOS_H */
