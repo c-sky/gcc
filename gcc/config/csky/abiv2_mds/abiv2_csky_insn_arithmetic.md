@@ -694,3 +694,57 @@
   "CSKY_ISA_FEATURE_GET2MD(ck801)"
   "not %0, %1"
 )
+
+;; -------------------------------------------------------------------------
+;; Sign extension instructions
+;; -------------------------------------------------------------------------
+
+;; One test shows that the following code helps to
+;; reduce one 'load' and two 'mov'.
+(define_expand "extendsidi2"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (match_operand:SI 1 "register_operand" "r"))]
+  ""
+  "{
+    int low, high;
+
+    if (TARGET_BIG_ENDIAN)
+      low = 4, high = 0;
+    else
+      low = 0, high = 4;
+
+    emit_insn (gen_rtx_SET (gen_rtx_SUBREG(SImode, operands[0], low),
+                            operands[1]));
+
+    emit_insn (gen_rtx_SET (gen_rtx_SUBREG (SImode, operands[0], high),
+                            gen_rtx_ASHIFTRT (SImode,
+                                              gen_rtx_SUBREG (SImode,
+                                                              operands[0],
+                                                              low),
+                                              GEN_INT(31))));
+    DONE;
+  }"
+)
+
+(define_insn "extendhisi2"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (sign_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  ""
+  "sexth  %0, %1"
+)
+
+;; qi -> si
+(define_insn "extendqisi2"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (sign_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "sextb  %0, %1"
+)
+
+;; qi -> hi
+(define_insn "extendqihi2"
+  [(set (match_operand:HI                 0 "register_operand" "=r")
+        (sign_extend:HI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "sextb  %0, %1"
+)
