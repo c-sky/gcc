@@ -3,7 +3,7 @@
 #define GCC_CSKY_ISA_FEATURE_H
 
 
-#define CSKY_ISA_FEATURE_DEFINE(x)  csky_isa_feature ## x
+#define CSKY_ISA_FEATURE_DEFINE(x)  isa_bit_ ## x
 #define CSKY_ISA_FEATURE_GET(x)     CSKY_ISA_FEATURE_DEFINE(x)
 
 enum csky_isa_feature

@@ -12,12 +12,13 @@ CSKY_ISA("ck807", 3sE7)  /* Extended insns for arch ck807  from ck803s. */
 CSKY_ISA("ck810", 7E10)  /* Extended insns for arch ck810  from ck807.  */
 
 /* Specific insns mode */
-CSKY_ISA("smart", smart)  /* TODO.  */
-CSKY_ISA("security", security) /* do nothing, just forward to as.  */
+CSKY_ISA("smart", smart)        /* TODO.  */
+CSKY_ISA("security", security)  /* do nothing, just forward to as.  */
 
 /* Extended specific insns */
-CSKY_ISA("dsp", dsp)      /* Extended insns for DSP.  */
+CSKY_ISA("dsp", dsp)        /* Extended insns for DSP.  */
+CSKY_ISA("java", java)      /* Extended insns for Java.  */
 
 /* VFP */
 CSKY_ISA("vfpv2", vfpv2)
-CSKY_ISA("fp_dbl", fp_dbl)/* Double precision operations supported.  */
+CSKY_ISA("fp_dbl", fp_dbl)  /* Double precision operations supported.  */
