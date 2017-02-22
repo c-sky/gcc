@@ -12,6 +12,9 @@
 
 #define TARGET_DEFAULT (MASK_PUSHPOP)
 
+/* Largest increment in UNITS we allow the stack to grow in a single operation.  */
+extern int csky_stack_increment;
+#define CSKY_STACK_UNITS_MAXSTEP 4096
 
 /* The highest CSKY architecture version supported by the target.  */
 extern enum csky_base_architecture csky_base_arch;

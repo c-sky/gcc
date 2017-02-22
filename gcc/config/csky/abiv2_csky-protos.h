@@ -194,6 +194,7 @@ extern void csky_expand_prologue(void);
 extern void csky_expand_epilogue(void);
 extern const char *output_csky_return_instruction(void);
 extern const char *csky_unexpanded_epilogue(void);
+extern void set_csky_return_address (rtx source, rtx scratch);
 
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"

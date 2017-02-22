@@ -79,3 +79,109 @@
 /* TODO: pushpop */
 
 /* TODO: pic */
+
+;;
+;; Stack allocation -- in particular, for alloca().
+;; this is *not* what we use for entry into functions.
+;;
+;; This is how we allocate stack space.  If we are allocating a
+;; constant amount of space and we know it is less than 4096
+;; bytes, we need do nothing.
+;;
+;; If it is more than 4096 bytes, we need to probe the stack
+;; periodically.
+;;
+;; operands[1], the distance is a POSITIVE number indicating that we
+;; are allocating stack space
+;;
+
+(define_expand "allocate_stack"
+  [(set (reg:SI 0)
+        (plus:SI (reg:SI 0)
+                 (match_operand:SI 1 "general_operand" "")))
+   (set (match_operand:SI 0 "register_operand" "=r")
+        (match_dup 2))]
+  ""
+  "{
+    /* If he wants no probing, just do it for him.  */
+    if (csky_stack_increment == 0)
+      {
+        emit_insn (gen_addsi3 (stack_pointer_rtx,
+                               stack_pointer_rtx, operands[1]));
+        emit_move_insn (operands[0], virtual_stack_dynamic_rtx);
+        DONE;
+      }
+
+    /* For small constant growth, we unroll the code.  */
+    if (GET_CODE (operands[1]) == CONST_INT
+        && INTVAL (operands[1]) < 8 * CSKY_STACK_UNITS_MAXSTEP)
+      {
+        HOST_WIDE_INT left = INTVAL(operands[1]);
+
+        /* If it's a long way, get close enough for a last shot.  */
+        if (left >= CSKY_STACK_UNITS_MAXSTEP)
+          {
+            rtx tmp = gen_reg_rtx (Pmode);
+            emit_insn (gen_movsi (tmp, GEN_INT (CSKY_STACK_UNITS_MAXSTEP)));
+
+            do
+            {
+              rtx memref = gen_rtx_MEM (SImode, stack_pointer_rtx);
+              MEM_VOLATILE_P (memref) = 1;
+              emit_insn (gen_subsi3 (stack_pointer_rtx,
+                                     stack_pointer_rtx,
+                                     tmp));
+              emit_insn (gen_movsi (memref, stack_pointer_rtx));
+              left -= CSKY_STACK_UNITS_MAXSTEP;
+            } while (left > CSKY_STACK_UNITS_MAXSTEP);
+          }
+
+        /* Perform the final adjustment.  */
+        emit_insn (gen_addsi3 (stack_pointer_rtx,
+                               stack_pointer_rtx,
+                               GEN_INT (-left)));
+        emit_move_insn (operands[0], virtual_stack_dynamic_rtx);
+        DONE;
+      }
+    else
+      {
+        rtx out_label = 0;
+        rtx loop_label = gen_label_rtx ();
+        rtx step = gen_reg_rtx (Pmode);
+        rtx tmp = gen_reg_rtx (Pmode);
+        rtx test, memref;
+
+        emit_insn (gen_movsi (tmp, operands[1]));
+        emit_insn (gen_movsi (step, GEN_INT (CSKY_STACK_UNITS_MAXSTEP)));
+
+        if (GET_CODE (operands[1]) != CONST_INT)
+          {
+            out_label = gen_label_rtx ();
+            test = gen_rtx_GEU (VOIDmode, step, tmp);   /* quick out */
+            emit_jump_insn (gen_cbranchsi4 (test, step, tmp, out_label));
+          }
+
+        /* Run a loop that steps it incrementally.  */
+        emit_label (loop_label);
+
+        /* Extend a step, probe, and adjust remaining count.  */
+        emit_insn(gen_subsi3(stack_pointer_rtx, stack_pointer_rtx, step));
+        memref = gen_rtx_MEM (SImode, stack_pointer_rtx);
+        MEM_VOLATILE_P (memref) = 1;
+        emit_insn(gen_movsi(memref, stack_pointer_rtx));
+        emit_insn(gen_subsi3(tmp, tmp, step));
+
+        /* Loop condition -- going back up.  */
+        test = gen_rtx_LTU (VOIDmode, step, tmp);
+        emit_jump_insn (gen_cbranchsi4 (test, step, tmp, loop_label));
+
+        if (out_label)
+          emit_label (out_label);
+
+        /* Bump the residual.  */
+        emit_insn (gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp));
+        emit_move_insn (operands[0], virtual_stack_dynamic_rtx);
+        DONE;
+      }
+  }"
+)

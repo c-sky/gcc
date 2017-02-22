@@ -215,6 +215,10 @@ enum csky_base_architecture csky_base_arch = CSKY_TARGET_ARCH_GET(NONE);
 
 const char *csky_arch_name = NULL;
 
+/* Maximum size we are allowed to grow the stack in a single operation.
+   If we want more, we must do it in increments of at most this size.
+   If this value is 0, we don't check at all.  */
+int csky_stack_increment = CSKY_STACK_UNITS_MAXSTEP;
 
 /* Forward definitions of types.  */
 typedef struct minipool_node    Mnode;
@@ -4309,6 +4313,49 @@ const char *csky_unexpanded_epilogue(void)
     }
 
   return "";
+}
+
+
+/* Set the caller frame exceptions handler address as lr.  */
+
+void
+set_csky_return_address (rtx source, rtx scratch)
+{
+  csky_stack_frame fi;
+  get_csky_frame_layout(&fi);
+  HOST_WIDE_INT delta = 0;
+  rtx addr;
+  unsigned long saved_regs = fi.reg_mask;
+
+  if ((saved_regs & ((1 << CSKY_LR_REGNUM)) == 0))
+    emit_move_insn (gen_rtx_REG (Pmode, CSKY_LR_REGNUM), source);
+  else
+    {
+      /* LR will be the toppest saved register.  */
+      int i = 0;
+      delta = 0;
+
+      delta += fi.reg_size;
+      delta -= fi.pad_reg + 4 /* lr self size */;
+
+      delta += fi.local_size + fi.outbound_size
+            + fi.pad_outbound + fi.pad_local;
+
+      for (i = 16; i < 32; i++)
+        if(saved_regs & (1 << i)) delta -= 4;
+
+      if(delta > 0x1000)
+        {
+          emit_insn (gen_movsi(scratch, GEN_INT (delta)));
+          emit_insn (gen_addsi3 (scratch, scratch, stack_pointer_rtx));
+          addr = scratch;
+        }
+      else
+        {
+          addr = plus_constant (Pmode, stack_pointer_rtx, delta);
+        }
+      emit_move_insn (gen_frame_mem (Pmode, addr), source);
+    }
 }
 
 

@@ -179,6 +179,9 @@
   "<inst>\t%0, %l1"
 )
 
+;; ------------------------------------------------------------------------
+;; return insns
+;; ------------------------------------------------------------------------
 
 (define_insn "*csky_simple_return"
   [(simple_return)]
@@ -186,4 +189,28 @@
   "*
     return output_csky_return_instruction();
   "
+)
+
+(define_expand "eh_return"
+  [(use (match_operand 0 "general_operand" ""))]
+  ""
+  "{
+    emit_insn (gen_csky_eh_return (operands[0]));
+    DONE;
+  }"
+)
+
+;; We can't expand this before we know where the link register is stored.
+(define_insn_and_split "csky_eh_return"
+  [(unspec_volatile [(match_operand:SI 0 "register_operand" "r")]
+                    VUNSPEC_EH_RETURN)
+   (clobber (match_scratch:SI 1 "=&r"))]
+  ""
+  "#"
+  "&& reload_completed"
+  [(const_int 0)]
+  "{
+    set_csky_return_address (operands[0], operands[1]);
+    DONE;
+  }"
 )
