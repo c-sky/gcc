@@ -985,3 +985,68 @@
   "or\t%0, %1, %2\;or\t%R0, %R1, %R2"
   [(set_attr "length" "4")]
 )
+
+
+;; -------------------------------------------------------------------------
+;; Xor instructions
+;; -------------------------------------------------------------------------
+
+(define_expand "xorsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (xor:SI (match_operand:SI 1 "register_operand" "")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "")))]
+  ""
+  "
+  {
+    if (CONST_INT_P(operands[2])
+        && (CSKY_ISA_FEATURE(E1) || !csky_arith_O_operand(operands[2],SImode)))
+      {
+        operands[2] = copy_to_mode_reg (SImode, operands[2]);
+      }
+  }"
+)
+
+(define_insn "*cskyv2_xorsi3"
+  [(set (match_operand:SI         0 "register_operand"           "=r,r")
+        (xor:SI (match_operand:SI 1 "register_operand"           "r, r")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "r, O")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+    xor\t%0, %1, %2
+    xori\t%0, %1, %2"
+)
+
+(define_insn "*ck801_xorsi3"
+  [(set (match_operand:SI         0 "register_operand"           "=r")
+        (xor:SI (match_operand:SI 1 "register_operand"           "0")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "xor\t%0, %1, %2"
+)
+
+(define_insn "xordi3"
+  [(set (match_operand:DI         0 "register_operand" "")
+        (xor:DI (match_operand:DI 1 "register_operand" "")
+                (match_operand:DI 2 "register_operand" "")))]
+  ""
+  ""
+)
+(define_insn "*cskyv2_xordi3"
+  [(set (match_operand:DI         0 "register_operand" "=&r,&r")
+        (xor:DI (match_operand:DI 1 "register_operand" "%0, r")
+                (match_operand:DI 2 "register_operand" "r,  r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+    xor\t%0, %1, %2\;xor\t%R0, %R1, %R2
+    xor\t%0, %1, %2\;xor\t%R0, %R1, %R2"
+  [(set_attr "length" "8,8")]
+)
+
+(define_insn "*ck801_xordi3"
+  [(set (match_operand:DI         0 "register_operand" "=&r")
+        (xor:DI (match_operand:DI 1 "register_operand" "%0")
+                (match_operand:DI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "xor\t%0, %1, %2\;xor\t%R0, %R1, %R2"
+  [(set_attr "length" "4")]
+)
