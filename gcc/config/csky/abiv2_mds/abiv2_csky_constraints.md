@@ -148,6 +148,11 @@
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_Uh (ival)")))
 
+(define_constraint "Ue"
+  "A constant with two '0' bit maximum"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Ue (ival)")))
+
 (define_constraint "J"
   "Constant in range 1- 32"
   (and (match_code "const_int")
@@ -157,3 +162,8 @@
   "Constant in range 0-31"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_K(ival)")))
+
+(define_constraint "O"
+  "Constant in range 0-4095"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_O(ival)")))

@@ -109,6 +109,13 @@
 #define CSKY_CONST_OK_FOR_Uh(VALUE)  \
   (VALUE_BETWEEN(VALUE, -31, 0))
 
+#define CSKY_CONST_OK_FOR_Ue(VALUE)  \
+  (get_csky_int_zeros(VALUE) <= 2 &&     \
+   get_csky_int_zeros(VALUE) == get_csky_int_zeros((VALUE) & 0xFFFFFFFF))
+
+#define CSKY_CONST_OK_FOR_O(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 0, 4095))
+
 /* Constant can gen by bseti(16,30) + subi.  */
 #define CSKY_CONST_OK_FOR_BS(VALUE)                                               \
   (exact_log2 ((unsigned HOST_WIDE_INT)(VALUE & 0xFFFFF000) + (1 << 12)) >= 1     \
@@ -182,6 +189,10 @@ extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
 extern int symbolic_csky_address_p (rtx);
 extern bool decompose_csky_address (rtx, struct csky_address *);
+extern const char *output_csky_bclri (rtx, rtx, int);
+extern int get_csky_int_ones (HOST_WIDE_INT);
+extern int get_csky_int_zeros (HOST_WIDE_INT);
+extern bool can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT);
 #ifdef RTX_CODE
 extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
 #endif /* RTX_CODE */

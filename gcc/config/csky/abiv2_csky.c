@@ -4359,4 +4359,77 @@ set_csky_return_address (rtx source, rtx scratch)
 }
 
 
+/* Output multipe bclri instructions according to how many
+   zero bits in MASK.  */
+
+const char *
+output_csky_bclri (rtx dst, rtx src, int mask)
+{
+  rtx out_operands[3];
+  int bit;
+
+  out_operands[0] = dst;
+  out_operands[1] = src;
+
+  for (bit = 0; bit < 32; bit++)
+    {
+      if ((mask & 0x1) == 0x0)
+        {
+          out_operands[2] = GEN_INT (bit);
+
+          output_asm_insn ("bclri\t%0, %0, %2", out_operands);
+        }
+
+      mask >>= 1;
+    }
+
+  return "";
+}
+
+
+/* Count the bits number of one in MASK.  */
+
+int
+get_csky_int_ones (HOST_WIDE_INT mask)
+{
+  /* A trick to count set bits recently posted on comp.compilers.  */
+  mask = (mask >> 1 & 0x55555555) + (mask & 0x55555555);
+  mask = ((mask >> 2) & 0x33333333) + (mask & 0x33333333);
+  mask = ((mask >> 4) + mask) & 0x0f0f0f0f;
+  mask = ((mask >> 8) + mask);
+
+  return (mask + (mask >> 16)) & 0xff;
+}
+
+
+/* Count the bits number of zero in MASK.  */
+
+int
+get_csky_int_zeros (HOST_WIDE_INT mask)
+{
+  return 32 - get_csky_int_ones (mask);
+}
+
+
+/* Return 1 if the VAL has continuous nonzero bits, and the
+   first nozero bit is begin at the top or the last nonzero
+   bit is end at the bottom.
+   Return 1 means some operation like and can be transformed
+   to lsli and lsri.  */
+
+bool
+can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT val)
+{
+  int i;
+  for (i = 13; i <= 31; i++)
+    {
+      if (((((HOST_WIDE_INT) 1) << i) - 1) == val
+          || ((((HOST_WIDE_INT) 1) << i) - 1) == ~val)
+        {
+          return 1;
+        }
+    }
+  return 0;
+}
+
 struct gcc_target targetm = TARGET_INITIALIZER;

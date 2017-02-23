@@ -748,3 +748,148 @@
   ""
   "sextb  %0, %1"
 )
+
+;; -------------------------------------------------------------------------
+;; And instructions
+;; -------------------------------------------------------------------------
+
+(define_expand "andsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (and:SI (match_operand:SI 1 "register_operand" "")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "")))]
+  ""
+  "
+  {
+    int i;
+    rtx not_value;
+
+    if (GET_CODE(operands[2]) == CONST_INT)
+    {
+      for (i = 13; i <= 31; i++)
+      {
+        if ((((HOST_WIDE_INT) 1) << i) - 1 == INTVAL (operands[2]))
+          {
+            emit_insn (gen_extzvsi (operands[0], operands[1], GEN_INT (i),
+                                    const0_rtx));
+            DONE;
+          }
+        else if ((((HOST_WIDE_INT) 1) << i) - 1
+             == ~INTVAL (operands[2]))
+          {
+            rtx shift = GEN_INT (i);
+            rtx reg = gen_reg_rtx (SImode);
+
+            emit_insn (gen_lshrsi3 (reg, operands[1], shift));
+            emit_insn (gen_ashlsi3 (operands[0], reg, shift));
+            DONE;
+          }
+      }
+
+      not_value = GEN_INT (~INTVAL(operands[2]));
+
+      /* Try to transform to andni insrtuction.  */
+      if (CSKY_ISA_FEATURE(E2))
+        {
+          if(csky_arith_O_operand (not_value,SImode))
+            {
+              emit_insn(gen_cskyv2_andnsi3 (operands[0], not_value, operands[1]));
+              DONE;
+            }
+        }
+
+      /* If it is a negitive number, it seems better to use andn,
+         since the NOT_VALUE, is always smaller than the origin value.  */
+      if (INTVAL(operands[2]) < 0)
+        {
+          operands[2] = copy_to_mode_reg(SImode, not_value);
+          emit_insn(gen_cskyv2_andnsi3 (operands[0], operands[2], operands[1]));
+          DONE;
+        }
+
+      /* If the above ways are all not working, mov the const
+         to reg.  */
+      operands[2] = copy_to_mode_reg(SImode, operands[2]);
+    }
+ }"
+)
+
+;;FIXME describe the length more precisely here.
+(define_insn "*cskyv2_andsi3"
+  [(set (match_operand:SI         0 "register_operand"           "=r,r,r")
+        (and:SI (match_operand:SI 1 "register_operand"           "%r,r,r")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "r, O,Ue")))]
+  "CSKY_ISA_FEATURE(E2)
+   && (CONST_INT_P(operands[2])
+       || !can_trans_by_csky_shlshr (INTVAL (operands[2])))"
+  "*{
+    switch(which_alternative)
+      {
+      case 0: return \"and\t%0, %1, %2\";
+      case 1: return \"andi\t%0, %1, %2\";
+      case 2: return output_csky_bclri(operands[0],
+                                       operands[1],
+                                       INTVAL(operands[2]));
+      default: gcc_unreachable();
+      }
+  }"
+  [(set_attr "length" "4,4,8")]
+)
+
+(define_insn "ck801_andsi3"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (and:SI (match_operand:SI 1 "register_operand" "%0")
+                (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "and %0, %1, %2"
+)
+
+(define_insn "cskyv2_andnsi3"
+  [(use (and:SI (not:SI (match_operand:SI 1 "csky_arith_O_operand" "r, O"))
+        (match_operand:SI                 2 "register_operand"     "r, r")))
+   (set (match_operand:SI                 0 "register_operand"     "=r,r")
+        (and:SI (not:SI (match_dup 1))
+                (match_dup 2)))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+    andn\t%0, %2, %1
+    andni\t%0, %2, %1"
+)
+
+(define_insn "ck801_andnsi3"
+  [(use (and:SI (not:SI (match_operand:SI 1 "register_operand" "r"))
+                (match_operand:SI         2 "register_operand" "0")))
+   (set (match_operand:SI                 0 "register_operand" "=r")
+        (and:SI (not:SI (match_dup 1))
+                (match_dup 2)))]
+ "CSKY_ISA_FEATURE(E1)"
+ "andn\t%0, %2, %1"
+)
+
+
+(define_expand "anddi3"
+  [(set (match_operand:DI 0 "register_operand" "")
+        (and:DI (match_operand:DI 1 "register_operand" "")
+                (match_operand:DI 2 "register_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_anddi3"
+  [(set (match_operand:DI         0 "register_operand" "=&b,&r")
+        (and:DI (match_operand:DI 1 "register_operand" "%0,r")
+                (match_operand:DI 2 "register_operand" "b,r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+    and\t%0, %1, %2\;and\t%R0, %R1, %R2
+    and\t%0, %1, %2\;and\t%R0, %R1, %R2"
+    [(set_attr "length" "4,8")]
+ )
+
+(define_insn "*ck801_anddi3"
+ [(set (match_operand:DI         0 "register_operand" "=&r")
+       (and:DI (match_operand:DI 1 "register_operand" "%0")
+               (match_operand:DI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "and\t%0, %1, %2\;and\t%R0, %R1, %R2"
+  [(set_attr "length" "4")]
+)
