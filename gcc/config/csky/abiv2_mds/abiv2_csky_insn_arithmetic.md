@@ -893,3 +893,95 @@
   "and\t%0, %1, %2\;and\t%R0, %R1, %R2"
   [(set_attr "length" "4")]
 )
+
+
+;; -------------------------------------------------------------------------
+;; Ior instructions
+;; -------------------------------------------------------------------------
+
+(define_expand "iorsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+        (ior:SI (match_operand:SI 1 "register_operand" "")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "")))]
+  ""
+  "
+  {
+    if (CONST_INT_P (operands[2])
+        && ((CSKY_ISA_FEATURE(E1) && !csky_arith_Uf_operand (operands[2],SImode))
+            || (CSKY_ISA_FEATURE(E2)
+                && !csky_literal_I_operand (operands[2],SImode)
+                && !csky_arith_Uf_operand (operands[2],SImode))))
+      {
+        operands[2] = copy_to_mode_reg (SImode, operands[2]);
+      }
+  }")
+
+(define_insn "*cskyv2_iorsi3"
+  [(set (match_operand:SI         0 "register_operand"           "=r,b, r, b, r, b,r")
+        (ior:SI (match_operand:SI 1 "register_operand"           "%r,0, r, 0, r, 0,r")
+                (match_operand:SI 2 "csky_arith_any_imm_operand" "I, Ub,Ub,Uf,Uf,b,r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "*{
+     switch (which_alternative)
+       {
+       case 0: return \"ori\t%0, %1, %2\";
+       case 1: return \"bseti\t%0, %1, %P2\";
+       case 2: return \"bseti\t%0, %1, %P2\";
+       case 3: return output_csky_bseti (operands[0], operands[1],
+                                         INTVAL (operands[2]));
+       case 4: return output_csky_bseti (operands[0], operands[1],
+                                         INTVAL (operands[2]));
+       case 5: return \"or\t%0, %1, %2\";
+       case 6: return \"or\t%0, %1, %2\";
+       default: gcc_unreachable ();
+       }
+  }"
+  [(set_attr "length" "4,2,4,4,8,2,4")]
+)
+
+(define_insn "*ck801_iorsi3"
+  [(set (match_operand:SI         0 "register_operand"      "=b,b, r")
+        (ior:SI (match_operand:SI 1 "register_operand"      "%0,0, 0")
+                (match_operand:SI 2 "csky_arith_Uf_operand" "Ub,Uf,r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "*{
+     switch (which_alternative)
+       {
+       case 0: return \"bseti\t%0, %1, %P2\";
+       case 1: return output_csky_bseti (operands[0], operands[1],
+                                         INTVAL (operands[2]));
+       case 2: return \"or\t%0, %1, %2\";
+       default: gcc_unreachable ();
+       }
+  }"
+  [(set_attr "length" "4,2,4")]
+)
+
+
+(define_expand "iordi3"
+  [(set (match_operand:DI         0 "register_operand" "")
+        (ior:DI (match_operand:DI 1 "register_operand" "")
+                (match_operand:DI 2 "register_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_iordi3"
+  [(set (match_operand:DI         0 "register_operand" "=&r,&r")
+        (ior:DI (match_operand:DI 1 "register_operand" "%0, r")
+                (match_operand:DI 2 "register_operand" "r,  r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+    or\t%0, %1, %2\;or\t%R0, %R1, %R2
+    or\t%0, %1, %2\;or\t%R0, %R1, %R2"
+  [(set_attr "length" "8,8")]
+)
+
+(define_insn "*ck801_iordi3"
+  [(set (match_operand:DI         0 "register_operand" "=&r")
+        (ior:DI (match_operand:DI 1 "register_operand" "%0")
+                (match_operand:DI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "or\t%0, %1, %2\;or\t%R0, %R1, %R2"
+  [(set_attr "length" "4")]
+)

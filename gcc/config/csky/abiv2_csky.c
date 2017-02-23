@@ -4387,6 +4387,33 @@ output_csky_bclri (rtx dst, rtx src, int mask)
 }
 
 
+/* Output multipe bseti instructions according to how many
+   one bits in MASK.  */
+
+const char *
+output_csky_bseti (rtx dst, rtx src, int mask)
+{
+  rtx out_operands[3];
+  int bit;
+
+  out_operands[0] = dst;
+  out_operands[1] = src;
+
+  for (bit = 0; bit < 32; bit++)
+    {
+      if ((mask & 0x1) == 0x1)
+        {
+          out_operands[2] = GEN_INT (bit);
+
+          output_asm_insn ("bseti\t%0, %0, %2", out_operands);
+        }
+
+      mask >>= 1;
+    }
+
+  return "";
+}
+
 /* Count the bits number of one in MASK.  */
 
 int

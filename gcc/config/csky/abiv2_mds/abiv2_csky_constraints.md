@@ -68,6 +68,11 @@
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_N(ival + 1)")))
 
+(define_constraint "Uf"
+  "A constant with two '1' bit maximum"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Uf (ival)")))
+
 (define_constraint "T"
   "Constant in range -256 - (-1)"
   (and (match_code "const_int")
