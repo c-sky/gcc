@@ -1,4 +1,27 @@
 
+(define_expand "tablejump"
+  [(parallel [(set (pc) (match_operand:SI 0 "register_operand" "r"))
+              (use (label_ref (match_operand 1 "" "")))])]
+  ""
+  "
+  {
+    /* TODO: pic  */
+    if (flag_pic)
+      {
+        operands[0] = expand_simple_binop (Pmode, PLUS, operands[0],
+                                           pic_offset_table_rtx, NULL_RTX,
+                                           1, OPTAB_DIRECT);
+      }
+  }"
+)
+
+(define_insn "*tablejump"
+  [(set (pc) (match_operand:SI    0 "register_operand" "r"))
+   (use (label_ref (match_operand 1 ""                 "")))]
+  ""
+  "jmp  %0"
+)
+
 ;; ------------------------------------------------------------------------
 ;; Jump and linkage insns
 ;; ------------------------------------------------------------------------
