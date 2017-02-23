@@ -109,9 +109,13 @@
 #define CSKY_CONST_OK_FOR_Uh(VALUE)  \
   (VALUE_BETWEEN(VALUE, -31, 0))
 
-#define CSKY_CONST_OK_FOR_Ue(VALUE)  \
+#define CSKY_CONST_OK_FOR_Ue(VALUE)      \
   (get_csky_int_zeros(VALUE) <= 2 &&     \
    get_csky_int_zeros(VALUE) == get_csky_int_zeros((VALUE) & 0xFFFFFFFF))
+
+#define CSKY_CONST_OK_FOR_Uf(VALUE)      \
+  (get_csky_int_ones(VALUE) <= 2 &&      \
+   get_csky_int_ones(VALUE) == get_csky_int_ones((VALUE) & 0xFFFFFFFF))
 
 #define CSKY_CONST_OK_FOR_O(VALUE)  \
   (VALUE_BETWEEN(VALUE, 0, 4095))
@@ -190,6 +194,7 @@ extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
 extern int symbolic_csky_address_p (rtx);
 extern bool decompose_csky_address (rtx, struct csky_address *);
 extern const char *output_csky_bclri (rtx, rtx, int);
+extern const char *output_csky_bseti (rtx, rtx, int);
 extern int get_csky_int_ones (HOST_WIDE_INT);
 extern int get_csky_int_zeros (HOST_WIDE_INT);
 extern bool can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT);
