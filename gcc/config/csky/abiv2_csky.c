@@ -1659,7 +1659,7 @@ static void
 csky_conditional_register_usage (void)
 {
   /* Only use mini registers in smart mode or 801.  */
-  if (TARGET_SMART || CSKY_TARGET_ARCH(CK801))
+  if (CSKY_ISA_FEATURE(smart) || CSKY_TARGET_ARCH(CK801))
     {
       int i;
 
@@ -1744,7 +1744,7 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
         return 1;
       else
         {
-          if (TARGET_SMART || CSKY_TARGET_ARCH(CK801))
+          if (CSKY_ISA_FEATURE(smart) || CSKY_TARGET_ARCH(CK801))
             return (regno < CSKY_LAST_MINI_REGNUM);
           else if (CSKY_TARGET_ARCH(CK802)
                    || CSKY_TARGET_ARCH(CK803S)
@@ -1788,7 +1788,7 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
 static bool
 csky_class_likely_spilled_p (reg_class_t rclass)
 {
-  if (((TARGET_SMART || CSKY_TARGET_ARCH(CK801))
+  if (((CSKY_ISA_FEATURE(smart) || CSKY_TARGET_ARCH(CK801))
        && rclass == MINI_REGS)
       || rclass == C_REGS)
     return true;
@@ -2294,7 +2294,7 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
      4.  */
   else if (GET_MODE_SIZE (mode) <= 4)
     {
-      if (code == REG)
+      if (is_csky_address_register_rtx_p (index, strict_p))
         return 1;
       else if (code == MULT || code == ASHIFT)
         {
@@ -3820,9 +3820,9 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
             code = NE;
           /* Check whether (GTU A imm) can become (GEU A  imm + 1).  */
           else
-            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+            if (((CSKY_TARGET_ARCH(CK801) || CSKY_ISA_FEATURE(smart))
                  && CSKY_CONST_OK_FOR_J (val + 1))
-                || (!(CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                || (!(CSKY_TARGET_ARCH(CK801) && !CSKY_ISA_FEATURE(smart))
                     && CSKY_CONST_OK_FOR_Uk (val + 1)))
             {
               op1 = GEN_INT (val + 1);
@@ -3833,9 +3833,9 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
            or (GT A imm) can become (GE A imm + 1).  */
         case GT:
         case LE:
-          if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+          if (((CSKY_TARGET_ARCH(CK801) || CSKY_ISA_FEATURE(smart))
                && CSKY_CONST_OK_FOR_J (val + 1))
-              || (!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART
+              || (!CSKY_TARGET_ARCH(CK801) && !CSKY_ISA_FEATURE(smart)
                   && CSKY_CONST_OK_FOR_Uk (val + 1)))
             {
               op1 = GEN_INT (val + 1);
@@ -3863,9 +3863,9 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
       /* Use normal condition, cmpne.  */
       case NE:
         if (GET_CODE (op1) == CONST_INT
-            && (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+            && (((CSKY_TARGET_ARCH(CK801) || CSKY_ISA_FEATURE(smart))
                  && !csky_literal_K_operand (op1, SImode))
-                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                || ((!CSKY_TARGET_ARCH(CK801) && !CSKY_ISA_FEATURE(smart))
                     && !csky_literal_I_operand (op1, SImode))))
           op1 = force_reg (SImode, op1);
       break;
@@ -3887,11 +3887,11 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
       /* Use normal condition, cmplt.  */
       case LT:
         /* covered by btsti x,31.  */
-        if (GET_CODE (op1) == CONST_INT && INTVAL (op1) == 0)
+        if (GET_CODE (op1) == CONST_INT && INTVAL (op1) != 0)
           {
-            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+            if (((CSKY_TARGET_ARCH(CK801) || CSKY_ISA_FEATURE(smart))
                  && !csky_literal_J_operand (op1, SImode))
-                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                || ((!CSKY_TARGET_ARCH(CK801) && !CSKY_ISA_FEATURE(smart))
                     && !csky_literal_Uk_operand (op1, SImode)))
               {
                 op1 = force_reg (SImode, op1);
@@ -3919,9 +3919,9 @@ gen_csky_compare (enum rtx_code code, rtx op0, rtx op1)
       case GEU:
         if (GET_CODE (op1) == CONST_INT && INTVAL (op1) != 0)
           {
-            if (((CSKY_TARGET_ARCH(CK801) || TARGET_SMART)
+            if (((CSKY_TARGET_ARCH(CK801) || CSKY_ISA_FEATURE(smart))
                  && !csky_literal_J_operand (op1, SImode))
-                || ((!CSKY_TARGET_ARCH(CK801) && !TARGET_SMART)
+                || ((!CSKY_TARGET_ARCH(CK801) && !CSKY_ISA_FEATURE(smart))
                     && !csky_literal_Uk_operand (op1, SImode)))
               {
                 op1 = force_reg (SImode, op1);

@@ -1,4 +1,6 @@
 
+(define_mode_iterator QHI [QI HI])
+
 ;; ------------------------------------------------------------------------
 ;; Mov insns
 ;; ------------------------------------------------------------------------
@@ -37,6 +39,7 @@
  [(set_attr "length" "2,2,2,4,4,2,4")]
 )
 
+;;Convert negative assignments to zero minus positive numbers.
 (define_split
   [(set (match_operand:SI 0 "register_operand" "")
         (match_operand:SI 1 "const_int_operand" ""))]
@@ -44,10 +47,11 @@
     [(set (match_dup 0) (match_dup 2))
      (set (match_dup 0) (plus:SI (match_dup 0) (match_dup 1)))]
     "
-    operands[2] = const0_rtx;
+      operands[2] = const0_rtx;
     "
 )
 
+;;Convert const assignments to small number of assignments and left shift.
 (define_split
   [(set (match_operand:SI 0 "register_operand" "")
         (match_operand:SI 1 "const_int_operand" ""))]
@@ -144,7 +148,7 @@
   [(set (match_operand:QI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:QI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
   "CSKY_ISA_FEATURE(E1)"
-  "* return output_csky_move (insn, operands, QImode);"
+  "* return output_ck801_move (insn, operands, QImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")]
 )
 
@@ -168,6 +172,84 @@
   }"
 )
 
+;;Convert negative assignments to zero minus positive numbers.
+(define_split
+  [(set (match_operand:QHI 0 "register_operand" "")
+        (match_operand:QHI 1 "const_int_operand" ""))]
+  "satisfies_constraint_T (operands[1])"
+  [(set (match_dup 4) (match_dup 2))
+   (set (match_dup 4) (match_dup 3))
+   (set (match_dup 0) (match_dup 5))]
+  "
+    int low;
+
+    if (TARGET_BIG_ENDIAN)
+      low = 4 - mode_size[GET_MODE(operands[0])];
+    else
+      low = 0;
+
+    operands[2] = const0_rtx;
+    if (can_create_pseudo_p ())
+      operands[4] = gen_reg_rtx (SImode);
+    else
+    {
+      operands[4] = gen_rtx_REG (SImode,
+                                 REGNO (operands[0]));
+    }
+    operands[3] = gen_rtx_PLUS (SImode,
+                                operands[4],
+                                operands[1]);
+    operands[5] = gen_rtx_SUBREG (GET_MODE(operands[0]),
+                                  operands[4],
+                                  low);
+  "
+)
+
+;;Convert const assignments to small number of assignments and left shift.
+(define_split
+  [(set (match_operand:QHI 0 "register_operand" "")
+        (match_operand:QHI 1 "const_int_operand" ""))]
+  "satisfies_constraint_Ux (operands[1])"
+  [(set (match_dup 3) (match_dup 1))
+   (set (match_dup 3) (ashift:SI (match_dup 3) (match_dup 2)))
+   (set (match_dup 0) (match_dup 4))]
+  "
+  {
+    unsigned HOST_WIDE_INT val = INTVAL (operands[1]) &0xffffffffu;
+    unsigned HOST_WIDE_INT mask = 0xff;
+    int i;
+    int low;
+
+    if (TARGET_BIG_ENDIAN)
+      low = 4 - mode_size[GET_MODE(operands[0])];
+    else
+      low = 0;
+
+    if (can_create_pseudo_p ())
+      operands[3] = gen_reg_rtx (SImode);
+    else
+    {
+      operands[3] = gen_rtx_REG (SImode,
+                                 REGNO (operands[0]));
+    }
+
+    operands[4] = gen_rtx_SUBREG (GET_MODE(operands[0]),
+                                  operands[3],
+                                  low);
+
+    for (i = 0; i< 25; i++)
+      {
+        if((val & (mask << i)) == val)
+          break;
+      }
+    if (i == 0)
+        FAIL;
+    operands[1] = GEN_INT (val >>i );
+    operands[2] = GEN_INT (i);
+  }"
+)
+
+
 (define_insn "*csky_movdi"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,r,r,r,m,*r,*y,*v,*r,*v")
         (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v"))]
@@ -180,7 +262,7 @@
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:DI 1 "general_operand"       "r, Up,T,i,m,F,r"))]
  "CSKY_ISA_FEATURE(E1)"
- "* return output_csky_movedouble (operands, DImode);"
+ "* return output_ck801_movedouble (operands, DImode);"
  [(set_attr "length" "4,4,4,8,8,8,8")]
 )
 

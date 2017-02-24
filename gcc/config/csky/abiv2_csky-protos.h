@@ -191,6 +191,8 @@ extern const char *output_csky_movedouble (rtx operands[],
                                            enum machine_mode mode ATTRIBUTE_UNUSED);
 extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
+extern const char *output_ck801_movedouble (rtx operands[],
+                                           enum machine_mode mode ATTRIBUTE_UNUSED);
 extern int symbolic_csky_address_p (rtx);
 extern bool decompose_csky_address (rtx, struct csky_address *);
 extern const char *output_csky_bclri (rtx, rtx, int);

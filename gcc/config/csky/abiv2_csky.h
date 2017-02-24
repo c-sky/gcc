@@ -525,7 +525,7 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define REGNO_REG_CLASS(REGNO) regno_reg_class[REGNO]
 
 /* The class value fo index registers, and the one for base regs.  */
-#define INDEX_REG_CLASS  ((CSKY_TARGET_ARCH(CK803)) ? GENERAL_REGS : NO_REGS)
+#define INDEX_REG_CLASS  (CSKY_ISA_FEATURE(2E3) ? GENERAL_REGS : NO_REGS)
 #define BASE_REG_CLASS  GENERAL_REGS
 
 /* TODO is it necessary to set it to MINI_REGS to emit more 16bits
