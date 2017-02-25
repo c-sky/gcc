@@ -182,14 +182,14 @@
 )
 
 (define_insn "*fast_addsi3"
-  [(set (match_operand:SI          0 "register_operand"  "=r,r,r")
-        (plus:SI (match_operand:SI 1 "register_operand"  "%r,r,r")
-                 (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
+  [(set (match_operand:SI          0 "register_operand"  "=r,r, r")
+        (plus:SI (match_operand:SI 1 "register_operand"  "%r,r, r")
+                 (match_operand:SI 2 "nonmemory_operand" "M, Um,r")))]
   "CSKY_ISA_FEATURE_FAST && CSKY_ISA_FEATURE(E2)"
   "@
-    addu    %0, %1, %2
-    addi    %0, %1, %2
-    subi    %0, %1, %M2"
+    addi\t%0, %1, %2
+    subi\t%0, %1, %M2
+    addu\t%0, %1, %2"
 )
 
 (define_expand "adddi3"
@@ -331,11 +331,11 @@
   [(set (match_operand:SI           0 "register_operand"  "=r,r,r")
         (minus:SI (match_operand:SI 1 "register_operand"  "r, r,r")
                   (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
- "!(CSKY_ISA_FEATURE(E1) || CSKY_ISA_FEATURE(smart))"
- "@
-    subu    %0, %1, %2
-    subi    %0, %1, %2
-    addi    %0, %1, %M2"
+  "CSKY_ISA_FEATURE_FAST && CSKY_ISA_FEATURE(E2)"
+  "@
+     subu    %0, %1, %2
+     subi    %0, %1, %2
+     addi    %0, %1, %M2"
 )
 
 (define_expand "subdi3"
@@ -396,11 +396,19 @@
 ;; Multiplication insns
 ;; ------------------------------------------------------------------------
 
-(define_insn "mulsi3"
+(define_expand "mulsi3"
+  [(set (match_operand:SI          0 "register_operand" "")
+        (mult:SI (match_operand:SI 1 "register_operand" "")
+                 (match_operand:SI 2 "register_operand" "")))]
+  ""
+  ""
+)
+
+(define_insn "*cskyv2_mulsi3"
   [(set (match_operand:SI          0 "register_operand" "=r")
         (mult:SI (match_operand:SI 1 "register_operand" "%r")
                  (match_operand:SI 2 "register_operand" "r")))]
-  ""
+  "CSKY_ISA_FEATURE(E2)"
   "mult\t%0, %1, %2"
 )
 
@@ -1049,4 +1057,25 @@
   "CSKY_ISA_FEATURE(E1)"
   "xor\t%0, %1, %2\;xor\t%R0, %R1, %R2"
   [(set_attr "length" "4")]
+)
+
+
+;; -------------------------------------------------------------------------
+;; Div instructions
+;; -------------------------------------------------------------------------
+
+(define_insn "divsi3"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (div:SI (match_operand:SI 1 "register_operand" "r")
+                (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "divs  %0, %1, %2"
+)
+
+(define_insn "udivsi3"
+  [(set (match_operand:SI          0 "register_operand" "=r")
+        (udiv:SI (match_operand:SI 1 "register_operand" "r")
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "divu  %0, %1, %2"
 )

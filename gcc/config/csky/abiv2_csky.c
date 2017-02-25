@@ -2443,6 +2443,9 @@ decompose_csky_address (rtx addr, struct csky_address * out)
           return true;
         }
 
+      if (!REG_P (addends[0]))
+        std::swap (addends[0], addends[1]);
+
       for (i = 0; i < 2; ++i)
         {
           op = addends[i];
@@ -2476,6 +2479,7 @@ decompose_csky_address (rtx addr, struct csky_address * out)
               if (!CONST_INT_P (scale_rtx))
                 return false;
               scale = scale << INTVAL (scale_rtx);
+              break;
             default:
               return false;
             }
@@ -4130,8 +4134,11 @@ void csky_expand_epilogue(void)
   else
     {
       offset = fi.local_size + fi.outbound_size;
-      emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-                           GEN_INT(offset)));
+      if (offset > 0)
+        {
+          emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                               GEN_INT(offset)));
+        }
     }
 
   /* TODO: backtrace */
@@ -4240,13 +4247,19 @@ csky_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
       int reg_end = 31;
       asm_fprintf (f, "\tpush\t");
 
+      /* Find the first reg and output the name.  */
+      while (!(fi.reg_mask & (1 << rn)))
+        {
+          rn++;
+        }
+      asm_fprintf (f, "%s", reg_names[rn++]);
+
+      /* Find and output the rest regs.  */
       for (; rn <= reg_end; rn++)
         {
           if (!(fi.reg_mask & (1 << rn)))
             continue;
-          asm_fprintf (f, "%s", reg_names[rn]);
-          if (fi.reg_mask & (1 << (rn + 1)))
-            asm_fprintf (f, ", ");
+          asm_fprintf (f, ", %s", reg_names[rn]);
         }
       asm_fprintf (f, "\n");
     }
@@ -4295,13 +4308,19 @@ const char *csky_unexpanded_epilogue(void)
       int reg_end = 31;
       asm_fprintf (asm_out_file, "\tpop\t");
 
+      /* Find the first reg and output the name.  */
+      while (!(fi.reg_mask & (1 << rn)))
+        {
+          rn++;
+        }
+      asm_fprintf (asm_out_file, "%s", reg_names[rn++]);
+
+      /* Find and output the rest regs.  */
       for (; rn <= reg_end; rn++)
         {
           if (!(fi.reg_mask & (1 << rn)))
             continue;
-          asm_fprintf (asm_out_file, "%s", reg_names[rn]);
-          if (fi.reg_mask & (1 << (rn + 1)))
-            asm_fprintf (asm_out_file, ", ");
+          asm_fprintf (asm_out_file, ", %s", reg_names[rn]);
         }
       asm_fprintf (asm_out_file, "\n");
     }
