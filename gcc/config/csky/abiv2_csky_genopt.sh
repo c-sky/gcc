@@ -20,8 +20,7 @@
 
 cat <<EOF
 ; -*- buffer-read-only: t -*-
-; Generated automatically by abiv2_csky_genopt.sh from abiv2_csky_cores.def,
-; abiv2_csky_arches.def and abiv2_csky_fpus.def.
+; Generated automatically by abiv2_csky_genopt.sh from abiv2_csky_cores.def.
 
 ; Copyright (C) 2011-2017 Free Software Foundation, Inc.
 ;
@@ -73,7 +72,7 @@ awk -F'[(, 	]+' 'BEGIN {
     print "Enum(csky_arch) String(" name ") Value(" value ")"
     print ""
     value++
-}' $1/abiv2_csky_arches.def
+}' $1/abiv2_csky_cores.def
 
 cat <<EOF
 Enum
@@ -94,5 +93,5 @@ awk -F'[(, 	]+' '
 END {
     print "EnumValue"
     print "Enum(csky_fpu) String(auto) Value(TARGET_FPU_auto)"
-}' $1/abiv2_csky_fpus.def
+}' $1/abiv2_csky_cores.def
 

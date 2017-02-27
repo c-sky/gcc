@@ -13,6 +13,7 @@ struct csky_processors
   const char *arch;
   enum csky_base_architecture base_arch;
   enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
+  int flags;
 };
 
 struct csky_fpu_desc

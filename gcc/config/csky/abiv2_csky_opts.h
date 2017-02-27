@@ -7,7 +7,7 @@
 enum csky_processor_type
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, INTERNAL_IDENT, IDENT, ARCH, ISA) \
+#define CSKY_CORE(NAME, INTERNAL_IDENT, IDENT, ARCH, ISA, X) \
   TARGET_CPU_##INTERNAL_IDENT,
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
@@ -23,7 +23,7 @@ enum csky_base_architecture
 #undef CSKY_ARCH
 #define CSKY_ARCH(NAME, CORE_IDENT, ARCH, ISA) \
   CSKY_BASE_ARCH_##ARCH,
-#include "abiv2_csky_arches.def"
+#include "abiv2_csky_cores.def"
 #undef CSKY_ARCH
   CSKY_BASE_ARCH_MAX
 };
@@ -34,7 +34,7 @@ enum csky_fpu_type
 {
 #undef CSKY_FPU
 #define CSKY_FPU(NAME, CNAME, ISA) TARGET_FPU_##CNAME,
-#include "abiv2_csky_fpus.def"
+#include "abiv2_csky_cores.def"
   TARGET_FPU_auto
 #undef CSKY_FPU
 };

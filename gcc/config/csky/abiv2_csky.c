@@ -172,13 +172,13 @@ unsigned csky_pic_register = INVALID_REGNUM;
 static const struct csky_processors all_cores[] =
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, CORE, X, ARCH, ISA)  \
+#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, FLAGS)  \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH, \
-  {ISA CSKY_ISA_FEATURE_GET(none)}},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, FLAGS},
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}}
+  {CSKY_ISA_FEATURE_GET(none)}, 0}
 };
 
 static const struct csky_processors all_architectures[] =
@@ -187,7 +187,7 @@ static const struct csky_processors all_architectures[] =
 #define CSKY_ARCH(NAME, CORE, ARCH, ISA)     \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH,  \
   {ISA CSKY_ISA_FEATURE_GET(none)}},
-#include "abiv2_csky_arches.def"
+#include "abiv2_csky_cores.def"
 #undef CSKY_ARCH
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
   {CSKY_ISA_FEATURE_GET(none)}}
@@ -198,7 +198,7 @@ static const struct csky_fpu_desc all_fpus[] =
 #undef CSKY_FPU
 #define CSKY_FPU(NAME, CNAME, ISA) \
   {NAME, {ISA CSKY_ISA_FEATURE_GET(none)}},
-#include "abiv2_csky_fpus.def"
+#include "abiv2_csky_cores.def"
 #undef CSKY_FPU
 };
 
@@ -1971,6 +1971,8 @@ csky_configure_build_target (struct csky_build_target *target,
   target->arch_pp_name = csky_selected_cpu->arch;
   target->base_arch = csky_selected_cpu->base_arch;
   target->arch_core = csky_selected_cpu->core;
+
+  target_flags |= csky_selected_cpu->flags;
 }
 
 
@@ -2020,13 +2022,11 @@ csky_option_override (void)
 
   csky_base_arch = csky_active_target.base_arch;
 
-  /* TODO: target_flags  */
-
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */
 
 #undef  CSKY_ISA
-#define CSKY_ISA(NAME, IDENT)                                             \
+#define CSKY_ISA(IDENT, DESC)                                             \
   {                                                                       \
     csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)] =                 \
       bitmap_bit_p (csky_active_target.isa, CSKY_ISA_FEATURE_GET(IDENT)); \
