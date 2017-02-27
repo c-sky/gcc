@@ -1,4 +1,35 @@
 
+(define_insn "abssi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (abs:SI (match_operand:SI 1 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "abs\t%0, %1"
+)
+
+(define_insn "extv"
+  [(set (match_operand:SI                  0 "register_operand" "=r")
+        (sign_extract:SI (match_operand:SI 1 "register_operand" "r")
+                         (match_operand:SI 2 "const_int_operand" "")
+                         (match_operand:SI 3 "const_int_operand" "")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "*{
+    operands[2] = GEN_INT(INTVAL(operands[3]) + INTVAL(operands[2]) - 1);
+    return \"sext\t%0, %1, %2, %3\";
+  }"
+)
+
+(define_insn "insv"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand"  "+r")
+                         (match_operand:SI 1 "const_int_operand" "i")
+                         (match_operand:SI 2 "const_int_operand" "i"))
+        (match_operand:SI                  3 "register_operand"  "r"))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "*{
+    operands[1] = GEN_INT (INTVAL (operands[2]) + INTVAL (operands[1]) - 1);
+    return \"ins\t%0, %3, %1, %2\";
+  }"
+)
+
 ;; Shift instructions.
 
 (define_expand "ashlsi3"
@@ -418,6 +449,14 @@
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E1)"
   "mult\t%0, %1, %2"
+)
+
+(define_insn "mulhisi3"
+  [(set (match_operand:SI                          0 "register_operand" "=r")
+        (mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand" "%r"))
+                 (sign_extend:SI (match_operand:HI 2 "register_operand" "r"))))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "mulsh\t%0, %1, %2"
 )
 
 
