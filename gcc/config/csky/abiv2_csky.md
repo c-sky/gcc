@@ -11,3 +11,5 @@
 (include "abiv2_mds/abiv2_csky_insn_cmp.md")
 (include "abiv2_mds/abiv2_csky_insn_call.md")
 (include "abiv2_mds/abiv2_csky_insn_misc.md")
+
+(include "abiv2_mds/abiv2_csky_insn_dsp.md")
