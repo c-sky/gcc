@@ -1973,6 +1973,35 @@ csky_configure_build_target (struct csky_build_target *target,
   target->arch_core = csky_selected_cpu->core;
 
   target_flags |= csky_selected_cpu->flags;
+
+  struct csky_opt2isa_table
+  {
+    int flags;
+    enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
+  } opt2isa_table [] = {
+
+    /* List all isa options here, and 'isa_bits' is full feature bits about
+       for this option, and you need to put the least bit of this feature
+       in elements[0] to skip when including the bit by default isa features
+       which are from abiv2_csky_cores.def.  */
+    { MASK_DSP, { CSKY_ISA_DSP } },
+  };
+  int i = 0;
+  sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
+  for (i = 0; i < sizeof(opt2isa_table)/sizeof(opt2isa_table[0]); i++)
+    {
+      if (target_flags & opt2isa_table[i].flags)
+        {
+          if (!bitmap_bit_p(target->isa, opt2isa_table[i].isa_bits[0]))
+            {
+              csky_initialize_isa (all_sbits, opt2isa_table[i].isa_bits);
+              bitmap_ior (target->isa, target->isa, all_sbits);
+            }
+        }
+    }
+  sbitmap_free(all_sbits);
+
+  /* TODO: fix conflict between isa features here.  */
 }
 
 
