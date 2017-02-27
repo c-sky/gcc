@@ -591,7 +591,7 @@
                          (const_int 8)
                          (const_int 24)))
         (clobber (reg:CC 33))]
-  ""
+  "CSKY_ISA_FEATURE(E2)"
   "@
     lsri\t%0, %0, 24
     xtrb0\t%0, %1"
@@ -603,7 +603,7 @@
                          (const_int 8)
                          (const_int 16)))
         (clobber (reg:CC 33))]
-  ""
+  "CSKY_ISA_FEATURE(E2)"
   "xtrb1\t%0, %1"
 )
 
@@ -613,7 +613,7 @@
                          (const_int 8)
                          (const_int 8)))
         (clobber (reg:CC 33))]
-  ""
+  "CSKY_ISA_FEATURE(E2)"
   "xtrb2\t%0, %1"
 )
 

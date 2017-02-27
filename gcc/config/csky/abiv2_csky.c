@@ -2149,7 +2149,7 @@ csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
              but this addi has it limition.  */
           if (optimize_size
               && offset > CSKY_LD16_MAX_OFFSET (mode)
-              && offset <= (CSKY_ADDI_MAX_IMM
+              && offset <= (CSKY_ADDI16_MAX_IMM
                            + CSKY_LD16_MAX_OFFSET (mode)))
             {
               HOST_WIDE_INT new_ld_offset = offset
@@ -2160,7 +2160,7 @@ csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
                                     NULL_RTX);
               x = plus_constant (Pmode, xop0, new_ld_offset);
             }
-          else if (offset < 0 && offset >= (-CSKY_SUBI_MAX_IMM))
+          else if (offset < 0 && offset >= (-CSKY_SUBI16_MAX_IMM))
             x = force_operand (x, NULL_RTX);
           else if (offset > CSKY_LD16_MAX_OFFSET (mode)
                    || offset < 0)
@@ -2217,7 +2217,7 @@ ck801_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
             && INTVAL (index) <  CSKY_LD16_MAX_OFFSET (SImode)
             && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
 
-  if (code == CONST_INT
+  if (code == CONST_INT && GET_MODE_SIZE (mode) > 0
       && INTVAL (index) <= CSKY_LD16_MAX_OFFSET (mode)
       && INTVAL (index) >= 0)
     return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
@@ -2238,7 +2238,7 @@ ck802_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
             && INTVAL (index) < CSKY_LD32_MAX_OFFSET (SImode)
             && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
 
-  if (code == CONST_INT
+  if (code == CONST_INT && GET_MODE_SIZE (mode) > 0
       && INTVAL (index) <= CSKY_LD32_MAX_OFFSET(mode)
       && INTVAL (index) >= 0)
     return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
@@ -2278,7 +2278,8 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
         return (INTVAL (index) < CSKY_LD32_MAX_OFFSET (SImode)
                 && INTVAL (index) >= 0 && (INTVAL (index) & 3) == 0);
 
-      if (INTVAL (index) <= CSKY_LD32_MAX_OFFSET (SImode)
+      if (GET_MODE_SIZE (mode) > 0
+          && INTVAL (index) <= CSKY_LD32_MAX_OFFSET (mode)
           && INTVAL (index) >= 0)
         return ((INTVAL (index) % GET_MODE_SIZE (mode)) == 0);
     }
@@ -2470,6 +2471,11 @@ decompose_csky_address (rtx addr, struct csky_address * out)
                 return false;
               index = XEXP (op, 0);
               scale_rtx = XEXP (op, 1);
+              if (!CONST_INT_P (index) && !CONST_INT_P (scale_rtx))
+                return false;
+              else if (CONST_INT_P (index))
+                std::swap (index, scale_rtx);
+              scale = INTVAL (scale_rtx);
               break;
             case ASHIFT:
               if (index)
@@ -2488,18 +2494,6 @@ decompose_csky_address (rtx addr, struct csky_address * out)
 
   if (!base)
     return false;
-
-  if (scale_rtx && !CONST_INT_P (scale_rtx))
-    {
-      rtx tmp = scale_rtx;
-      scale_rtx = index;
-      index = tmp;
-    }
-
-  if (scale_rtx && !CONST_INT_P (scale_rtx))
-    return false;
-  else if (scale_rtx && CONST_INT_P (scale_rtx))
-    scale = INTVAL (scale_rtx);
 
   out->base = base;
   out->index = index;
@@ -4017,6 +4011,87 @@ static bool is_pushpop_from_csky_live_regs(int mask)
   return true;
 }
 
+/* FIXME debug information should be added in this function. */
+/* Adjust the stack and return the number of bytes taken to do it
+    for targer v2.  */
+
+static void
+expand_csky_stack_adjust (int direction, int size)
+{
+  rtx insn;
+
+  if (size > CSKY_ADDI_MAX_STEP * 2)
+    {
+      struct csky_stack_frame fi;
+
+      get_csky_frame_layout (&fi);
+
+      if (fi.reg_size != 0)
+        {
+          rtx tmp;
+
+          if (!(fi.reg_mask & (1 << 4)))
+            df_set_regs_ever_live (4, true);
+
+          tmp = gen_rtx_REG (SImode, 4);
+          insn = emit_insn (gen_movsi (tmp, GEN_INT (size)));
+
+          if (direction > 0)
+            insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+          else
+            insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+
+          insn = emit_insn (insn);
+          size = 0;
+        }
+      /*  SIZE is now the residual for the last adjustment,
+         which doesn't require a probe.  */
+    }
+
+  if (direction > 0 && size > CSKY_ADDI_MAX_STEP)
+    {
+      rtx tmp = GEN_INT (CSKY_ADDI_MAX_STEP);
+      rtx memref;
+
+      do
+        {
+          insn = emit_insn (gen_addsi3 (stack_pointer_rtx,
+                                        stack_pointer_rtx,
+                                        tmp));
+          size -= CSKY_ADDI_MAX_STEP;
+        }
+      while (size > CSKY_ADDI_MAX_STEP);
+    }
+
+  if (direction < 0 && size > CSKY_SUBI_MAX_STEP)
+    {
+      rtx tmp = GEN_INT (CSKY_SUBI_MAX_STEP);
+      rtx memref;
+
+      do
+        {
+          insn = emit_insn (gen_subsi3 (stack_pointer_rtx,
+                                        stack_pointer_rtx,
+                                        tmp));
+          size -= CSKY_SUBI_MAX_STEP;
+        }
+      while (size > CSKY_SUBI_MAX_STEP);
+    }
+
+  if (size)
+    {
+      rtx insn;
+      rtx val = GEN_INT (size);
+
+      if (direction > 0)
+        insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
+      else
+        insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
+
+      insn = emit_insn (insn);
+    }
+}
+
 
 void csky_expand_prologue(void)
 {
@@ -4101,10 +4176,7 @@ void csky_expand_prologue(void)
   if (fi.local_size + fi.outbound_size)
     {
       offset = fi.local_size + fi.outbound_size;
-
-      insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-                                 GEN_INT(-offset)));
-      RTX_FRAME_RELATED_P (insn) = 1;
+      expand_csky_stack_adjust (-1, offset);
     }
 
   #if 0 /* TODO: pic  */
@@ -4136,8 +4208,7 @@ void csky_expand_epilogue(void)
       offset = fi.local_size + fi.outbound_size;
       if (offset > 0)
         {
-          emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-                               GEN_INT(offset)));
+          expand_csky_stack_adjust (1, offset);
         }
     }
 

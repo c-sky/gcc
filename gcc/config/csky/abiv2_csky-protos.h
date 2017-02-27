@@ -26,8 +26,8 @@
 #define CSKY_LD32_MAX_OFFSET(MODE)    (4095 * GET_MODE_SIZE(MODE))
 #define CSKY_LD16_OFFSET_MASK(MODE)   (CSKY_LD16_MAX_OFFSET (MODE) \
                                        + GET_MODE_SIZE (MODE) - 1)
-#define CSKY_ADDI_MAX_IMM             256
-#define CSKY_SUBI_MAX_IMM             256
+#define CSKY_ADDI16_MAX_IMM           256
+#define CSKY_SUBI16_MAX_IMM           256
 
 #define CSKY_NUM_WORDS(SIZE) ((SIZE + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
