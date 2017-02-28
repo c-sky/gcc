@@ -19,7 +19,16 @@
     /* Recognize the case where operand[1] is a reference to thread-local
        data and load its address to a register.  */
     /* TODO impelent the TLS related function later. */
-    /* TODO PIC related code.  */
+    if (flag_pic
+        && (CONSTANT_P (operands[1])
+            || symbol_mentioned_p (operands[1])
+            || label_mentioned_p (operands[1])))
+      {
+        operands[1] = legitimize_pic_address (operands[1],
+                                              SImode,
+                                              (!can_create_pseudo_p () ? operands[0] : 0),
+                                              1);
+      }
   }"
 )
 

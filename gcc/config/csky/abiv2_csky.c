@@ -85,9 +85,6 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
   OTHER_REGS
 };
 
-/* The register number to be used for the PIC offset register.  */
-unsigned csky_pic_register = INVALID_REGNUM;
-
 
 /******************************************************************
  *                         Storage Layout                         *
@@ -1720,11 +1717,9 @@ csky_conditional_register_usage (void)
      call, set the call_really_used_regs to 0.  */
   if (flag_pic)
     {
-      gcc_assert (csky_pic_register != INVALID_REGNUM);
-
-      fixed_regs[csky_pic_register] = 1;
-      call_used_regs[csky_pic_register] = 1;
-      call_really_used_regs[csky_pic_register] = 0;
+      fixed_regs[PIC_OFFSET_TABLE_REGNUM] = 1;
+      call_used_regs[PIC_OFFSET_TABLE_REGNUM] = 1;
+      call_really_used_regs[PIC_OFFSET_TABLE_REGNUM] = 0;
     }
 }
 
@@ -2050,6 +2045,12 @@ csky_option_override (void)
   csky_arch_name = csky_active_target.arch_pp_name;
 
   csky_base_arch = csky_active_target.base_arch;
+
+  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    {
+      flag_pic = 0;
+      warning (0, "-fPIC is not supported by arch %s", csky_arch_name);
+    }
 
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */
@@ -4208,12 +4209,27 @@ void csky_expand_prologue(void)
       expand_csky_stack_adjust (-1, offset);
     }
 
-  #if 0 /* TODO: pic  */
   if (flag_pic && fi.reg_mask & (1 << PIC_OFFSET_TABLE_REGNUM))
     {
+      rtx l1 = gen_label_rtx();
+      rtx grs_label = gen_rtx_LABEL_REF(SImode, l1);
+      rtx reg_gb = gen_rtx_REG(SImode, PIC_OFFSET_TABLE_REGNUM);
+      /* FIXME R12 is the static_chain reg */
+      rtx reg_temp = gen_rtx_REG(SImode, 13);
 
+      rtx tmp0_unspec = gen_rtx_UNSPEC (Pmode,
+                                        gen_rtvec (1, grs_label),
+                                        PIC_SYMBOL_GOTPC_GRS);
+      rtx tmp1_unspec = gen_rtx_UNSPEC (Pmode,
+                                        gen_rtvec (1, grs_label),
+                                        PIC_SYMBOL_GOTPC);
+
+      emit_insn(gen_prologue_get_pc(tmp0_unspec, reg_gb));
+
+      emit_move_insn(reg_temp, tmp1_unspec);
+
+      emit_insn(gen_addsi3(reg_gb, reg_gb, reg_temp));
     }
-  #endif
 }
 
 
@@ -4576,6 +4592,230 @@ can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT val)
         }
     }
   return 0;
+}
+
+
+/* Return TRUE if X references a SYMBOL_REF.  */
+
+int
+symbol_mentioned_p (rtx x)
+{
+  const char * fmt;
+  int i;
+
+  if (GET_CODE (x) == SYMBOL_REF)
+    return 1;
+
+  fmt = GET_RTX_FORMAT (GET_CODE (x));
+  for (i = GET_RTX_LENGTH (GET_CODE (x)) - 1; i >= 0; i--)
+    {
+      if (fmt[i] == 'E')
+        {
+          int j;
+
+          for (j = XVECLEN (x, i) - 1; j >= 0; j--)
+            if (symbol_mentioned_p (XVECEXP (x, i, j)))
+              return 1;
+        }
+      else if (fmt[i] == 'e' && symbol_mentioned_p (XEXP (x, i)))
+        return 1;
+    }
+  return 0;
+}
+
+
+/* Return TRUE if X references a LABEL_REF.  */
+
+int
+label_mentioned_p (rtx x)
+{
+  const char * fmt;
+  int i;
+
+  if (GET_CODE (x) == LABEL_REF)
+    return 1;
+
+  fmt = GET_RTX_FORMAT (GET_CODE (x));
+  for (i = GET_RTX_LENGTH (GET_CODE (x)) - 1; i >= 0; i--)
+    {
+      if (fmt[i] == 'E')
+        {
+          int j;
+
+          for (j = XVECLEN (x, i) - 1; j >= 0; j--)
+            if (label_mentioned_p (XVECEXP (x, i, j)))
+              return 1;
+        }
+      else if (fmt[i] == 'e' && label_mentioned_p (XEXP (x, i)))
+        return 1;
+    }
+
+  return 0;
+}
+
+
+int
+tls_mentioned_p (rtx x)
+{
+  switch (GET_CODE (x))
+    {
+    case CONST:
+      return tls_mentioned_p (XEXP (x, 0));
+
+    case UNSPEC:
+      if (XINT (x, 1) == UNSPEC_TLS)
+        return 1;
+
+    /* Fall through.  */
+    default:
+      return 0;
+    }
+}
+
+
+rtx
+legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
+{
+  rtx pic_reg = gen_rtx_REG(SImode, PIC_OFFSET_TABLE_REGNUM);
+  int flag_optimize = 0;
+
+  if (GET_CODE (orig) == SYMBOL_REF
+      || GET_CODE (orig) == LABEL_REF)
+    {
+      rtx pic_ref, address, rtx_tmp;
+      rtx insn;
+      rtx pic_reg = gen_rtx_REG(SImode, PIC_OFFSET_TABLE_REGNUM);
+      int subregs = 0;
+
+      if (reg == 0)
+        {
+          gcc_assert (can_create_pseudo_p ());
+          reg = gen_reg_rtx (Pmode);
+          subregs = 1;
+        }
+
+      if (subregs)
+        address = gen_reg_rtx (Pmode);
+      else
+        address = reg;
+
+      if (GET_CODE (orig) == LABEL_REF
+          || ((GET_CODE (orig) == SYMBOL_REF
+              && SYMBOL_REF_LOCAL_P (orig))))
+        {
+          /* bsr symbol */
+          if (flag_pic && flag == 0)
+            {
+              pic_ref = gen_rtx_UNSPEC (Pmode,
+                                        gen_rtvec (1, orig),
+                                        PIC_SYMBOL_BSR);
+              return pic_ref;
+            }
+          /* grs rx, symbol */
+          else if (flag_pic && (GET_CODE (orig) == SYMBOL_REF)
+                   && SYMBOL_REF_FUNCTION_P (orig))
+            {
+              pic_ref = gen_rtx_UNSPEC (Pmode,
+                                        gen_rtvec (1, orig),
+                                        PIC_SYMBOL_GRS);
+              return pic_ref;
+            }
+          /* lrw rx, symbol@GOTOFF; add rx, rx, gb */
+          else
+            {
+              rtx_tmp = gen_rtx_UNSPEC (Pmode,
+                                        gen_rtvec (1, orig),
+                                        PIC_SYMBOL_GOTOFF);
+              emit_move_insn (address, rtx_tmp);
+
+              pic_ref = gen_rtx_PLUS (Pmode, address, pic_reg);
+
+              flag_optimize = 1;
+            }
+        }
+      else
+        {
+          /* when flag != 0 generate sym@GOT, otherwise generate sym@PLT */
+          rtx_tmp = gen_rtx_UNSPEC (Pmode,
+                                    gen_rtvec (1, orig),
+                                    flag != 0 ? PIC_SYMBOL_GOT:PIC_SYMBOL_PLT);
+          flag_optimize = flag;
+
+          if (flag_pic)
+            {
+              pic_ref = gen_const_mem(Pmode,
+                          gen_rtx_PLUS (Pmode, pic_reg, rtx_tmp));
+            }
+          else
+            {
+              emit_move_insn (address, rtx_tmp);
+              pic_ref = gen_const_mem(Pmode,
+                                      gen_rtx_PLUS (Pmode,
+                                                    pic_reg,
+                                                    gen_rtx_MULT (Pmode,
+                                                                  address,
+                                                                  GEN_INT(1))));
+            }
+        }
+
+      insn = emit_move_insn(reg, pic_ref);
+      /* Put a REG_EQUAL note on this insn,
+         so that it can be optimized by loop.  */
+      if (flag_optimize)
+        set_unique_reg_note (insn, REG_EQUAL, orig);
+
+      return reg;
+    }
+  else if (GET_CODE (orig) == CONST)
+    {
+      rtx base, offset;
+
+      if(GET_CODE (XEXP (orig, 0)) == PLUS
+         && XEXP (XEXP (orig, 0), 1) == pic_reg)
+        return orig;
+
+      if (reg == 0)
+        {
+          gcc_assert (can_create_pseudo_p());
+          reg = gen_reg_rtx (Pmode);
+        }
+
+      gcc_assert (GET_CODE (XEXP(orig, 0)) == PLUS);
+
+      base = legitimize_pic_address (XEXP (XEXP (orig, 0), 0),
+                                     Pmode,
+                                     reg,
+                                     flag);
+      offset = legitimize_pic_address (XEXP (XEXP (orig, 0), 1),
+                                       Pmode,
+                                       base == reg ? 0 : reg, flag);
+
+      if (GET_CODE (offset) == CONST_INT)
+        return plus_constant (Pmode, base, INTVAL (offset));
+
+      return gen_rtx_PLUS (Pmode, base, offset);
+    }
+
+  return orig;
+}
+
+
+/* Functions to output assembly code for a function call.  */
+
+char *
+csky_output_call (rtx operands[], int index)
+{
+  static char buffer[20];
+  rtx addr = operands[index];
+
+  if (REG_P (addr))
+    sprintf (buffer, "jsr\t%%%d", index);
+  else if (flag_pic && (GET_CODE (addr) == UNSPEC))
+    sprintf (buffer, "bsr\t%%%d", index);
+  else
+    sprintf (buffer, "jbsr\t%%%d", index);
+
+  return buffer;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;

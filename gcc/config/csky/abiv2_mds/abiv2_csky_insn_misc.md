@@ -78,8 +78,6 @@
 
 /* TODO: pushpop */
 
-/* TODO: pic */
-
 ;;
 ;; Stack allocation -- in particular, for alloca().
 ;; this is *not* what we use for entry into functions.

@@ -5,7 +5,6 @@
   ""
   "
   {
-    /* TODO: pic  */
     if (flag_pic)
       {
         operands[0] = expand_simple_binop (Pmode, PLUS, operands[0],

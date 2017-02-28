@@ -159,3 +159,12 @@
 
     return 0;
   })
+
+(define_predicate "csky_unspec_operand"
+  (match_code "unspec")
+  {
+    if(op == NULL || GET_CODE(op) != UNSPEC)
+      return 0;
+    return 1;
+  }
+)

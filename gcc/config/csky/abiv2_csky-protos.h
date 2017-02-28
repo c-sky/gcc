@@ -214,6 +214,12 @@ extern const char *output_csky_return_instruction(void);
 extern const char *csky_unexpanded_epilogue(void);
 extern void set_csky_return_address (rtx source, rtx scratch);
 
+extern int symbol_mentioned_p (rtx x);
+extern int label_mentioned_p (rtx x);
+extern int tls_mentioned_p(rtx x);
+extern rtx legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag);
+extern char *csky_output_call (rtx operands[], int index);
+
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
 extern int csky_arch_isa_features[];

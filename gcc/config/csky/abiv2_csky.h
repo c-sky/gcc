@@ -838,6 +838,20 @@ while (0)
 
 
 /******************************************************************
+ *                    Position Independent Code                   *
+ ******************************************************************/
+
+
+/* define the gloable table register.  */
+#define PIC_OFFSET_TABLE_REGNUM CSKY_GB_REGNUM
+
+/* Nonzero if x is a legitimate immediate operand on the target machine
+   when generating position independent code.  */
+#define LEGITIMATE_PIC_OPERAND_P(X) \
+  (!(symbol_mentioned_p (X) || label_mentioned_p (X)) || tls_mentioned_p (X))
+
+
+/******************************************************************
  *                    Miscellaneous Parameters                    *
  ******************************************************************/
 
