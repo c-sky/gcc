@@ -352,10 +352,10 @@
    && (operands[0] == stack_pointer_rtx
        || operands[1] == stack_pointer_rtx)"
   "@
-    addi    %0, %1, %M2
-    subi    %0, %1, %2
-    addi    %0, %1, %M2
-    subu    %0, %1, %2"
+    addi\t%0, %1, %M2
+    subi\t%0, %1, %2
+    addi\t%0, %1, %M2
+    subu\t%0, %1, %2"
 )
 
 (define_insn "*fast_subsi3"
@@ -364,9 +364,9 @@
                   (match_operand:SI 2 "nonmemory_operand" "r, M,Um")))]
   "CSKY_ISA_FEATURE_FAST && CSKY_ISA_FEATURE(E2)"
   "@
-     subu    %0, %1, %2
-     subi    %0, %1, %2
-     addi    %0, %1, %M2"
+     subu\t%0, %1, %2
+     subi\t%0, %1, %2
+     addi\t%0, %1, %M2"
 )
 
 (define_expand "subdi3"
@@ -844,18 +844,24 @@
             }
         }
 
-      /* If it is a negitive number, it seems better to use andn,
-         since the NOT_VALUE, is always smaller than the origin value.  */
-      if (INTVAL(operands[2]) < 0)
+      /* Let it emit andi or bclri*2 if it could. Otherwise, try
+         some other ways.  */
+      if (!satisfies_constraint_Ue(operands[2])
+          && !(CSKY_ISA_FEATURE(E2) && satisfies_constraint_O (operands[2])))
         {
-          operands[2] = copy_to_mode_reg(SImode, not_value);
-          emit_insn(gen_cskyv2_andnsi3 (operands[0], operands[2], operands[1]));
-          DONE;
-        }
+          /* If it is a negitive number, it seems better to use andn,
+             since the NOT_VALUE, is always smaller than the origin value.  */
+          if (INTVAL(operands[2]) < 0)
+            {
+              operands[2] = copy_to_mode_reg(SImode, not_value);
+              emit_insn(gen_cskyv2_andnsi3 (operands[0], operands[2], operands[1]));
+              DONE;
+            }
 
-      /* If the above ways are all not working, mov the const
-         to reg.  */
-      operands[2] = copy_to_mode_reg(SImode, operands[2]);
+          /* If the above ways are all not working, mov the const
+             to reg.  */
+          operands[2] = copy_to_mode_reg(SImode, operands[2]);
+        }
     }
  }"
 )
@@ -882,12 +888,22 @@
   [(set_attr "length" "4,4,8")]
 )
 
-(define_insn "ck801_andsi3"
-  [(set (match_operand:SI         0 "register_operand" "=r")
-        (and:SI (match_operand:SI 1 "register_operand" "%0")
-                (match_operand:SI 2 "register_operand" "r")))]
+(define_insn "*ck801_andsi3"
+  [(set (match_operand:SI         0 "register_operand"      "=r,r")
+        (and:SI (match_operand:SI 1 "register_operand"      "%0,0")
+                (match_operand:SI 2 "csky_arith_Ue_operand" "r, Ue")))]
   "CSKY_ISA_FEATURE(E1)"
-  "and %0, %1, %2"
+  "*{
+    switch(which_alternative)
+      {
+      case 0: return \"and\t%0, %1, %2\";
+      case 1: return output_csky_bclri(operands[0],
+                                       operands[1],
+                                       INTVAL(operands[2]));
+      default: gcc_unreachable();
+      }
+  }"
+  [(set_attr "length" "2,4")]
 )
 
 (define_insn "cskyv2_andnsi3"
@@ -1071,7 +1087,7 @@
   "xor\t%0, %1, %2"
 )
 
-(define_insn "xordi3"
+(define_expand "xordi3"
   [(set (match_operand:DI         0 "register_operand" "")
         (xor:DI (match_operand:DI 1 "register_operand" "")
                 (match_operand:DI 2 "register_operand" "")))]
@@ -1108,7 +1124,7 @@
         (div:SI (match_operand:SI 1 "register_operand" "r")
                 (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(2E3)"
-  "divs  %0, %1, %2"
+  "divs\t%0, %1, %2"
 )
 
 (define_insn "udivsi3"
@@ -1116,5 +1132,5 @@
         (udiv:SI (match_operand:SI 1 "register_operand" "r")
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(2E3)"
-  "divu  %0, %1, %2"
+  "divu\t%0, %1, %2"
 )

@@ -17,21 +17,24 @@
 # GCC testsuite that uses the `dg.exp' driver.
 
 # Exit immediately if this isn't a csky target.
-#if { ![istarget csky*-*-*]} then
-if { [istarget csky*-*-*]} then {
+if { ![istarget csky*-*-*]} then {
   return
 }
+
 set cflags [board_info target cflags]
 if { [string first "ck6" "${cflags}"] >= 0 } {
        verbose "the test is not support "
        return
 }
-set cflags [board_info target cflags]
 if { [string first "ck5" "${cflags}"] >= 0 } {
        verbose "the test is not support "
        return
 }
 
+if { [string first "ck801" "${cflags}"] < 0 } {
+       verbose "the test only supports ck801 "
+       return
+}
 # Load support procs.
 load_lib gcc-dg.exp
 

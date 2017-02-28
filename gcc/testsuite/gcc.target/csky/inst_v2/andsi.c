@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-skip-if  "test is specific to the instruction v2"  { csky-*-* }  { "-march=*" }  { "-march=ck801*"  }  }  */
+/* { dg-skip-if  "test is specific to the instruction v2"  { csky-*-* }  { "-march=ck801" }  { ""  }  }  */
 
 int func (int a, int b)
 {
@@ -29,7 +29,7 @@ int func4 (int a)
 {
     return a & (0xff00000);
 }
-/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\nand" } } */
+/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\n\[ |\t]and" } } */
 
 int func5 (int a)
 {
@@ -54,3 +54,9 @@ int func8 (int a)
     return a & (-0xffff);
 }
 /* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]andn" } } */
+
+int func9 (int a)
+{
+    return a & (0x9f);
+}
+/* { dg-final { scan-assembler "andi" } } */

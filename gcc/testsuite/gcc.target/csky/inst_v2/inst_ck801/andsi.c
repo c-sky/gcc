@@ -28,7 +28,7 @@ int func4 (int a)
 {
     return a & (0xff00000);
 }
-/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\nand" } } */
+/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\n\[ |\t\]and" } } */
 
 int func5 (int a)
 {
@@ -46,7 +46,7 @@ int func7 (int a)
 {
     return a & (0xffff3fff);
 }
-/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\nandn" } } */
+/* { dg-final { scan-assembler "\[ |\t\]movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\n\[ |\t\]and" } } */
 
 int func8 (int a)
 {

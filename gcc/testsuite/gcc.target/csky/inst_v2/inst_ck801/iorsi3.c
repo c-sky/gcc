@@ -22,4 +22,4 @@ int func4 (int a)
 {
   return a | 0x700000;
 }
-/* { dg-final { scan-assembler "movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\n\[|\t\]or” } } */
+/* { dg-final { scan-assembler "movi\[^\n\]*\n\[ |\t\]lsli\[^\n\]*\n\[|\t\]or" } } */

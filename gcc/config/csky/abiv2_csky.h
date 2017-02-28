@@ -277,18 +277,6 @@ machine_function;
 
 
 /******************************************************************
- *                Trampolines for Nested Functions                *
- ******************************************************************/
-
-
-/* Length in units of the trampoline for entering a nested function.  */
-#define TRAMPOLINE_SIZE         12
-
-/* Alignment required for a trampoline in bits.  */
-#define TRAMPOLINE_ALIGNMENT    16
-
-
-/******************************************************************
  *              Register Usage & Register Classes                 *
  ******************************************************************/
 
@@ -887,6 +875,20 @@ while (0)
 /* The machine modes of pointers and functions.  */
 #define Pmode  SImode
 #define FUNCTION_MODE  Pmode
+
+
+/******************************************************************
+ *                Trampolines for Nested Functions                *
+ ******************************************************************/
+
+
+/* Length in units of the trampoline for entering a nested function.  */
+#define TRAMPOLINE_SIZE  (CSKY_ISA_FEATURE(2E3) ? 16 : 20)
+
+/* Alignment required for a trampoline in bits.  */
+#define TRAMPOLINE_ALIGNMENT  32
+
+
 
 
 #define FUNCTION_PROFILER(FILE, LABELNO)

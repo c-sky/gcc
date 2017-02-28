@@ -307,6 +307,18 @@ typedef struct minipool_fixup   Mfix;
 #undef  TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS
 #define TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS csky_allocate_stack_slots_for_args
 
+
+/******************************************************************
+ *                Trampolines for Nested Functions                *
+ ******************************************************************/
+
+
+#undef  TARGET_ASM_TRAMPOLINE_TEMPLATE
+#define TARGET_ASM_TRAMPOLINE_TEMPLATE  csky_asm_trampoline_template
+#undef  TARGET_TRAMPOLINE_INIT
+#define TARGET_TRAMPOLINE_INIT          csky_trampoline_init
+
+
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);
@@ -4512,7 +4524,7 @@ output_csky_bclri (rtx dst, rtx src, int mask)
         {
           out_operands[2] = GEN_INT (bit);
 
-          output_asm_insn ("bclri\t%0, %0, %2", out_operands);
+          output_asm_insn ("bclri\t%0, %1, %2", out_operands);
         }
 
       mask >>= 1;
@@ -4540,7 +4552,7 @@ output_csky_bseti (rtx dst, rtx src, int mask)
         {
           out_operands[2] = GEN_INT (bit);
 
-          output_asm_insn ("bseti\t%0, %0, %2", out_operands);
+          output_asm_insn ("bseti\t%0, %1, %2", out_operands);
         }
 
       mask >>= 1;
@@ -4816,6 +4828,59 @@ csky_output_call (rtx operands[], int index)
     sprintf (buffer, "jbsr\t%%%d", index);
 
   return buffer;
+}
+
+
+/* Worker function for TARGET_ASM_TRAMPOLINE_TEMPLATE.
+   Output assembler code for a block containing the constant parts
+   of a trampoline, leaving space for the variable parts.  */
+
+static void
+csky_asm_trampoline_template (FILE *f)
+{
+  if (CSKY_ISA_FEATURE(2E3))
+    {
+      fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+               reg_names[STATIC_CHAIN_REGNUM]);
+      fprintf (f, "\tjmpi\t[.Lfunc_address]\n");
+    }
+  else
+    {
+      fprintf (f, "\tpush\tr4, lr\n");
+      fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+               reg_names[STATIC_CHAIN_REGNUM]);
+      fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
+      /* To align 32bits for lrw. And add nop here eliminate
+         the delay cause by lrw.  */
+      fprintf (f, "\tnop\n");
+      fprintf (f, "\tjsr\tr4\n");
+      fprintf (f, "\tpush\tr4, lr\n");
+    }
+    fprintf (f, ".Lstatic_chain:\n");
+    fprintf (f, "\t.long 0\n");
+    fprintf (f, ".Lfunc_address:\n");
+    fprintf (f, "\t.long 0\n");
+}
+
+/* Worker function for TARGET_TRAMPOLINE_INIT.  */
+
+static void
+csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
+{
+  rtx fnaddr = XEXP (DECL_RTL (fndecl), 0);
+  rtx mem;
+
+  emit_block_move (m_tramp, assemble_trampoline_template (),
+                   GEN_INT (TRAMPOLINE_SIZE), BLOCK_OP_NORMAL);
+
+  mem = adjust_address (m_tramp, SImode,
+                        CSKY_ISA_FEATURE(2E3) ? 8 : 12);
+  emit_move_insn (mem, chain_value);
+  mem = adjust_address (m_tramp, SImode,
+                        CSKY_ISA_FEATURE(2E3) ? 12 : 16);
+  emit_move_insn (mem, fnaddr);
+
+  /* TODO Add code about clear insn cache.  */
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
