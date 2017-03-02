@@ -13,8 +13,22 @@ CSKY_ARCH("ck801",  ck801,  CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801))
 CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802))
 CSKY_ARCH("ck803",  ck803,  CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
 CSKY_ARCH("ck803s", ck803s, CK803S, CSKY_ISA_FEAT(CSKY_ISA_CK803S))
-CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807))
-CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
+CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_DSP))
+CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(CSKY_ISA_DSP))
+#endif
+
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_OPTION(MASK, ISA)
+
+   List all isa options here, and 'ISA' is full feature bits about
+   for this option, and you need to put the least bit of this feature
+   in elements[0] to skip when including the bit by default isa features
+   which are from CSKY_CORE.  */
+
+#ifdef CSKY_OPTION
+CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
 #endif
 
 
@@ -34,33 +48,33 @@ CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810))
 
 #ifdef CSKY_CORE
 /* ck801 Architecture Processors */
-CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801), 0)
+CSKY_CORE("ck801",    ck801,    ck801,    CK801,  , 0)
 
 /* ck802 Architecture Processors */
-CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart), 0)
-CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), 0)
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), 0)
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), 0)
 
 /* ck803 Architecture Processors */
-CSKY_CORE("ck803",    ck803,    ck803,    CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803), 0)
-CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803), MASK_DSP)
+CSKY_CORE("ck803",    ck803,    ck803,    CK803,  , 0)
+CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  , MASK_DSP)
 
 /* ck803s Architecture Processors */
-CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S), 0)
-CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S), MASK_DSP)
-CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S) CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
-CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(CSKY_ISA_CK803S) CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), MASK_DSP)
+CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  , 0)
+CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  , MASK_DSP)
+CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
+CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), MASK_DSP)
 
 /* ck807 Architecture Processors */
-CSKY_CORE("ck807",    ck807,    ck807,    CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807), MASK_DSP)
-CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807), MASK_DSP)
-CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), MASK_DSP)
-CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), MASK_DSP)
+CSKY_CORE("ck807",    ck807,    ck807,    CK807,  , 0)
+CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  , 0)
+CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
+CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
 
 /* ck810 Architecture Processors */
-CSKY_CORE("ck810",    ck810,    ck810,    CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810), MASK_DSP)
-CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810), MASK_DSP)
-CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810), MASK_DSP)
-CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), MASK_DSP)
+CSKY_CORE("ck810",    ck810,    ck810,    CK810,  , 0)
+CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  , 0)
+CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  , 0)
+CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
 #endif
 
 

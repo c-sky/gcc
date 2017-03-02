@@ -169,9 +169,9 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
 static const struct csky_processors all_cores[] =
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, FLAGS)  \
+#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TARGET_FLAGS)  \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH, \
-  {ISA CSKY_ISA_FEATURE_GET(none)}, FLAGS},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, TARGET_FLAGS},
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
@@ -197,6 +197,15 @@ static const struct csky_fpu_desc all_fpus[] =
   {NAME, {ISA CSKY_ISA_FEATURE_GET(none)}},
 #include "abiv2_csky_cores.def"
 #undef CSKY_FPU
+};
+
+static const struct csky_option2isa all_opt2isa[] =
+{
+#undef CSKY_OPTION
+#define CSKY_OPTION(MASK, ISA) \
+  {MASK, {ISA CSKY_ISA_FEATURE_GET(none)}},
+#include "abiv2_csky_cores.def"
+#undef CSKY_OPTION
 };
 
 static sbitmap csky_isa_all_fpubits;
@@ -1911,6 +1920,8 @@ csky_configure_build_target (struct csky_build_target *target,
   const struct csky_processors *csky_selected_arch = NULL;
   const struct csky_processors *csky_selected_cpu = NULL;
   const struct csky_fpu_desc *csky_selected_fpu = NULL;
+  sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
+  bitmap_clear(all_sbits);
 
   bitmap_clear (target->isa);
   target->core_name = NULL;
@@ -1920,43 +1931,41 @@ csky_configure_build_target (struct csky_build_target *target,
     csky_selected_arch = &all_architectures[opts->x_csky_arch_option];
 
   if (opts_set->x_csky_cpu_option)
-      csky_selected_cpu = &all_cores[opts->x_csky_cpu_option];
+    csky_selected_cpu = &all_cores[opts->x_csky_cpu_option];
 
-  if (csky_selected_arch)
+  if (csky_selected_cpu)
     {
-      csky_initialize_isa (target->isa, csky_selected_arch->isa_bits);
-
-      if (csky_selected_cpu)
+      /* TODO: support combination of features
+         between different cpu & arch, should based on arch.   */
+      if (csky_selected_arch
+          && (csky_selected_cpu->base_arch != csky_selected_arch->base_arch))
         {
-          /* TODO  */
+          warning (0, "cpu %s is not based on arch %s, ignore the arch",
+                   csky_selected_cpu->name, csky_selected_arch->name);
         }
-      else
-        {
-          /* Pick a CPU based on the architecture.  */
-          csky_selected_cpu = csky_selected_arch;
-          target->arch_name = csky_selected_arch->name;
-          /* Note: target->core_name is left unset in this path.  */
-        }
-    }
-  else if (csky_selected_cpu)
-    {
+      if (!csky_selected_arch)
+        csky_selected_arch = &all_architectures[csky_selected_cpu->base_arch];
+      csky_initialize_isa (all_sbits, csky_selected_arch->isa_bits);
       target->core_name = csky_selected_cpu->name;
-      csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
+    }
+  else if (csky_selected_arch)
+    {
+      csky_selected_cpu = csky_selected_arch;
+      target->arch_name = csky_selected_arch->name;
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
       csky_selected_cpu = &all_cores[TARGET_CPU_DEFAULT];
-      gcc_assert (csky_selected_cpu->name);
+      csky_selected_arch = &all_architectures[csky_selected_cpu->base_arch];
+      csky_initialize_isa (all_sbits, csky_selected_arch->isa_bits);
 
-      /* TODO: TARGET_CPU_DEFAULT + options to create cpu  */
-
-      /* Now we know the CPU, we can finally initialize the target
-         structure.  */
       target->core_name = csky_selected_cpu->name;
-      csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
     }
 
+  gcc_assert (csky_selected_arch);
   gcc_assert (csky_selected_cpu);
+  csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
+  bitmap_ior (target->isa, target->isa, all_sbits);
 
   if (opts->x_csky_fpu_index != TARGET_FPU_auto)
     {
@@ -1981,27 +1990,16 @@ csky_configure_build_target (struct csky_build_target *target,
 
   target_flags |= csky_selected_cpu->flags;
 
-  struct csky_opt2isa_table
-  {
-    int flags;
-    enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
-  } opt2isa_table [] = {
-
-    /* List all isa options here, and 'isa_bits' is full feature bits about
-       for this option, and you need to put the least bit of this feature
-       in elements[0] to skip when including the bit by default isa features
-       which are from abiv2_csky_cores.def.  */
-    { MASK_DSP, { CSKY_ISA_DSP } },
-  };
+  /* Setting isa features if there is no default
+     which are controlled by the option.  */
   int i = 0;
-  sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
-  for (i = 0; i < sizeof(opt2isa_table)/sizeof(opt2isa_table[0]); i++)
+  for (i = 0; i < sizeof(all_opt2isa)/sizeof(all_opt2isa[0]); i++)
     {
-      if (target_flags & opt2isa_table[i].flags)
+      if (target_flags & all_opt2isa[i].flags)
         {
-          if (!bitmap_bit_p(target->isa, opt2isa_table[i].isa_bits[0]))
+          if (!bitmap_bit_p(target->isa, all_opt2isa[i].isa_bits[0]))
             {
-              csky_initialize_isa (all_sbits, opt2isa_table[i].isa_bits);
+              csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
               bitmap_ior (target->isa, target->isa, all_sbits);
             }
         }
@@ -2009,6 +2007,12 @@ csky_configure_build_target (struct csky_build_target *target,
   sbitmap_free(all_sbits);
 
   /* TODO: fix conflict between isa features here.  */
+
+  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    {
+      flag_pic = 0;
+      warning (0, "-fPIC is not supported by arch %s", csky_selected_cpu->arch);
+    }
 }
 
 
@@ -2057,12 +2061,6 @@ csky_option_override (void)
   csky_arch_name = csky_active_target.arch_pp_name;
 
   csky_base_arch = csky_active_target.base_arch;
-
-  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
-    {
-      flag_pic = 0;
-      warning (0, "-fPIC is not supported by arch %s", csky_arch_name);
-    }
 
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */

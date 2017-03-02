@@ -19,13 +19,12 @@ enum csky_processor_type
 /* The various CSKY architectures.  */
 enum csky_base_architecture
 {
-  CSKY_BASE_ARCH_NONE,
 #undef CSKY_ARCH
 #define CSKY_ARCH(NAME, CORE_IDENT, ARCH, ISA) \
   CSKY_BASE_ARCH_##ARCH,
 #include "abiv2_csky_cores.def"
 #undef CSKY_ARCH
-  CSKY_BASE_ARCH_MAX
+  CSKY_BASE_ARCH_NONE
 };
 #define CSKY_TARGET_ARCH_GET(name) CSKY_BASE_ARCH_ ## name
 

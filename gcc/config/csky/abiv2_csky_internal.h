@@ -6,6 +6,12 @@
 #include "abiv2_csky_isa.h"
 #include "abiv2_csky_opts.h"
 
+struct csky_option2isa
+{
+  int flags;
+  enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
+};
+
 struct csky_processors
 {
   const char *const name;
