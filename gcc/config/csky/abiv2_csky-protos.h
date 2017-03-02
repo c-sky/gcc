@@ -21,6 +21,7 @@
 #define CSKY_LR_REGNUM                15
 #define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
 #define CSKY_GB_REGNUM                28
+#define CSKY_TLS_REGNUM               31
 
 #define CSKY_LD16_MAX_OFFSET(MODE)    (31 * GET_MODE_SIZE(MODE))
 #define CSKY_LD32_MAX_OFFSET(MODE)    (4095 * GET_MODE_SIZE(MODE))
@@ -216,9 +217,12 @@ extern void set_csky_return_address (rtx source, rtx scratch);
 
 extern int symbol_mentioned_p (rtx x);
 extern int label_mentioned_p (rtx x);
-extern int tls_mentioned_p(rtx x);
 extern rtx legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag);
 extern char *csky_output_call (rtx operands[], int index);
+
+extern int tls_mentioned_p(rtx x);
+extern bool csky_tls_referenced_p (rtx x);
+extern rtx legitimize_tls_address (rtx x, rtx reg);
 
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
@@ -227,5 +231,6 @@ extern int csky_arch_isa_features[];
   csky_arch_isa_features[CSKY_ISA_FEATURE_GET(IDENT)]
 #define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE(smart)
 
+#define TARGET_SOFT_TP      !TARGET_HARD_TP
 
 #endif /* GCC_CSKY_PROTOS_H */

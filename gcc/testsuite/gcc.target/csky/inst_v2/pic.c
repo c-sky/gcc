@@ -1,6 +1,7 @@
 
 /* { dg-do compile } */
 /* { dg-options "-fPIC" } */
+/* { dg-skip-if "CSKY_ISA_FEATURE(pic)" { csky-*-* } { "-march=*" } { "-march=ck807" "-march=ck810" } }  */
 
 extern int a;
 extern void b(void);

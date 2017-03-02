@@ -158,6 +158,16 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
 
 
 /******************************************************************
+ *    Dividing the Output into Sections (Texts, Data, . . . )     *
+ ******************************************************************/
+
+
+#undef TARGET_HAVE_TLS
+#define TARGET_HAVE_TLS true
+#define CSKY_HAVE_TLS (TARGET_HAVE_TLS && CSKY_ISA_FEATURE(tls))
+
+
+/******************************************************************
  *         Defining target-specific uses of __attribute__         *
  ******************************************************************/
 
@@ -229,6 +239,8 @@ int csky_stack_increment = CSKY_STACK_UNITS_MAXSTEP;
 /* Forward definitions of types.  */
 typedef struct minipool_node    Mnode;
 typedef struct minipool_fixup   Mfix;
+
+static GTY(()) int tls_labelno;
 
 
 #define CSKY_ADDISP_MAX_STEP  508
@@ -2004,15 +2016,8 @@ csky_configure_build_target (struct csky_build_target *target,
             }
         }
     }
+
   sbitmap_free(all_sbits);
-
-  /* TODO: fix conflict between isa features here.  */
-
-  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
-    {
-      flag_pic = 0;
-      warning (0, "-fPIC is not supported by arch %s", csky_selected_cpu->arch);
-    }
 }
 
 
@@ -2062,6 +2067,17 @@ csky_option_override (void)
 
   csky_base_arch = csky_active_target.base_arch;
 
+  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    {
+      flag_pic = 0;
+      warning (0, "-fPIC is not supported by arch %s", csky_arch_name);
+    }
+
+  if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    bitmap_set_bit(csky_active_target.isa, CSKY_ISA_FEATURE_GET(tls));
+  else
+    warning (0, "TLS is not supported by arch %s", csky_arch_name);
+
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */
 
@@ -2082,6 +2098,30 @@ csky_option_override (void)
 }
 
 
+/* Return TRUE if X contains any TLS symbol references.  */
+
+bool
+csky_tls_referenced_p (rtx x)
+{
+  if (!CSKY_HAVE_TLS)
+    return false;
+
+  subrtx_iterator::array_type array;
+  FOR_EACH_SUBRTX (iter, array, x, ALL)
+    {
+      const_rtx x = *iter;
+      if (GET_CODE (x) == SYMBOL_REF && SYMBOL_REF_TLS_MODEL (x) != 0)
+        return true;
+
+      /* Don't recurse into UNSPEC_TLS looking for TLS symbols; these are
+         TLS offsets, not real symbol references.  */
+      if (GET_CODE (x) == UNSPEC && XINT (x, 1) == UNSPEC_TLS)
+        iter.skip_subrtxes ();
+    }
+  return false;
+}
+
+
 /* Determine if it's legal to put X into the constant pool.  This
    is not possible for the address of thread-local symbols, which
    is checked above.  */
@@ -2089,10 +2129,7 @@ csky_option_override (void)
 static bool
 csky_cannot_force_const_mem (machine_mode mode, rtx x)
 {
-  /* TODO impelent the TLS related function later.  */
-#if 0
   return csky_tls_referenced_p (x);
-#endif
 }
 
 
@@ -2161,18 +2198,164 @@ get_offset_bits_count (machine_mode mode)
 }
 
 
+/* Return TRUE if X is a thread-local symbol.  */
+
+static bool
+csky_tls_symbol_p (rtx x)
+{
+  if (! CSKY_HAVE_TLS)
+    return false;
+
+  if (GET_CODE (x) != SYMBOL_REF)
+    return false;
+
+  return SYMBOL_REF_TLS_MODEL (x) != 0;
+}
+
+
+static GTY(()) rtx tls_get_addr_libfunc;
+
+static rtx
+get_tls_get_addr (void)
+{
+  if (!tls_get_addr_libfunc)
+    tls_get_addr_libfunc = init_one_libfunc ("__tls_get_addr");
+  return tls_get_addr_libfunc;
+}
+
+
+static rtx
+csky_load_tp (rtx target)
+{
+  if (!target)
+    target = gen_reg_rtx (SImode);
+
+  if (TARGET_HARD_TP)
+    {
+      /* Can return in any reg.  */
+      emit_insn (gen_load_tp_hard (target));
+    }
+  else
+    {
+      /* Always returned in r0.  Immediately copy the result into a pseudo,
+         otherwise other uses of r0 (e.g. setting up function arguments) may
+         clobber the value.  */
+      emit_insn (gen_load_tp_soft ());
+      emit_move_insn (target, gen_rtx_REG (SImode, 0));
+    }
+  return target;
+}
+
+
+static rtx
+load_tls_operand (rtx x, rtx reg)
+{
+  if (reg == NULL_RTX)
+    reg = gen_reg_rtx (SImode);
+
+  emit_move_insn (reg, x);
+  return reg;
+}
+
+
+static rtx
+csky_call_tls_get_addr (rtx x, rtx reg, rtx *valuep, int reloc)
+{
+  rtx insns, label, labelno, sum;
+
+  start_sequence ();
+
+  labelno = GEN_INT (tls_labelno++);
+
+  label = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, labelno), UNSPEC_TLS_LABEL);
+
+  sum = gen_rtx_UNSPEC (Pmode,
+                        gen_rtvec (3, x, GEN_INT (reloc), label),
+                        UNSPEC_TLS);
+
+  reg = load_tls_operand (sum, reg);
+
+  emit_insn (gen_tls_do_add_pc (reg, reg, labelno));
+
+  *valuep = emit_library_call_value (get_tls_get_addr (),
+                                     NULL_RTX, LCT_PURE, /* LCT_CONST?  */
+                                     Pmode, 1, reg, Pmode);
+  insns = get_insns ();
+  end_sequence ();
+
+  return insns;
+}
+
+
+rtx
+legitimize_tls_address (rtx x, rtx reg)
+{
+  rtx dest, tp, label, labelno, sum, insns, ret, eqv, addend;
+  unsigned int model = SYMBOL_REF_TLS_MODEL (x);
+
+  switch (model)
+    {
+    case TLS_MODEL_GLOBAL_DYNAMIC:
+      insns = csky_call_tls_get_addr (x, reg, &ret, TLS_GD32);
+      dest = gen_reg_rtx (Pmode);
+      emit_libcall_block (insns, dest, ret, x);
+      return dest;
+
+    case TLS_MODEL_LOCAL_DYNAMIC:
+      insns = csky_call_tls_get_addr (x, reg, &ret, TLS_LDM32);
+
+      /* Attach a unique REG_EQUIV, to allow the RTL optimizers to
+     share the LDM result with other LD model accesses.  */
+      eqv = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, const1_rtx), UNSPEC_TLS);
+      dest = gen_reg_rtx (Pmode);
+      emit_libcall_block (insns, dest, ret, eqv);
+
+      /* Load the addend.  */
+      addend = gen_rtx_UNSPEC (Pmode,
+                               gen_rtvec (2, x, GEN_INT (TLS_LDO32)),
+                               UNSPEC_TLS);
+      addend = force_reg (SImode, addend);
+      return gen_rtx_PLUS (Pmode, dest, addend);
+
+    case TLS_MODEL_INITIAL_EXEC:
+      labelno = GEN_INT (tls_labelno++);
+      label = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, labelno), UNSPEC_TLS_LABEL);
+      sum = gen_rtx_UNSPEC (Pmode,
+                            gen_rtvec (3, x, GEN_INT (TLS_IE32), label),
+                            UNSPEC_TLS);
+      reg = load_tls_operand (sum, reg);
+
+      emit_insn (gen_tls_do_add_pc (reg, reg, labelno));
+      emit_move_insn (reg, gen_const_mem (Pmode, reg));
+
+      tp = csky_load_tp (NULL_RTX);
+
+      return gen_rtx_PLUS (Pmode, tp, reg);
+
+    case TLS_MODEL_LOCAL_EXEC:
+      tp = csky_load_tp (NULL_RTX);
+
+      reg = gen_rtx_UNSPEC (Pmode,
+                            gen_rtvec (2, x, GEN_INT (TLS_LE32)),
+                            UNSPEC_TLS);
+      reg = force_reg (SImode, reg);
+
+      return gen_rtx_PLUS (Pmode, tp, reg);
+
+    default:
+      abort ();
+    }
+}
+
+
 /* Try machine-dependent ways of modifying an illegitimate address
    to be legitimate.  If we find one, return the new, valid address.  */
 
 static rtx
 csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
 {
-
-  /* TODO impelent the TLS related function later.  */
-#if 0
   if (csky_tls_symbol_p (x))
     return legitimize_tls_address (x, NULL_RTX);
-#endif
 
   if (GET_CODE (x) == PLUS)
     {
@@ -4882,3 +5065,5 @@ csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
+
+#include "gt-abiv2-csky.h"

@@ -111,7 +111,7 @@ Generate code with push/pop instruction, -mpushpop is default.
 
 -mhard-tp
 Target RejectNegative Report Mask(HARD_TP)
-Generate Tls code use tls register.
+Generate TLS code use TLS register.
 
 mstrict-align
 Target Report Mask(STRICT_ALIGNMENT)

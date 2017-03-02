@@ -14,6 +14,7 @@ CSKY_ISA(7E10,  "Extended insns for arch ck810  from ck807")
 /* Specific insns mode */
 CSKY_ISA(smart,    "TODO")
 CSKY_ISA(security, "Do nothing, just forward to as")
+CSKY_ISA(tls,      "Support thread-local storage")
 
 /* Extended specific insns */
 CSKY_ISA(dsp,   "Extended insns for DSP")

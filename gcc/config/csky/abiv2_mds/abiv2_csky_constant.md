@@ -32,3 +32,11 @@
    (VUNSPEC_SYMBOL_REF     3)
 ])
 
+;; Supported TLS relocations
+(define_constants
+  [(TLS_GD32               0)
+   (TLS_LDM32              1)
+   (TLS_LDO32              2)
+   (TLS_IE32               3)
+   (TLS_LE32               4)]
+)
