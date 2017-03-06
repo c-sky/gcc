@@ -40,9 +40,6 @@
 #include "builtins.h"
 #include "tm-constrs.h"
 #include "rtl-iter.h"
-/* FIXME Include this file for function dwarf2out_do_frame, can we
-   repalce this function just like arm?  */
-#include "debug.h"
 
 #include "abiv2_csky_internal.h"
 
@@ -83,6 +80,22 @@ enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER] =
   RESERVE_REGS, RESERVE_REGS,
   /* Register epc.  */
   OTHER_REGS
+};
+
+/* Arrays that map GCC register numbers to debugger register numbers,
+   '-1' means that is INVALID_REGNUM.
+   TODO: which rules according to here ?  */
+const int csky_dbx_regno[FIRST_PSEUDO_REGISTER] =
+{
+  0,  1,  2,  3,  4,  5,  6,  7,
+  8,  9,  10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23,
+  24, 25, 26, 27, 28, 29, 30, 31,
+  -1, -1, 36, 37, 56, 57, 58, 59,
+  60, 61, 62, 63, 64, 65, 66, 67,
+  68, 69, 70, 71, -1, -1, -1, -1,
+  -1, -1, -1, -1, -1, -1, -1, -1,
+  -1, -1, -1, -1, -1, -1, 72
 };
 
 
@@ -1720,7 +1733,7 @@ csky_conditional_register_usage (void)
 
 
   /* The hi,lo register is only supported in dsp mode.  */
-  if (!TARGET_DSP)
+  if (!CSKY_ISA_FEATURE(dsp))
     {
       fixed_regs[CSKY_HI_REGNUM] = 1;
       call_used_regs[CSKY_HI_REGNUM] = 1;
@@ -1795,7 +1808,7 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
       /* Don't allocate hi,lo register for float data even
          if in dsp mode, because it will cause high cost
          to reload data from hi,lo register.  */
-      if (!TARGET_DSP || mode == SFmode || mode == DFmode)
+      if (!CSKY_ISA_FEATURE(dsp) || mode == SFmode || mode == DFmode)
         return 0;
       else if (CSKY_NUM_REGS(mode) == 2)
         return (regno == CSKY_HI_REGNUM);

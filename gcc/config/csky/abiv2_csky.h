@@ -840,6 +840,39 @@ while (0)
 
 
 /******************************************************************
+ *            Controlling Debugging Information Format            *
+ ******************************************************************/
+
+
+/* Define this macro if GCC should produce dwarf version 2 format debugging
+   output in response to the `-g' option.  */
+#define DWARF2_DEBUGGING_INFO 1
+
+/* Define this if you have arranged for GCC to support
+   more than one format of debugging output.
+   The value of this macro only affects the default debugging output.  */
+#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
+
+/* Define this macro if the target’s representation
+   for dwarf registers used in .eh_frame or .debug_frame
+   is different from that used in other debug info sections.
+   Given a GCC hard register number,
+   this macro should return the .eh_frame register number.*/
+#define DWARF_FRAME_REGNUM(REG)  DBX_REGISTER_NUMBER (REG)
+
+/* If INCOMING_RETURN_ADDR_RTX is defined & the RTL is REG,
+   define DWARF_FRAME_RETURN_COLUMN to DWARF_FRAME_REGNUM.  */
+#define DWARF_FRAME_RETURN_COLUMN DWARF_FRAME_REGNUM (CSKY_LR_REGNUM)
+
+/* Use r0 and r1 to pass exception handling information.  */
+#define EH_RETURN_DATA_REGNO(N) (((N) < 2) ? N : INVALID_REGNUM)
+
+/* How to renumber registers for dbx and gdb.  */
+extern const int csky_dbx_regno[];
+#define DBX_REGISTER_NUMBER(REGNO) csky_dbx_regno[REGNO]
+
+
+/******************************************************************
  *                    Miscellaneous Parameters                    *
  ******************************************************************/
 

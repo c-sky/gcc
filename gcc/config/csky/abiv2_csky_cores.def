@@ -73,7 +73,7 @@ CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU
 /* ck810 Architecture Processors */
 CSKY_CORE("ck810",    ck810,    ck810,    CK810,  , 0)
 CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  , 0)
-CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  , 0)
+CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
 CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_ALL_FPU), 0)
 #endif
 
