@@ -364,6 +364,7 @@ static enum csky_inline_const_type
 try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
                           HOST_WIDE_INT * y);
 static bool is_pushpop_from_csky_live_regs(int mask);
+static bool is_stm_from_csky_live_regs(int mask, int *br, int *er);
 
 
 static unsigned long
@@ -4441,6 +4442,7 @@ void csky_expand_prologue(void)
 
 void csky_expand_epilogue(void)
 {
+  int sreg, ereg;
   int offset = 0;
   unsigned long func_type = get_csky_current_func_type();
 
@@ -4474,7 +4476,7 @@ void csky_expand_epilogue(void)
 
     }
   /* TODO: stm */
-  else if (0 /* is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg) */)
+  else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
     {
 
     }
@@ -4614,8 +4616,65 @@ csky_output_function_epilogue (FILE *file ATTRIBUTE_UNUSED,
 }
 
 
+static bool
+is_stm_from_csky_live_regs(int mask, int *br, int *er)
+{
+  int i = 4;
+  int begin_reg, end_reg;
+  bool begin = false;
+  bool end = false;
+  int count = 0;
+
+  if (!TARGET_MULTIPLE_STLD)
+    return false;
+
+  for (; i <= 11; i++)
+    {
+      if (!begin && (mask & 1 << i))
+        {
+          begin_reg = i;
+          begin = true;
+          count++;
+          continue;
+        }
+      else if (begin && !end && (mask & 1 << i))
+        {
+          count++;
+        }
+      else if (begin && !end && !(mask & 1 << i))
+        {
+          end_reg = i - 1;
+          end = true;
+          continue;
+        }
+      /* FIXME by yanwb, the allocation order my not be continuous */
+      else if (end && (mask & 1 << i))
+        {
+          return false;
+        }
+    }
+
+  if (begin && !end && i == 12)
+    {
+      end_reg = 11;
+      end = true;
+    }
+
+  if (count >= CSKY_MULTIPLE_LDST_THRESHOLD && count <= CSKY_MAX_MULTIPLE_STLD)
+    {
+      if (br)
+        *br = begin_reg;
+      if (er)
+        *er = end_reg;
+      return true;
+    }
+  return false;
+}
+
+
 const char *csky_unexpanded_epilogue(void)
 {
+  int sreg, ereg;
   unsigned long func_type = get_csky_current_func_type();
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
@@ -4645,6 +4704,28 @@ const char *csky_unexpanded_epilogue(void)
           asm_fprintf (asm_out_file, ", %s", reg_names[rn]);
         }
       asm_fprintf (asm_out_file, "\n");
+    }
+  else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
+    {
+      int off = fi.reg_size - (ereg - sreg + 1 ) * 4;
+      if (off) off = fi.reg_size - 4;
+
+      int i = 31;
+      for (; i > ereg; i--)
+        {
+          if (!(fi.reg_mask & (1 << i)))
+            continue;
+          asm_fprintf (asm_out_file, "\tld.w\t%s, (%s, %d)\n",
+                       reg_names[i], reg_names[CSKY_SP_REGNUM], off);
+          off -= 4;
+        }
+
+      asm_fprintf (asm_out_file, "\tldm\t%s - %s, (%s)\n",
+                   reg_names[sreg], reg_names[ereg],
+                   reg_names[CSKY_SP_REGNUM]);
+      asm_fprintf (asm_out_file, "\taddi\t%s, 0x%x\n",
+                   reg_names[CSKY_SP_REGNUM],
+                   fi.reg_size + fi.pad_reg + fi.arg_size + fi.pad_arg);
     }
 
   if(crtl->calls_eh_return)

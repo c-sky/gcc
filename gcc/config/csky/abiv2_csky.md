@@ -7,6 +7,7 @@
 (include "abiv2_mds/abiv2_csky_insn_attr.md")
 (include "abiv2_mds/abiv2_csky_insn_mov.md")
 (include "abiv2_mds/abiv2_csky_insn_arithmetic.md")
+(include "abiv2_mds/abiv2_csky_insn_ldmstm.md")
 (include "abiv2_mds/abiv2_csky_insn_jump.md")
 (include "abiv2_mds/abiv2_csky_insn_cmp.md")
 (include "abiv2_mds/abiv2_csky_insn_call.md")

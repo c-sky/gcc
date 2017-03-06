@@ -1,4 +1,87 @@
 
+;; Return 1 if OP is a load multiple operation.
+
+(define_predicate "csky_load_multiple_operation"
+  (match_code "parallel")
+{
+  int count = XVECLEN (op, 0);
+  int dest_regno;
+  rtx src_addr;
+  int i;
+
+  /* Perform a quick check so we don't blow up below.  */
+  if (count <= 1
+      || GET_CODE (XVECEXP (op, 0, 0))                     != SET
+      || GET_CODE (SET_DEST (XVECEXP (op, 0, 0)))          != REG
+      || GET_CODE (SET_SRC (XVECEXP (op, 0, 0)))           != MEM
+      || GET_CODE (XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0)) != REG
+      || XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0)            != stack_pointer_rtx)
+    return 0;
+
+  dest_regno = REGNO (SET_DEST (XVECEXP (op, 0, 0)));
+  src_addr = XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0);
+
+  for (i = 1; i < count; i++)
+    {
+      rtx elt = XVECEXP (op, 0, i);
+
+      if (GET_CODE (elt) != SET
+          || GET_CODE (SET_DEST (elt))          != REG
+          || GET_MODE (SET_DEST (elt))          != SImode
+          || REGNO (SET_DEST (elt))             != (unsigned) (dest_regno + i)
+          || GET_CODE (SET_SRC (elt))           != MEM
+          || GET_MODE (SET_SRC (elt))           != SImode
+          || GET_CODE (XEXP (SET_SRC (elt), 0)) != PLUS
+          || ! rtx_equal_p (XEXP (XEXP (SET_SRC (elt), 0), 0), src_addr)
+          || GET_CODE (XEXP (XEXP (SET_SRC (elt), 0), 1)) != CONST_INT
+          || INTVAL (XEXP (XEXP (SET_SRC (elt), 0), 1))   != i * 4)
+        return 0;
+    }
+  return 1;
+})
+
+;; Similar, for store multiple.
+
+(define_predicate "csky_store_multiple_operation"
+  (match_code "parallel")
+{
+  int count = XVECLEN (op, 0);
+  int src_regno;
+  rtx dest_addr;
+  int i;
+
+  /* Perform a quick check so we don't blow up below.  */
+  if (count <= 1
+      || GET_CODE (XVECEXP (op, 0, 0))                      != SET
+      || GET_CODE (SET_DEST (XVECEXP (op, 0, 0)))           != MEM
+      || GET_CODE (XEXP (SET_DEST (XVECEXP (op, 0, 0)), 0)) != REG
+      || XEXP (SET_DEST (XVECEXP (op, 0, 0)), 0)            != stack_pointer_rtx
+      || GET_CODE (SET_SRC (XVECEXP (op, 0, 0)))            != REG)
+    return 0;
+
+  src_regno = REGNO (SET_SRC (XVECEXP (op, 0, 0)));
+  dest_addr = XEXP (SET_DEST (XVECEXP (op, 0, 0)), 0);
+
+  for (i = 1; i < count; i++)
+    {
+      rtx elt = XVECEXP (op, 0, i);
+
+      if (GET_CODE (elt) != SET
+          || GET_CODE (SET_SRC (elt))            != REG
+          || GET_MODE (SET_SRC (elt))            != SImode
+          || REGNO (SET_SRC (elt))               != (unsigned) (src_regno + i)
+          || GET_CODE (SET_DEST (elt))           != MEM
+          || GET_MODE (SET_DEST (elt))           != SImode
+          || GET_CODE (XEXP (SET_DEST (elt), 0)) != PLUS
+          || ! rtx_equal_p (XEXP (XEXP (SET_DEST (elt), 0), 0), dest_addr)
+          || GET_CODE (XEXP (XEXP (SET_DEST (elt), 0), 1)) != CONST_INT
+          || INTVAL (XEXP (XEXP (SET_DEST (elt), 0), 1))   != i * 4)
+        return 0;
+    }
+  return 1;
+})
+
+
 (define_predicate "csky_arith_K_operand"
   (match_code "reg,subreg,const_int")
   {
