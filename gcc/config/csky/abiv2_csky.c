@@ -5548,10 +5548,208 @@ register_csky_move_cost (enum machine_mode mode ATTRIBUTE_UNUSED,
 
 
 static bool
-csky_rtx_costs (rtx x, int code, int outer_code, int *total,
+ck802_ck801_rtx_costs (rtx x, int code, int outer_code, int *total,
+                       bool speed ATTRIBUTE_UNUSED)
+{
+  enum machine_mode mode = GET_MODE (x);
+  switch (code)
+    {
+      /*Accessing memrory costs quite a lot for first word */
+    case MEM:
+      *total = COSTS_N_INSNS (1 + CSKY_NUM_REGS (mode));
+      return false;
+    case DIV:
+    case UDIV:
+    case MOD:
+    case UMOD:
+      *total = 100;
+      return true;
+
+    case ROTATE:
+    case ROTATERT:
+    case ASHIFT:
+    case LSHIFTRT:
+    case ASHIFTRT:
+      if (speed)
+        *total = 2;
+      else
+        *total = COSTS_N_INSNS (1);
+      return false;
+
+    case MINUS:
+    case PLUS:
+      *total = COSTS_N_INSNS (CSKY_NUM_REGS (mode));
+      return false;
+
+    case AND:
+      {
+        enum rtx_code subcode = GET_CODE (XEXP (x, 1));
+
+        /*if subcode is "not", try to conbime it such as "andn"
+           instruction, so let AND itself not to costs insns */
+        if (subcode == NOT)
+          {
+            *total = 0;
+            return false;
+          }
+      }
+      /*fall through */
+    case XOR:
+    case IOR:
+      *total = COSTS_N_INSNS (CSKY_NUM_REGS (mode));
+      return false;
+
+    case MULT:
+      /*we can use "ix.h/w" insn to repalce multed by 3 or 5
+         "ix.h/w" is a 32-bits insn, so let it be little less than
+         "mult" insn */
+      if (REG_P (XEXP (x, 0)) && CONST_INT_P (XEXP (x, 1)))
+        {
+          unsigned HOST_WIDE_INT m;
+          m = (unsigned HOST_WIDE_INT) (INTVAL (XEXP (x, 1)));
+          if ((m == 2 || m == 4) && outer_code == PLUS)
+            {
+              *total = 2;
+              return true;
+            }
+          else
+            {
+              /*because mult is relatively slower than other operation, so
+                 if speeding ,we try to using other insns to optimazing mult,
+                 so let the mult insn relatively large. And if we consider about
+                 size, a mult insn seems much simpler */
+              if (speed)
+                {
+                  *total = COSTS_N_INSNS (10 * CSKY_NUM_REGS (mode));
+                  return true;
+                }
+              int cycle = 0;
+              while (m)
+                {
+                  m >>= 2;
+                  cycle++;
+                }
+              *total = COSTS_N_INSNS (1) + cycle;
+              return false;
+            }
+        }
+      if (!speed)
+        *total = COSTS_N_INSNS (1);
+      return false;
+
+    case NEG:
+      /*Usually, we use minused by 0 to substutite for neg, but we must cost
+         1 insn to move 0 to a register, so it si the extra cost */
+      *total = COSTS_N_INSNS (2 * CSKY_NUM_REGS (mode));
+      return false;
+
+    case NOT:
+      *total = COSTS_N_INSNS (CSKY_NUM_REGS (mode));
+      return false;
+
+    case COMPARE:
+      *total = COSTS_N_INSNS (1);
+      return false;
+
+    case SIGN_EXTEND:
+    case ZERO_EXTEND:
+      *total = COSTS_N_INSNS (CSKY_NUM_REGS (mode));
+      return false;
+
+    case SIGN_EXTRACT:
+    case ZERO_EXTRACT:
+      if (REG_P (XEXP (x, 0)) && CONST_INT_P (XEXP (x, 1))
+          && CONST_INT_P (XEXP (x, 2)) && INTVAL (XEXP (x, 1)) == 8
+          && (INTVAL (XEXP (x, 2)) % 8 == 0))
+        {
+          *total = 4;
+          return true;
+        }
+      *total = COSTS_N_INSNS (CSKY_NUM_REGS (mode));
+      return false;
+
+    case CONST_INT:
+      {
+        unsigned HOST_WIDE_INT t;
+        t = (unsigned HOST_WIDE_INT) (INTVAL (x));
+
+        if (outer_code == COMPARE)
+          {
+            if (t < 0x10000)
+              *total = 0;
+            else
+              *total = COSTS_N_INSNS (2);
+          }
+        else if (outer_code == AND || outer_code == IOR || outer_code == XOR)
+          {
+            /*"andi,xori,ori" arn 32-bits insn, so let it costs a little more */
+            if (t < 0x1000)
+              {
+                /*try replace "andi" by "sextb/h", so let it cost more */
+                if (outer_code == AND && (t == 0xff || t == 0xffff))
+                  {
+                    *total = 8;
+                    return true;
+                  }
+                *total = 2;
+              }
+            else if (t < 0x10000)
+              *total = COSTS_N_INSNS (1);
+            else
+              *total = COSTS_N_INSNS (2);
+          }
+        else if (outer_code == PLUS || outer_code == MINUS)
+          {
+            /*"addi/subi rx,ry,imm", id imm<9, it more often be a 16-bits insn
+               if imm>=9, use "movi" insn probably be less than "addi/subi" */
+            if (t < 9)
+              *total = 0;
+            else if (t < 0x1000)
+              *total = 2;
+            else if (t < 0x10000)
+              *total = COSTS_N_INSNS (1);
+            else
+              *total = COSTS_N_INSNS (2);
+          }
+        else if (outer_code == ROTATE || outer_code == ROTATERT
+                 || outer_code == LSHIFTRT || outer_code == ASHIFTRT
+                 || outer_code == ASHIFT)
+          {
+            if (t < 32)
+              *total = 0;
+            else
+              *total = COSTS_N_INSNS (2);
+          }
+        else
+          {
+            if (t < 0x10000)
+              if (outer_code == SET && t < 256)
+                *total = 0;
+              else
+                *total = COSTS_N_INSNS (1);
+            else
+              *total = COSTS_N_INSNS (2);
+          }
+      }
+      return true;
+
+    case CONST:
+    case LABEL_REF:
+    case SYMBOL_REF:
+      *total = COSTS_N_INSNS (3);
+      return true;
+    default:
+      return false;
+    }
+}
+
+static bool
+csky_rtx_costs (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
+                int outer_code, int opno ATTRIBUTE_UNUSED, int *total,
                 bool speed ATTRIBUTE_UNUSED)
 {
-  if (TARGET_CK802 || TARGET_CK801)
+  int code = GET_CODE (x);
+  if (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801))
     {
       return ck802_ck801_rtx_costs (x, code, outer_code, total, speed);
     }
