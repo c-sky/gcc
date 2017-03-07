@@ -91,11 +91,11 @@ const int csky_dbx_regno[FIRST_PSEUDO_REGISTER] =
   8,  9,  10, 11, 12, 13, 14, 15,
   16, 17, 18, 19, 20, 21, 22, 23,
   24, 25, 26, 27, 28, 29, 30, 31,
-  -1, -1, 36, 37, 56, 57, 58, 59,
-  60, 61, 62, 63, 64, 65, 66, 67,
-  68, 69, 70, 71, -1, -1, -1, -1,
+  -1, -1, 36, 37, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1,
-  -1, -1, -1, -1, -1, -1, 72
+  -1, -1, -1, -1, 56, 57, 58, 59,
+  60, 61, 62, 63, 64, 65, 66, 67,
+  68, 69, 70, 71, -1, -1, 72
 };
 
 /* Table of machine attributes.  */
@@ -1755,6 +1755,7 @@ csky_conditional_register_usage (void)
           call_used_regs[i] = 1;
           call_really_used_regs[i] = 1;
         }
+        call_really_used_regs[CSKY_LR_REGNUM] = 0;
     }
   /* For some targets, the high regitser is not supported.
      Expect ck801 & ck802 & ck803s, other cpu use high registers
@@ -2029,11 +2030,9 @@ csky_configure_build_target (struct csky_build_target *target,
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
-      csky_selected_cpu = &all_cores[TARGET_CPU_DEFAULT];
-      csky_selected_arch = &all_architectures[csky_selected_cpu->base_arch];
-      csky_initialize_isa (all_sbits, csky_selected_arch->isa_bits);
-
-      target->core_name = csky_selected_cpu->name;
+      csky_selected_arch = &all_architectures[TARGET_ARCH_DEFAULT];
+      csky_selected_cpu = csky_selected_arch;
+      target->arch_name = csky_selected_arch->name;
     }
 
   gcc_assert (csky_selected_arch);
@@ -4253,7 +4252,8 @@ output_csky_return_instruction(void)
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
-  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
+      && fi.arg_size == 0)
     return "";
 
   if (CSKY_FUNCTION_IS_INTERRUPT(func_type))
@@ -4540,7 +4540,8 @@ void csky_expand_epilogue(void)
 
     }
   /* TODO: pushpop */
-  else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+  else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
+           && fi.arg_size == 0)
     {
 
     }
@@ -4752,7 +4753,8 @@ const char *csky_unexpanded_epilogue(void)
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
 
-  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
+  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
+      && fi.arg_size == 0)
     {
       int rn = 4;
       int reg_end = 31;

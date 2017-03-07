@@ -844,15 +844,37 @@ mcore-*-elf)
 	tmake_file="mcore/t-mcore t-fdpbit"
 	extra_parts="$extra_parts crti.o crtn.o"
 	;;
-csky-*-ecos)
-	;;
-csky-*-elf)
-	;;
-csky-*-linux*)
-    extra_parts=
-	;;
-csky-*-uclinux*)
-	;;
+csky-*-*)
+	case "$with_cskyabi" in
+	"" | abiv1 | abiv2 )
+		#OK
+		;;
+	*)
+		echo "Unknown ABI used in --with-cskyabi=$with_cskyabi"
+		exit 1
+		;;
+	esac
+
+    case ${target} in
+        csky-*-elf*)
+            tmake_file="csky/${with_cskyabi}_t-csky t-fdpbit"
+            extra_parts="$extra_parts crti.o crtn.o"
+            ;;
+        csky-*-ecos*)
+            tmake_file="csky/${with_cskyabi}_t-csky t-fdpbit"
+            ;;
+        csky-*-uclinux*)
+            tmake_file="t-linux csky/${with_cskyabi}_t-csky t-fdpbit"
+            ;;
+        csky-*-linux*)
+            tmake_file="csky/t-slibgcc-elf-ver-csky t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux t-slibgcc-libgcc t-fdpbit t-slibgcc-libgcc"
+            ;;
+        *)
+            echo "*** Configuration ${target} not  supported !!" 1>&2
+            exit 1
+            ;;
+    esac
+    ;;
 microblaze*-linux*)
 	tmake_file="${tmake_file} microblaze/t-microblaze t-fdpbit t-slibgcc-libgcc"
 	;;

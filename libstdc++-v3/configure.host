@@ -108,6 +108,9 @@ case "${host_cpu}" in
   crisv32)
     try_cpu=cris
     ;;
+  csky)
+    try_cpu=csky
+    ;;
   i[567]86 | x86_64)
     try_cpu=i486
     ;;

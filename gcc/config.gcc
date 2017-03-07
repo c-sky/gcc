@@ -2025,7 +2025,7 @@ csky-*-*)
             ;;
         csky-*-linux*)
             tm_file="dbxelf.h elfos.h svr4.h linux.h glibc-stdint.h ${tm_file} csky/csky-linux-elf.h"
-            tmake_file="csky/t-slibgcc-elf-ver-csky t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux t-slibgcc-libgcc"
+            tmake_file="t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
             case ${with_cskylibc} in
                 glibc)
                     tm_file="$tm_file ./sysroot-suffix.h"

@@ -160,9 +160,9 @@
 )
 
 (define_insn "*smart_addsi3"
- [(set (match_operand:SI          0 "register_operand"  "=a,a,a,a,a,a, a, r,r")
+ [(set (match_operand:SI          0 "register_operand"  "=a,r,a,a,a,a, a, r,r")
        (plus:SI (match_operand:SI 1 "register_operand"  "%a,0,0,a,0,a, a, r,r")
-                (match_operand:SI 2 "nonmemory_operand" "a, a,N,L,T,Us,Ua,M,Um")))]
+                (match_operand:SI 2 "nonmemory_operand" "a, r,N,L,T,Us,Ua,M,Um")))]
  "CSKY_ISA_FEATURE(smart) && operands[0] != stack_pointer_rtx
   && operands[1] != stack_pointer_rtx"
  "@
