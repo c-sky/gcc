@@ -21,8 +21,9 @@ CSKY_ISA(dsp,   "Extended insns for DSP")
 CSKY_ISA(java,  "Extended insns for Java")
 
 /* VFP */
-CSKY_ISA(vfpv2,   "")
-CSKY_ISA(fp_dbl,  "Double precision operations supported")
+CSKY_ISA(fpv2_sf,    "Single precision operations supported")
+CSKY_ISA(fpv2_df,    "Double precision operations supported")
+CSKY_ISA(fpv2_divd,  "Double precision div operations supported")
 
 
 #ifdef  CSKY_ISA_MACRO
@@ -35,6 +36,7 @@ CSKY_ISA(fp_dbl,  "Double precision operations supported")
 
 #define CSKY_ISA_DSP        CSKY_ISA_FEATURE_GET(dsp)
 
-#define CSKY_ISA_VFPv2      CSKY_ISA_FEATURE_GET(vfpv2)
-#define CSKY_ISA_ALL_FPU    CSKY_ISA_VFPv2, CSKY_ISA_FEATURE_GET(fp_dbl)
+#define CSKY_ISA_FPv2_SF    CSKY_ISA_FEATURE_GET(fpv2_sf)
+#define CSKY_ISA_FPv2       CSKY_ISA_FPv2_SF, CSKY_ISA_FEATURE_GET(fpv2_df)
+#define CSKY_ISA_FPv2_DIVD  CSKY_ISA_FPv2, CSKY_ISA_FEATURE_GET(fpv2_divd)
 #endif

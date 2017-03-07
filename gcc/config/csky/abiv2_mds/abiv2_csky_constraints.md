@@ -23,6 +23,11 @@
 (define_register_constraint "z" "SP_REGS" "sp register only")
 
 
+(define_memory_constraint "Q"
+  "memory operands with base register, index regster and short displacement for FPUV2"
+  (match_test "get_cskyv2_mem_constraint (\"Q\", op)"))
+
+
 (define_constraint "S"
   "Symbol reference"
   (match_test "symbolic_csky_address_p(op)"))

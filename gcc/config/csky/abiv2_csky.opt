@@ -117,10 +117,6 @@ mstrict-align
 Target Report Mask(STRICT_ALIGNMENT)
 Do not use unaligned memory references
 
-mfcmpzls
-Target Report Mask(FCMPZLS)
-Use fcmpzlss/fcmpzlsd insns.
-
 mfdivdu
 Target Report Mask(FDIVDU)
 Use frecipd/fsqrtd/fdivd insns.

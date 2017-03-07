@@ -263,3 +263,45 @@
 
     return 0;
   })
+
+(define_predicate "csky_const_float1_operand"
+  (match_code "const_double")
+  {
+    if (is_csky_const_float_1(op, mode))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_arith_float1_operand"
+  (match_code "reg,subreg,const_double")
+  {
+    if (register_operand (op, mode))
+      return 1;
+
+    if (GET_CODE (op) == CONST_DOUBLE && is_csky_const_float_1(op, mode))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_const_float0_operand"
+  (match_code "const_double")
+  {
+    if (is_csky_const_float_0(op, mode))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_compare_operand_float"
+  (match_code "const_double,reg,subreg")
+  {
+    if (register_operand (op, mode))
+      return 1;
+
+    if (GET_CODE (op) == CONST_DOUBLE && is_csky_const_float_0(op, mode))
+      return 1;
+
+    return 0;
+  })

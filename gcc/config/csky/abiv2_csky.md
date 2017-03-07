@@ -16,3 +16,4 @@
 (include "abiv2_mds/abiv2_csky_insn_misc.md")
 
 (include "abiv2_mds/abiv2_csky_insn_dsp.md")
+(include "abiv2_mds/abiv2_csky_insn_fpu.md")

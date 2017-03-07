@@ -204,8 +204,12 @@ extern const char *output_csky_bseti (rtx, rtx, int);
 extern int get_csky_int_ones (HOST_WIDE_INT);
 extern int get_csky_int_zeros (HOST_WIDE_INT);
 extern bool can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT);
+extern int is_csky_const_float_1 (rtx, enum machine_mode);
+extern int is_csky_const_float_0 (rtx, enum machine_mode);
+extern int get_cskyv2_mem_constraint (const char *, rtx);
 #ifdef RTX_CODE
 extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
+extern bool gen_csky_compare_float (enum rtx_code, rtx, rtx);
 #endif /* RTX_CODE */
 
 extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);

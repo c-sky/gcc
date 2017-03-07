@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-skip-if  "test is specific to the instruction v2"  { csky-*-* } { "" } { "-march=ck802" } }  */
+/* { dg-skip-if  "test is specific to the instruction v2"  { csky-*-* } { "*" } { "-march=ck802" } }  */
 
 void func(int (*param)(int));
 

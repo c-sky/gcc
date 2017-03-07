@@ -231,8 +231,6 @@ static const struct csky_option2isa all_opt2isa[] =
 #undef CSKY_OPTION
 };
 
-static sbitmap csky_isa_all_fpubits;
-
 /* Active target architecture.  */
 struct csky_build_target csky_active_target;
 
@@ -1626,6 +1624,7 @@ csky_setup_incoming_varargs (cumulative_args_t pcum_v,
 
 /* Output code to add DELTA to the first argument, and then jump
    to FUNCTION.  Used for C++ multiple inheritance.  */
+
 static void
 csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
                       HOST_WIDE_INT delta,
@@ -1639,6 +1638,20 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   rtx fnaddr = XEXP (DECL_RTL (function), 0);
 
   /* TODO for ck801  */
+  if (CSKY_TARGET_ARCH (CK801))
+    {
+      reg0 = "l0";
+      reg1 = "l1";
+      if (vcall_offset > CSKY_ADDI_MAX_STEP
+          || vcall_offset < -CSKY_ADDI_MAX_STEP)
+        {
+          fprintf (file, "\tpush l0, l1\n");
+        }
+            else
+        {
+          fprintf (file, "\tpush l0\n");
+        }
+    }
 
   if (aggregate_value_p (TREE_TYPE (TREE_TYPE (function)), function))
     thiz = "a1";
@@ -1682,6 +1695,18 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
       /* Load the offset and add it to this_rtx  */
       fprintf(file, "\tld.w\t%s, (%s, 0)\n", reg0, reg0);
       fprintf(file, "\taddu\t%s, %s, %s\n", thiz, thiz, reg0);
+    }
+
+  if (CSKY_TARGET_ARCH (CK801))
+    {
+      if (vcall_offset > CSKY_ADDI_MAX_STEP || vcall_offset < -CSKY_ADDI_MAX_STEP)
+        {
+          fprintf (file, "\tpop l0, l1\n");
+        }
+            else
+        {
+          fprintf (file, "\tpop l0\n");
+        }
     }
 
   fprintf(file, "\tjbr \t");
@@ -1816,8 +1841,15 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
       else
         return 1;
     }
-  else if ((regno >= CSKY_FIRST_VFP_REGNUM) && (regno <= CSKY_LAST_VFP_REGNUM))
-      return TARGET_HARD_FLOAT;
+  else if ((regno >= CSKY_FIRST_VFP_REGNUM)
+           && (regno <= CSKY_LAST_VFP_REGNUM)
+           && TARGET_HARD_FLOAT)
+    {
+      if (CSKY_TARGET_ARCH (CK803S))
+        return (CSKY_NUM_REGS(mode) < 2);
+      else
+        return 1;
+    }
 
   return 0;
 }
@@ -1945,7 +1977,6 @@ csky_configure_build_target (struct csky_build_target *target,
 {
   const struct csky_processors *csky_selected_arch = NULL;
   const struct csky_processors *csky_selected_cpu = NULL;
-  const struct csky_fpu_desc *csky_selected_fpu = NULL;
   sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
   bitmap_clear(all_sbits);
 
@@ -1993,22 +2024,6 @@ csky_configure_build_target (struct csky_build_target *target,
   csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
   bitmap_ior (target->isa, target->isa, all_sbits);
 
-  if (opts->x_csky_fpu_index != TARGET_FPU_auto)
-    {
-      csky_selected_fpu = &all_fpus[opts->x_csky_fpu_index];
-      sbitmap fpu_bits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
-      csky_initialize_isa (fpu_bits, csky_selected_fpu->isa_bits);
-
-      bitmap_and_compl (target->isa, target->isa, csky_isa_all_fpubits);
-      bitmap_ior (target->isa, target->isa, fpu_bits);
-
-      sbitmap_free(fpu_bits);
-    }
-  else if (target->core_name == NULL)
-    /* To support this we need to be able to parse FPU feature options
-       from the architecture string.  */
-    sorry ("-mfpu=auto not currently supported without an explicit CPU.");
-
   /* Finish initializing the target structure.  */
   target->arch_pp_name = csky_selected_cpu->arch;
   target->base_arch = csky_selected_cpu->base_arch;
@@ -2038,31 +2053,7 @@ csky_configure_build_target (struct csky_build_target *target,
 static void
 csky_option_override (void)
 {
-  static const enum csky_isa_feature fpu_bitlist[]
-  = {CSKY_ISA_ALL_FPU, CSKY_ISA_FEATURE_GET(none)};
-
-  csky_isa_all_fpubits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
-  csky_initialize_isa (csky_isa_all_fpubits, fpu_bitlist);
-
   csky_active_target.isa = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
-
-  if (!global_options_set.x_csky_fpu_index)
-    {
-      const char *target_fpu_name;
-      bool ok;
-      int fpu_index;
-
-#ifdef CSKY_FPUTYPE_DEFAULT
-      target_fpu_name = CSKY_FPUTYPE_DEFAULT;
-#else
-      target_fpu_name = "vfpv2";
-#endif
-
-      ok = opt_enum_arg_to_value (OPT_mfpu_, target_fpu_name, &fpu_index,
-                                  CL_TARGET);
-      gcc_assert (ok);
-      csky_fpu_index = (enum csky_fpu_type) fpu_index;
-    }
 
   /* Create the default target_options structure.  We need this early
      to configure the overall build target.  */
@@ -2080,6 +2071,51 @@ csky_option_override (void)
   csky_arch_name = csky_active_target.arch_pp_name;
 
   csky_base_arch = csky_active_target.base_arch;
+
+  if (TARGET_HARD_FLOAT)
+    {
+      const struct csky_fpu_desc *csky_selected_fpu = NULL;
+
+      if (csky_fpu_index == TARGET_FPU_auto)
+        {
+          const char *target_fpu_name;
+          bool ok;
+          int fpu_index;
+
+#ifdef CSKY_FPUTYPE_DEFAULT
+          target_fpu_name = CSKY_FPUTYPE_DEFAULT;
+#else
+          target_fpu_name = "fpv2";
+#endif
+
+          if (csky_active_target.core_name != NULL
+              && !strchr (csky_active_target.core_name, 'f'))
+            target_fpu_name = "auto";
+          else if (CSKY_TARGET_ARCH (CK803S))
+            target_fpu_name = "fpv2_sf";
+          else if (TARGET_DOUBLE_FLOAT && TARGET_FDIVDU)
+            target_fpu_name = "fpv2_divd";
+
+          ok = opt_enum_arg_to_value (OPT_mfpu_, target_fpu_name, &fpu_index,
+                                      CL_TARGET);
+          gcc_assert (ok);
+          csky_fpu_index = (enum csky_fpu_type) fpu_index;
+        }
+
+      if (csky_fpu_index != TARGET_FPU_auto)
+        {
+          csky_selected_fpu = &all_fpus[csky_fpu_index];
+          sbitmap fpu_bits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
+          csky_initialize_isa (fpu_bits, csky_selected_fpu->isa_bits);
+
+          bitmap_ior (csky_active_target.isa, csky_active_target.isa,
+                      fpu_bits);
+
+          sbitmap_free(fpu_bits);
+        }
+      else
+        warning (0, "-mhard-float is not supported in current CPU.");
+    }
 
   if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
     {
@@ -3744,17 +3780,33 @@ output_csky_movedouble (rtx operands[],
             }
           else if (CSKY_VREG_P (srcreg))
             {
-              if (TARGET_BIG_ENDIAN)
-                return "fmfvrh\t%0, %1\n\tfmfvrl\t%R0, %1";
+              /* Since the vector registers in ck803s are 32bits width,
+                 it just need one insn to complete the move operator.  */
+              if (CSKY_TARGET_ARCH (CK803S))
+                {
+                  return "fmfvrl\t%0, %1";
+                }
               else
-                return "fmfvrh\t%R0, %1\n\tfmfvrl\t%0, %1";
+                {
+                  if (TARGET_BIG_ENDIAN)
+                    return "fmfvrh\t%0, %1\n\tfmfvrl\t%R0, %1";
+                  else
+                    return "fmfvrh\t%R0, %1\n\tfmfvrl\t%0, %1";
+                }
             }
           else if (CSKY_VREG_P (dstreg))
             {
-              if (TARGET_BIG_ENDIAN)
-                return "fmtvrh\t%0, %1\n\tfmtvrl\t%0, %R1";
+              if (CSKY_TARGET_ARCH (CK803S))
+                {
+                  return "fmtvrl\t%0, %1";
+                }
               else
-                return "fmtvrh\t%0, %R1\n\tfmtvrl\t%0, %1";
+                {
+                  if (TARGET_BIG_ENDIAN)
+                    return "fmtvrh\t%0, %1\n\tfmtvrl\t%0, %R1";
+                  else
+                    return "fmtvrh\t%0, %R1\n\tfmtvrl\t%0, %1";
+                }
             }
 
           /* Ensure the second source not overwritten.  */
@@ -5156,6 +5208,178 @@ csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
   emit_move_insn (mem, fnaddr);
 
   /* TODO Add code about clear insn cache.  */
+}
+
+
+/* Accept the floating point constant 1 in the appropriate mode.  */
+
+int
+is_csky_const_float_1 (rtx op, enum machine_mode mode)
+{
+  const REAL_VALUE_TYPE *d;
+  static REAL_VALUE_TYPE onedf;
+  static REAL_VALUE_TYPE onesf;
+  static int one_initialized;
+
+  if (mode != GET_MODE (op)
+      || (mode != DFmode && mode != SFmode))
+    {
+      return 0;
+    }
+
+  if (GET_CODE (op) != CONST_DOUBLE)
+    {
+      return 0;
+    }
+  d = CONST_DOUBLE_REAL_VALUE (op);
+
+  /* We only initialize these values if we need them, since we will
+     never get called unless mips_isa >= 4.  */
+  if (! one_initialized)
+    {
+      onedf = REAL_VALUE_ATOF ("1.0", DFmode);
+      onesf = REAL_VALUE_ATOF ("1.0", SFmode);
+      one_initialized = 1;
+    }
+  if (mode == DFmode)
+    return real_equal (d, &onedf);
+  else
+    return real_equal (d, &onesf);
+}
+
+/* Accept the floating point constant 1 in the appropriate mode.  */
+
+int
+is_csky_const_float_0 (rtx op, enum machine_mode mode)
+{
+  const REAL_VALUE_TYPE *d;
+  static REAL_VALUE_TYPE zerodf;
+  static REAL_VALUE_TYPE zerosf;
+  static int zero_initialized;
+
+  if (GET_CODE (op) != CONST_DOUBLE
+      || mode != GET_MODE (op)
+      || (mode != DFmode && mode != SFmode))
+    return 0;
+
+  d = CONST_DOUBLE_REAL_VALUE (op);
+
+  /* We only initialize these values if we need them, since we will
+     never get called unless mips_isa >= 4.  */
+  if (!zero_initialized)
+    {
+      zerodf = REAL_VALUE_ATOF ("0", DFmode);
+      zerosf = REAL_VALUE_ATOF ("0", SFmode);
+      zero_initialized = 1;
+    }
+
+  if (mode == DFmode)
+    return real_equal (d, &zerodf);
+  else
+    return real_equal (d, &zerosf);
+}
+
+
+/* Generate compare rtl insn for float comparison instruction.
+   Retrun true if the comparison CODE has turn to negative
+   side.  */
+
+bool
+gen_csky_compare_float (enum rtx_code code, rtx op0, rtx op1)
+{
+  rtx cc_reg = gen_rtx_REG (CCmode, CSKY_CC_REGNUM);
+  bool invert;
+
+  if (!is_csky_const_float_0 (op1, GET_MODE (op1)))
+    op1 = force_reg (GET_MODE (op1), op1);
+
+  invert = false;
+  switch (code)
+    {
+    case EQ:
+      code = NE;
+      invert = true;
+      break;
+
+    case NE:
+      break;
+    case LE:
+      if (is_csky_const_float_0 (op1, GET_MODE (op1)))
+        op1 = force_reg (GET_MODE (op1), op1);
+      break;
+    case GT:
+      if (is_csky_const_float_0 (op1, GET_MODE (op1)))
+        {
+          op1 = force_reg (GET_MODE (op1), op1);
+        }
+      break;
+    case GE:
+      break;
+    case LT:
+      if ((is_csky_const_float_0 (op1, GET_MODE (op1))))
+        {
+          code = GE;
+          invert = true;
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  emit_insn (gen_rtx_SET (cc_reg, gen_rtx_fmt_ee (code, CCmode, op0, op1)));
+
+  return invert;
+}
+
+
+int
+get_cskyv2_mem_constraint (const char *str, rtx op)
+{
+  if (GET_CODE (op) != MEM)
+    return false;
+  if (*str == 'Q')
+    {
+      struct csky_address addr;
+
+      if (!decompose_csky_address (XEXP (op, 0), &addr))
+        return false;
+
+      /* Verify base register. */
+      if (!is_csky_address_register_rtx_p (addr.base, 0))
+        return false;
+
+      /* Verify index operand. */
+      if (addr.index)
+        {
+          if (!is_csky_address_register_rtx_p (addr.index, 0))
+            return false;
+
+          if (addr.scale == 1 || addr.scale == 2 || addr.scale == 4
+              || addr.scale == 8)
+            return true;
+
+          return false;
+        }
+      /* verify disp operand */
+      else if (addr.disp)
+        {
+          rtx disp = addr.disp;
+
+          if (!CONST_INT_P (disp))
+            return false;
+
+          if ((((unsigned) INTVAL (disp)) % 4) == 0 &&
+              ((unsigned) INTVAL (disp)) <= (unsigned) 1020)
+            return true;
+
+          return false;
+        }
+
+      return true;
+    }
+
+  return false;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;

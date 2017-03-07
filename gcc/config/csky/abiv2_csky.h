@@ -463,8 +463,9 @@ machine_function;
    but can be less for certain modes in special long registers.
 
    On the CSKY core regs are UNITS_PER_WORD bits wide.  */
-#define HARD_REGNO_NREGS(REGNO, MODE) \
-  ((REGNO >= CSKY_FIRST_VFP_REGNUM) ? 1 : CSKY_NUM_REGS (MODE))
+#define HARD_REGNO_NREGS(REGNO, MODE)                            \
+  ((REGNO >= CSKY_FIRST_VFP_REGNUM && !CSKY_TARGET_ARCH(CK803S)) \
+   ? 1 : CSKY_NUM_REGS (MODE))
 
 /* Retrun true if REGNO is suitable for holding a quantity of type MODE.  */
 #define HARD_REGNO_MODE_OK(REGNO, MODE) \
@@ -533,7 +534,7 @@ enum reg_class
   {0x00000000, 0x00000004, 0x00000000 },  /* HI_REG            */    \
   {0x00000000, 0x00000008, 0x00000000 },  /* LO_REG            */    \
   {0x00000000, 0x0000000c, 0x00000000 },  /* HILO_REGS         */    \
-  {0x00000000, 0xF0000000, 0x0000000F },  /* V_REGS            */    \
+  {0x00000000, 0xFFF00000, 0x0000000F },  /* V_REGS            */    \
   {0x00000000, 0x00000000, 0x00000040 },  /* OTHER_REGS        */    \
   {0x00000000, 0x0FF00001, 0x00000030 },  /* RESERVE_REGS      */    \
   {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F },  /* ALL_REGS          */    \
@@ -657,7 +658,7 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
             builtin_define ("__csky_dsp__");          \
             builtin_define ("__CSKY_DSP__");          \
         }                                             \
-        if (CSKY_ISA_FEATURE(vfpv2))                  \
+        if (CSKY_ISA_FEATURE(fpv2_sf))                \
         {                                             \
             builtin_define ("__csky_fpuv2__");        \
             builtin_define ("__CSKY_FPUV2__");        \
