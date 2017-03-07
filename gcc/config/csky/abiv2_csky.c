@@ -98,6 +98,20 @@ const int csky_dbx_regno[FIRST_PSEUDO_REGISTER] =
   -1, -1, -1, -1, -1, -1, 72
 };
 
+/* Table of machine attributes.  */
+static tree csky_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
+static tree csky_handle_isr_attribute (tree *, tree, tree, int, bool *);
+static const struct attribute_spec csky_attribute_table[] =
+{
+  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler,
+       affects_type_identity } */
+  { "naked",     0, 0, true,  false, false, csky_handle_fndecl_attribute, false },
+  /* Interrupt Service Routines have special prologue and epilogue requirements.  */
+  { "interrupt", 0, 1, false, false, false, csky_handle_isr_attribute,    false },
+  { "isr",       0, 1, false, false, false, csky_handle_isr_attribute,    false },
+  { NULL,        0, 0, false, false, false, NULL,                         false }
+};
+
 
 /******************************************************************
  *                         Storage Layout                         *
@@ -184,6 +198,9 @@ const int csky_dbx_regno[FIRST_PSEUDO_REGISTER] =
  *         Defining target-specific uses of __attribute__         *
  ******************************************************************/
 
+
+#undef TARGET_ATTRIBUTE_TABLE
+#define TARGET_ATTRIBUTE_TABLE csky_attribute_table
 
 #undef  TARGET_OPTION_OVERRIDE
 #define TARGET_OPTION_OVERRIDE csky_option_override
@@ -5380,6 +5397,117 @@ get_cskyv2_mem_constraint (const char *str, rtx op)
     }
 
   return false;
+}
+
+
+/* Returns the (interrupt) function type of the current
+   function, or CSKY_FT_UNKNOWN if the type cannot be determined.  */
+
+static unsigned long
+csky_isr_value (tree argument)
+{
+  const isr_attribute_arg *ptr;
+  const char *arg;
+
+  /* No argument - default to IRQ.  */
+  if (argument == NULL_TREE)
+    return CSKY_FT_ISR;
+
+  /* Get the value of the argument.  */
+  if (TREE_VALUE(argument) == NULL_TREE
+      || TREE_CODE(TREE_VALUE(argument)) != STRING_CST)
+    return CSKY_FT_UNKNOWN;
+
+  arg = TREE_STRING_POINTER(TREE_VALUE(argument));
+
+  /* Check it against the list of known arguments.  */
+  for(ptr = isr_attribute_args; ptr->arg != NULL; ptr++)
+    {
+      if(strcmp(arg, ptr->arg) == 0)
+        return ptr->return_value;
+    }
+
+  /* An unrecognized interrupt type.  */
+  return CSKY_FT_UNKNOWN;
+}
+
+/* Handle an attribute requiring a FUNCTION_DECL;
+   arguments as in struct attribute_spec.handler.  */
+
+static tree
+csky_handle_fndecl_attribute (tree *node, tree name, tree args ATTRIBUTE_UNUSED,
+                              int flags ATTRIBUTE_UNUSED, bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) != FUNCTION_DECL)
+    {
+      warning (OPT_Wattributes, "%qE attribute only applies to functions",
+         name);
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+/* Handle an "interrupt" or "isr" attribute;
+   arguments as in struct attribute_spec.handler.  */
+
+static tree
+csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
+                           bool *no_add_attrs)
+{
+  if(!TARGET_ATTRIBUTE_ISR)
+    {
+      warning(OPT_Wattributes, "%qE attribute ignored", name);
+      *no_add_attrs = true;
+      return NULL_TREE;
+    }
+
+  if(DECL_P(*node))
+    {
+      if(TREE_CODE(*node) != FUNCTION_DECL)
+        {
+          warning(OPT_Wattributes, "%qE attribute only applies to function",
+                  name);
+          *no_add_attrs = true;
+        }
+    }
+  else
+    {
+      if (TREE_CODE(*node) == FUNCTION_TYPE
+          || TREE_CODE(*node) == METHOD_TYPE)
+        {
+          if(csky_isr_value(args) == CSKY_FT_UNKNOWN)
+            {
+              warning(OPT_Wattributes, "%qE attribute ignored", name);
+              *no_add_attrs = true;
+            }
+        }
+      else if (TREE_CODE(*node) == POINTER_TYPE
+               && (TREE_CODE(TREE_TYPE(*node)) == FUNCTION_TYPE
+                   || TREE_CODE(TREE_TYPE(*node)) == METHOD_TYPE)
+               && csky_isr_value(args) != CSKY_FT_UNKNOWN)
+        {
+          *node = build_variant_type_copy(*node);
+          TREE_TYPE(*node) = build_type_attribute_variant (TREE_TYPE(*node),
+            tree_cons(name, args, TYPE_ATTRIBUTES(TREE_TYPE(*node))));
+          *no_add_attrs = true;
+        }
+      else
+        {
+          if (flags & ((int)ATTR_FLAG_DECL_NEXT
+                       | (int)ATTR_FLAG_FUNCTION_NEXT
+                       | (int)ATTR_FLAG_ARRAY_NEXT))
+            {
+              *no_add_attrs = true;
+              return tree_cons(name, args, NULL_TREE);
+            }
+          else
+            {
+              warning(OPT_Wattributes, "%qE attribute ignored", name);
+            }
+        }
+    }
+  return NULL_TREE;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
