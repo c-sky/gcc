@@ -368,6 +368,15 @@ static GTY(()) int tls_labelno;
 #define TARGET_TRAMPOLINE_INIT          csky_trampoline_init
 
 
+/******************************************************************
+ *                            Cost                                *
+ ******************************************************************/
+
+
+#undef TARGET_RTX_COSTS
+#define TARGET_RTX_COSTS        csky_rtx_costs
+
+
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);
@@ -5511,6 +5520,67 @@ csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
     }
   return NULL_TREE;
 }
+
+
+int
+register_csky_move_cost (enum machine_mode mode ATTRIBUTE_UNUSED,
+                         enum reg_class from, enum reg_class to)
+{
+#define GR_REG_CLASS_P(CLASS)    \
+    ((CLASS) == GENERAL_REGS || (CLASS) == MINI_REGS || (CLASS) == SP_REGS)
+
+#define HILO_REG_CLASS_P(CLASS) \
+    ((CLASS) == HI_REGS || (CLASS) == LO_REGS || (CLASS) == HILO_REGS)
+
+#define V_REG_CLASS_P(CLASS)    \
+    ((CLASS) == V_REGS)
+
+  return ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to)) ? 16
+          : ((GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 16
+             : ((HILO_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 32
+                : ((V_REG_CLASS_P (from) && V_REG_CLASS_P (to)) ? 16
+                   : ((HILO_REG_CLASS_P (from) && V_REG_CLASS_P (to)) ? 64
+                      : ((V_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 64
+                         : ((V_REG_CLASS_P (from) && GR_REG_CLASS_P (to)) ? 16
+                            : ((GR_REG_CLASS_P (from)
+                                && V_REG_CLASS_P (to)) ? 16 : 2))))))));
+}
+
+
+static bool
+csky_rtx_costs (rtx x, int code, int outer_code, int *total,
+                bool speed ATTRIBUTE_UNUSED)
+{
+  if (TARGET_CK802 || TARGET_CK801)
+    {
+      return ck802_ck801_rtx_costs (x, code, outer_code, total, speed);
+    }
+
+  switch (code)
+    {
+    case MULT:
+      if (REG_P (XEXP (x, 0)) && CONST_INT_P (XEXP (x, 1)))
+        {
+          if (INTVAL (XEXP (x, 1)) % 2 == 0
+              && INTVAL (XEXP (x, 1)) < 0xffffffff
+              && INTVAL (XEXP (x, 1)) > 0)
+            {
+              *total = 4;
+              return true;
+            }
+        }
+      return false;
+
+    case CONST:
+    case LABEL_REF:
+    case SYMBOL_REF:
+      *total = COSTS_N_INSNS (3);
+      return true;
+    default:
+      return false;
+    }
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

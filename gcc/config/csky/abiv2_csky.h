@@ -923,6 +923,22 @@ extern const int csky_dbx_regno[];
 #define TRAMPOLINE_ALIGNMENT  32
 
 
+/******************************************************************
+ *                            Cost                                *
+ ******************************************************************/
+
+/* FIXME these should be rewrite later.  */
+#define NO_FUNCTION_CSE 0
+
+#define REGISTER_MOVE_COST(MODE, SRCCLASS, DSTCLASS)     \
+  register_csky_move_cost((MODE), (SRCCLASS), (DSTCLASS))
+
+#define SLOW_BYTE_ACCESS    0
+
+#define MEMORY_MOVE_COST(MODE, CLASS, TO_P) \
+  (4 + memory_move_secondary_cost ((MODE), (CLASS), (TO_P)))
+
+
 
 
 #define FUNCTION_PROFILER(FILE, LABELNO)
