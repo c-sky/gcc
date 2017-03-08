@@ -377,6 +377,21 @@ static GTY(()) int tls_labelno;
 #define TARGET_RTX_COSTS        csky_rtx_costs
 
 
+/******************************************************************
+ *                        Anchor address                          *
+ ******************************************************************/
+
+
+/* FIXME the max offset is related to mode size, the follow is
+   defined according to SImode. How to deal with HImode and
+   QImode, and should the min offset be defined?  */
+#undef  TARGET_MAX_ANCHOR_OFFSET
+#define TARGET_MAX_ANCHOR_OFFSET  (((CSKY_ISA_FEATURE(smart)        \
+                                     || CSKY_TARGET_ARCH(CK801))    \
+                                    && optimize_size) ? 127 : 4095)
+
+
+
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
 static unsigned long get_csky_isr_type(tree);

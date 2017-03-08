@@ -137,6 +137,8 @@ machine_function;
    when given unaligned data.  */
 #define STRICT_ALIGNMENT    (TARGET_STRICT_ALIGNMENT)
 
+#define UINT_LEAST32_TYPE "unsigned int"
+
 
 /******************************************************************
  *              Layout of Source Language Data Types              *
