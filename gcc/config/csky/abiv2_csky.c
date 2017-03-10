@@ -5086,7 +5086,7 @@ legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
               && SYMBOL_REF_LOCAL_P (orig))))
         {
           /* bsr symbol */
-          if (flag_pic && flag == 0)
+          if (flag_pic == 1 && flag == 0)
             {
               pic_ref = gen_rtx_UNSPEC (Pmode,
                                         gen_rtvec (1, orig),
@@ -5094,7 +5094,7 @@ legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
               return pic_ref;
             }
           /* grs rx, symbol */
-          else if (flag_pic && (GET_CODE (orig) == SYMBOL_REF)
+          else if (flag_pic == 1 && (GET_CODE (orig) == SYMBOL_REF)
                    && SYMBOL_REF_FUNCTION_P (orig))
             {
               pic_ref = gen_rtx_UNSPEC (Pmode,
@@ -5123,7 +5123,7 @@ legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
                                     flag != 0 ? PIC_SYMBOL_GOT:PIC_SYMBOL_PLT);
           flag_optimize = flag;
 
-          if (flag_pic)
+          if (flag_pic == 1)
             {
               pic_ref = gen_const_mem(Pmode,
                           gen_rtx_PLUS (Pmode, pic_reg, rtx_tmp));
