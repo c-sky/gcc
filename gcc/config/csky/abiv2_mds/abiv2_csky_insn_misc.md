@@ -183,3 +183,10 @@
       }
   }"
 )
+
+(define_insn "trap"
+  [(trap_if (const_int 1) (const_int 0))]
+  ""
+  "bkpt"
+  [(set (attr "length") (const_int 2))]
+)

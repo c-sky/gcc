@@ -1,38 +1,41 @@
+/******************************************************************
+ *               Run-time Target Specification                    *
+ ******************************************************************/
 
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC \
-	"crt0.o%s crti.o%s crtbegin.o%s"
+  "crt0.o%s crti.o%s crtbegin.o%s"
 
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 
 #undef CC1_SPEC
-#define CC1_SPEC	\
-	"%{EB:-EB}		\
-	 %{EL:-EL}		\
-	 %{fpic|fPIC:-DPIC}		\
-	"
+#define CC1_SPEC       \
+  "%{EB:-EB}           \
+   %{EL:-EL}           \
+   %{fpic|fPIC:-DPIC}  \
+  "
 
 #undef ASM_SPEC
-#define ASM_SPEC 	\
-	"%{mbig-endian:-mbig-endian}	\
-	%{EB:-EB}	\
-	%{EL:-EL}	\
-	%{fpic|fPIC:-pic}	\
-	%{mcpu=*:-mcpu=%*}		\
-	%{march=*:-march=%*}	\
-	%{mhard-float:-mhard-float}	\
-	%{mdsp:-mdsp}	\
-	%{mmac:-mmac}	\
-	%{manchor:-manchor}	\
-	%{melrw:-melrw}	\
-	%{mistack:-mistack}	\
-	"
+#define ASM_SPEC                \
+  "%{mbig-endian:-mbig-endian}  \
+  %{EB:-EB}                     \
+  %{EL:-EL}                     \
+  %{fpic|fPIC:-pic}             \
+  %{mcpu=*:-mcpu=%*}            \
+  %{march=*:-march=%*}          \
+  %{mhard-float:-mhard-float}   \
+  %{mdsp:-mdsp}                 \
+  %{mmac:-mmac}                 \
+  %{manchor:-manchor}           \
+  %{melrw:-melrw}               \
+  %{mistack:-mistack}           \
+  "
 
-#undef	LINK_SPEC
-#define LINK_SPEC		\
-"%{mbig-endian:-EB}		\
- %{EB:-EB}				\
+#undef  LINK_SPEC
+#define LINK_SPEC     \
+"%{mbig-endian:-EB}   \
+ %{EB:-EB}            \
  %{EL:-EL} -X"
 
 #undef  LIB_SPEC

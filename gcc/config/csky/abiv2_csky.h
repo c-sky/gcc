@@ -137,8 +137,6 @@ machine_function;
    when given unaligned data.  */
 #define STRICT_ALIGNMENT    (TARGET_STRICT_ALIGNMENT)
 
-#define UINT_LEAST32_TYPE "unsigned int"
-
 
 /******************************************************************
  *              Layout of Source Language Data Types              *
@@ -720,6 +718,10 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define TEXT_SECTION_ASM_OP  "\t.text"
 #define DATA_SECTION_ASM_OP  "\t.data"
 
+/* The subroutine calls in the .init and .fini sections create literal
+   pools which must be jumped around...  */
+#define FORCE_CODE_SECTION_ALIGN    \
+  asm ("br 1f ; .literals ; .align 2 ; 1:");
 
 /******************************************************************
  *                      Assembler Format                          *
@@ -850,6 +852,10 @@ while (0)
 /* Define this macro if GCC should produce dwarf version 2 format debugging
    output in response to the `-g' option.  */
 #define DWARF2_DEBUGGING_INFO 1
+
+/* Define this macro to 0 if your target supports DWARF 2 frame unwind
+   information, but it does not yet work with exception handling.  */
+#define DWARF2_UNWIND_INFO 1
 
 /* Define this if you have arranged for GCC to support
    more than one format of debugging output.

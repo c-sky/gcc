@@ -1996,10 +1996,8 @@ csky-*-*)
     tm_file="csky/${with_cskyabi}_csky.h"
     md_file="csky/${with_cskyabi}_csky.md"
     out_file="csky/${with_cskyabi}_csky.c"
-    tm_p_file="csky/${with_cskyabi}_csky-protos.h"
-    extra_options="csky/${with_cskyabi}_csky.opt"
-
-    extra_options="${extra_options} csky/${with_cskyabi}_csky_tables.opt"
+    tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
+    extra_options="${extra_options} csky/${with_cskyabi}_csky.opt csky/${with_cskyabi}_csky_tables.opt"
 
     case ${target} in
         csky-*-elf*)
@@ -2007,39 +2005,38 @@ csky-*-*)
             tmake_file="csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-elf"
             inhibit_libc=true
             csky_elf_libgcov=true
-            tm_defines="${tm_defines} UCLIBC_DEFAULT=1"
             default_use_cxa_atexit=no
             ;;
         csky-*-ecos*)
-            tm_file="dbxelf.h elfos.h svr4.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"
+            tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"
             tmake_file="csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-elf"
             inhibit_libc=true
             tm_defines="${tm_defines} UCLIBC_DEFAULT=1"
             default_use_cxa_atexit=no
             ;;
         csky-*-uclinux*)
-            tm_file="dbxelf.h elfos.h svr4.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
+            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
             tmake_file="t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-uclinux"
             tm_defines="UCLIBC_DEFAULT=1 OPTION_GLIBC=0"
             default_use_cxa_atexit=no
             ;;
         csky-*-linux*)
-            tm_file="dbxelf.h elfos.h svr4.h linux.h glibc-stdint.h ${tm_file} csky/csky-linux-elf.h"
-            tmake_file="t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
+            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-linux-elf.h"
+            tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
             case ${with_cskylibc} in
                 glibc)
                     tm_file="$tm_file ./sysroot-suffix.h"
                     tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-glibc"
-                    tm_defines="OPTION_GLIBC=1"
+                    tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
                     ;;
                 uclibc)
                     tm_file="$tm_file ./sysroot-suffix.h"
                     tmake_file="$tmake_file csky/t-sysroot-suffix"
-                    tm_defines="UCLIBC_DEFAULT=1 OPTION_GLIBC=0"
+                    tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
                     default_use_cxa_atexit=no
                     ;;
                 *)
-                    tm_defines="UCLIBC_DEFAULT=1 OPTION_GLIBC=0"
+                    tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
                     default_use_cxa_atexit=no
                     ;;
             esac

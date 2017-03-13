@@ -3536,9 +3536,9 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
               return "fmfvrl\t%0, %1";
 
             if (REGNO (src) == CSKY_CC_REGNUM)
-              return "mvc\t\t%0";
+              return "mvc\t%0";
             else
-              return "mov\t\t%0, %1";
+              return "mov\t%0, %1";
         }
       /* The situation mov memory to reg.  */
       else if (GET_CODE (src) == MEM)
@@ -3615,19 +3615,19 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           else if (CSKY_CONST_OK_FOR_T (INTVAL (src)))
             return "#";
           else
-            return "lrw\t\t%0, %x1\t";
+            return "lrw\t%0, %x1\t";
         }
       else if (TARGET_ANCHOR && GET_CODE (src) == SYMBOL_REF)
         {
           if (SYMBOL_REF_FUNCTION_P (src))
-            return "lrw\t\t%0, %1@BTEXT";
+            return "lrw\t%0, %1@BTEXT";
           else
-            return "lrw\t\t%0, %1@BDATA";
+            return "lrw\t%0, %1@BDATA";
         }
       else if (GET_CODE (src) == UNSPEC && XINT (src, 1) == PIC_SYMBOL_GRS)
-        return "grs\t\t%0, %1";
+        return "grs\t%0, %1";
       else
-        return "lrw\t\t%0, %1";
+        return "lrw\t%0, %1";
     }
   else if (GET_CODE (dst) == MEM)
     {
@@ -3690,7 +3690,7 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           int dstreg = REGNO (dst);
           int srcreg = REGNO (src);
 
-          return "mov\t\t%0, %1";
+          return "mov\t%0, %1";
         }
       else if (GET_CODE (src) == MEM)
         {
@@ -3732,10 +3732,10 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
               else if (shiftable_csky_imm8_const (INTVAL (src)))
                 return "#";
               else
-                return "lrw\t\t%0, %x1\t";
+                return "lrw\t%0, %x1\t";
             }
           else
-            return "lrw\t\t%0, %x1\t";
+            return "lrw\t%0, %x1\t";
         }
       else if (GET_CODE (src) == CONST_DOUBLE && GET_MODE (src) == SFmode)
         {
@@ -3750,17 +3750,17 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           if (CSKY_CONST_OK_FOR_N (INTVAL (src) + 1))
             return "movi\t%0, %1";
           else
-            return "lrw\t\t%0, %x1\t";
+            return "lrw\t%0, %x1\t";
         }
       else if (TARGET_ANCHOR && GET_CODE (src) == SYMBOL_REF)
         {
           if (SYMBOL_REF_FUNCTION_P (src))
-            return "lrw\t\t%0, %1@BTEXT";
+            return "lrw\t%0, %1@BTEXT";
           else
-            return "lrw\t\t%0, %1@BDATA";
+            return "lrw\t%0, %1@BDATA";
         }
       else
-        return "lrw\t\t%0, %1";
+        return "lrw\t%0, %1";
     }
   else if (GET_CODE (dst) == MEM)
     {
@@ -4365,6 +4365,7 @@ expand_csky_stack_adjust (int direction, int size)
 
           tmp = gen_rtx_REG (SImode, 4);
           insn = emit_insn (gen_movsi (tmp, GEN_INT (size)));
+          RTX_FRAME_RELATED_P (insn) = 1;
 
           if (direction > 0)
             insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
@@ -4372,6 +4373,7 @@ expand_csky_stack_adjust (int direction, int size)
             insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
 
           insn = emit_insn (insn);
+          RTX_FRAME_RELATED_P (insn) = 1;
           size = 0;
         }
       /*  SIZE is now the residual for the last adjustment,
@@ -4388,6 +4390,7 @@ expand_csky_stack_adjust (int direction, int size)
           insn = emit_insn (gen_addsi3 (stack_pointer_rtx,
                                         stack_pointer_rtx,
                                         tmp));
+          RTX_FRAME_RELATED_P (insn) = 1;
           size -= CSKY_ADDI_MAX_STEP;
         }
       while (size > CSKY_ADDI_MAX_STEP);
@@ -4403,6 +4406,7 @@ expand_csky_stack_adjust (int direction, int size)
           insn = emit_insn (gen_subsi3 (stack_pointer_rtx,
                                         stack_pointer_rtx,
                                         tmp));
+          RTX_FRAME_RELATED_P (insn) = 1;
           size -= CSKY_SUBI_MAX_STEP;
         }
       while (size > CSKY_SUBI_MAX_STEP);
@@ -4419,6 +4423,7 @@ expand_csky_stack_adjust (int direction, int size)
         insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
 
       insn = emit_insn (insn);
+      RTX_FRAME_RELATED_P (insn) = 1;
     }
 }
 
