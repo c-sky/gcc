@@ -34,47 +34,50 @@ CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
 
 /* Before using #include to read this file, define a macro:
 
-      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA, TARGET_FLAGS)
+      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA, TARGET_FLAGS, TUNE)
+
+      The isa features of core will inherit the ARCH.
 
    The CORE_NAME is the name of the core, represented as a string constant.
    The INTERNAL_IDENT is the name of the core represented as an identifier.
    This must be unique for each entry in this table.
    The TUNE_IDENT is the name of the core for which scheduling decisions
    should be made, represented as an identifier.
-   ARCH is the architecture revision implemented by the chip.
-   ISA is the detailed architectural capabilities of the core,
-   and as the default isa features when certain can been controlled
-   by option MASK_*.  */
+   The ARCH is the architecture revision implemented by the chip.
+   The ISA is the detailed architectural capabilities of the core.
+   The TARGET_FLAGS is the isa features controller by macro CSKY_OPTION,
+   and MASK_* has define in *.opt file.
+   The TUNE is tuning data (e.g. insns COSTS) for specific core.  */
 
 #ifdef CSKY_CORE
 /* ck801 Architecture Processors */
-CSKY_CORE("ck801",    ck801,    ck801,    CK801,  , 0)
+CSKY_CORE("ck801",    ck801,    ck801,    CK801,  , 0, CSKY_TUNE_GET(generic))
 
 /* ck802 Architecture Processors */
-CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), 0)
-CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), 0)
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), 0, CSKY_TUNE_GET(generic))
 
 /* ck803 Architecture Processors */
-CSKY_CORE("ck803",    ck803,    ck803,    CK803,  , 0)
-CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  , MASK_DSP)
+CSKY_CORE("ck803",    ck803,    ck803,    CK803,  , 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  , MASK_DSP, CSKY_TUNE_GET(generic))
 
 /* ck803s Architecture Processors */
-CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  , 0)
-CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  , MASK_DSP)
-CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  , 0)
-CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  , MASK_DSP)
+CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  , 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  , 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  , MASK_DSP, CSKY_TUNE_GET(generic))
 
 /* ck807 Architecture Processors */
-CSKY_CORE("ck807",    ck807,    ck807,    CK807,  , MASK_DSP)
-CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  , MASK_DSP)
-CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  , MASK_DSP)
-CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  , MASK_DSP)
+CSKY_CORE("ck807",    ck807,    ck807,    CK807,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  , MASK_DSP, CSKY_TUNE_GET(generic))
 
 /* ck810 Architecture Processors */
-CSKY_CORE("ck810",    ck810,    ck810,    CK810,  , MASK_DSP)
-CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  , MASK_DSP)
-CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  , MASK_DSP)
-CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  , MASK_DSP)
+CSKY_CORE("ck810",    ck810,    ck810,    CK810,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  , MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  , MASK_DSP, CSKY_TUNE_GET(generic))
 #endif
 
 

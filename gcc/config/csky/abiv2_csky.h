@@ -480,8 +480,6 @@ machine_function;
    !((MODE1) == DFmode && (MODE1) != (MODE2) || \
      (MODE2) == DFmode && (MODE1) != (MODE2)))
 
-#define SLOW_BYTE_ACCESS 0
-
 /*  Register classes.  */
 enum reg_class
 {
@@ -932,21 +930,25 @@ extern const int csky_dbx_regno[];
 
 
 /******************************************************************
- *                            Cost                                *
+ *            Describing Relative Costs of Operations             *
  ******************************************************************/
 
-/* FIXME these should be rewrite later.  */
-#define NO_FUNCTION_CSE 0
 
-#define REGISTER_MOVE_COST(MODE, SRCCLASS, DSTCLASS)     \
-  register_csky_move_cost((MODE), (SRCCLASS), (DSTCLASS))
+/* Nonzero if access to memory by bytes is slow and undesirable.
+   For RISC chips, it means that access to memory by bytes is no
+   better than access by words when possible, so grab a whole word
+   and maybe make use of that.  */
+#define SLOW_BYTE_ACCESS  0
 
-#define SLOW_BYTE_ACCESS    0
+/* Define this macro if it is as good or better to call a constant
+   function address than to call an address kept in a register.  */
+/* On the CSKY, calling through registers is slow.  */
+#define NO_FUNCTION_CSE 1
 
-#define MEMORY_MOVE_COST(MODE, CLASS, TO_P) \
-  (4 + memory_move_secondary_cost ((MODE), (CLASS), (TO_P)))
 
-
+/******************************************************************
+ *                 Generating Code for Profiling                  *
+ ******************************************************************/
 
 
 #define FUNCTION_PROFILER(FILE, LABELNO)

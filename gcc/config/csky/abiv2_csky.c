@@ -206,16 +206,18 @@ static const struct attribute_spec csky_attribute_table[] =
 #define TARGET_OPTION_OVERRIDE csky_option_override
 
 
+#include "abiv2_csky_tune_tables.h"
+
 static const struct csky_processors all_cores[] =
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TARGET_FLAGS)  \
+#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TARGET_FLAGS, TUNE)  \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH, \
-  {ISA CSKY_ISA_FEATURE_GET(none)}, TARGET_FLAGS},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, TARGET_FLAGS, TUNE},
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}, 0}
+  {CSKY_ISA_FEATURE_GET(none)}}
 };
 
 static const struct csky_processors all_architectures[] =
@@ -256,6 +258,9 @@ int csky_arch_isa_features[CSKY_ISA_FEATURE_GET(max)] = {0};
 
 /* The highest CSKY architecture version supported by the target.  */
 enum csky_base_architecture csky_base_arch = CSKY_TARGET_ARCH_GET(NONE);
+
+/* The current tuning set.  */
+const struct tune_params *current_tune = NULL;
 
 const char *csky_arch_name = NULL;
 
@@ -369,12 +374,18 @@ static GTY(()) int tls_labelno;
 
 
 /******************************************************************
- *                            Cost                                *
+ *            Describing Relative Costs of Operations             *
  ******************************************************************/
 
 
-#undef TARGET_RTX_COSTS
-#define TARGET_RTX_COSTS        csky_rtx_costs
+#undef  TARGET_REGISTER_MOVE_COST
+#define TARGET_REGISTER_MOVE_COST csky_register_move_cost
+
+#undef  TARGET_MEMORY_MOVE_COST
+#define TARGET_MEMORY_MOVE_COST   csky_memory_move_cost
+
+#undef  TARGET_RTX_COSTS
+#define TARGET_RTX_COSTS          csky_rtx_costs
 
 
 /******************************************************************
@@ -2017,6 +2028,7 @@ csky_configure_build_target (struct csky_build_target *target,
                              struct gcc_options *opts_set,
                              bool warn_compatible)
 {
+  const struct csky_processors *csky_selected_tune = NULL;
   const struct csky_processors *csky_selected_arch = NULL;
   const struct csky_processors *csky_selected_cpu = NULL;
   sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
@@ -2030,7 +2042,10 @@ csky_configure_build_target (struct csky_build_target *target,
     csky_selected_arch = &all_architectures[opts->x_csky_arch_option];
 
   if (opts_set->x_csky_cpu_option)
-    csky_selected_cpu = &all_cores[opts->x_csky_cpu_option];
+    {
+      csky_selected_cpu = &all_cores[opts->x_csky_cpu_option];
+      csky_selected_tune = &all_cores[opts->x_csky_cpu_option];
+    }
 
   if (csky_selected_cpu)
     {
@@ -2059,6 +2074,11 @@ csky_configure_build_target (struct csky_build_target *target,
       target->arch_name = csky_selected_arch->name;
     }
 
+  /* The selected cpu may be an architecture, so lookup tuning by core ID.  */
+  if (!csky_selected_tune)
+    csky_selected_tune = &all_cores[csky_selected_cpu->core];
+  gcc_assert (csky_selected_tune);
+
   gcc_assert (csky_selected_arch);
   gcc_assert (csky_selected_cpu);
   csky_initialize_isa (target->isa, csky_selected_cpu->isa_bits);
@@ -2068,6 +2088,7 @@ csky_configure_build_target (struct csky_build_target *target,
   target->arch_pp_name = csky_selected_cpu->arch;
   target->base_arch = csky_selected_cpu->base_arch;
   target->arch_core = csky_selected_cpu->core;
+  target->tune = csky_selected_tune->tune;
 
   target_flags |= csky_selected_cpu->flags;
 
@@ -2109,8 +2130,8 @@ csky_option_override (void)
 #endif
 
   csky_arch_name = csky_active_target.arch_pp_name;
-
   csky_base_arch = csky_active_target.base_arch;
+  current_tune = csky_active_target.tune;
 
   if (TARGET_HARD_FLOAT)
     {
@@ -5542,28 +5563,47 @@ csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
 }
 
 
+/* Compute extra cost of moving data between one register class
+   and another.  */
+
 int
-register_csky_move_cost (enum machine_mode mode ATTRIBUTE_UNUSED,
-                         enum reg_class from, enum reg_class to)
+csky_register_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
+                         reg_class_t from, reg_class_t to)
 {
-#define GR_REG_CLASS_P(CLASS)    \
-    ((CLASS) == GENERAL_REGS || (CLASS) == MINI_REGS || (CLASS) == SP_REGS)
+#define GR_REG_CLASS_P(CLASS) \
+  ((CLASS) == GENERAL_REGS || (CLASS) == MINI_REGS || (CLASS) == SP_REGS)
 
 #define HILO_REG_CLASS_P(CLASS) \
-    ((CLASS) == HI_REGS || (CLASS) == LO_REGS || (CLASS) == HILO_REGS)
+  ((CLASS) == HI_REGS || (CLASS) == LO_REGS || (CLASS) == HILO_REGS)
 
-#define V_REG_CLASS_P(CLASS)    \
-    ((CLASS) == V_REGS)
+#define V_REG_CLASS_P(CLASS) \
+  ((CLASS) == V_REGS)
 
-  return ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to)) ? 16
-          : ((GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 16
-             : ((HILO_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 32
-                : ((V_REG_CLASS_P (from) && V_REG_CLASS_P (to)) ? 16
-                   : ((HILO_REG_CLASS_P (from) && V_REG_CLASS_P (to)) ? 64
-                      : ((V_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)) ? 64
-                         : ((V_REG_CLASS_P (from) && GR_REG_CLASS_P (to)) ? 16
-                            : ((GR_REG_CLASS_P (from)
-                                && V_REG_CLASS_P (to)) ? 16 : 2))))))));
+  if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+      || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
+      || (V_REG_CLASS_P (from) && V_REG_CLASS_P (to))
+      || (V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+      || (GR_REG_CLASS_P (from) && V_REG_CLASS_P (to)))
+    return 16;
+
+  if (HILO_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
+    return 32;
+
+  if ((HILO_REG_CLASS_P (from) && V_REG_CLASS_P (to))
+      || (V_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)))
+    return 64;
+
+  return 2;
+}
+
+
+/* Compute the cost of moving data between registers and memory.  */
+
+int
+csky_memory_move_cost (machine_mode mode, reg_class_t rclass,
+                       bool in ATTRIBUTE_UNUSED)
+{
+  return (4 + memory_move_secondary_cost(mode, rclass, in));
 }
 
 
@@ -5763,12 +5803,16 @@ ck802_ck801_rtx_costs (rtx x, int code, int outer_code, int *total,
     }
 }
 
+
+/* Compute a (partial) cost for rtx X.  Return true if the complete
+   cost has been computed, and false if subexpressions should be
+   scanned.  In either case, *TOTAL contains the cost result.  */
+
 static bool
-csky_rtx_costs (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
-                int outer_code, int opno ATTRIBUTE_UNUSED, int *total,
-                bool speed ATTRIBUTE_UNUSED)
+csky_rtx_costs_internal (rtx x, enum rtx_code code, enum rtx_code outer_code,
+                         const struct cpu_cost_table *extra_cost,
+                         int *total, bool speed)
 {
-  int code = GET_CODE (x);
   if (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801))
     {
       return ck802_ck801_rtx_costs (x, code, outer_code, total, speed);
@@ -5797,6 +5841,31 @@ csky_rtx_costs (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
     default:
       return false;
     }
+}
+
+
+/* RTX costs entry point.  */
+
+static bool
+csky_rtx_costs (rtx x, machine_mode mode ATTRIBUTE_UNUSED, int outer_code,
+                int opno ATTRIBUTE_UNUSED, int *total, bool speed)
+{
+  bool result;
+  int code = GET_CODE (x);
+  gcc_assert (current_tune->insn_extra_cost);
+
+  result =  csky_rtx_costs_internal (x, (enum rtx_code) code,
+                                     (enum rtx_code) outer_code,
+                                     current_tune->insn_extra_cost,
+                                     total, speed);
+
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    {
+      print_rtl_single (dump_file, x);
+      fprintf (dump_file, "\n%s cost: %d (%s)\n", speed ? "Hot" : "Cold",
+               *total, result ? "final" : "partial");
+    }
+  return result;
 }
 
 
