@@ -217,7 +217,7 @@ static const struct csky_processors all_cores[] =
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}}
+  {CSKY_ISA_FEATURE_GET(none)}, 0, NULL}
 };
 
 static const struct csky_processors all_architectures[] =
@@ -225,11 +225,11 @@ static const struct csky_processors all_architectures[] =
 #undef CSKY_ARCH
 #define CSKY_ARCH(NAME, CORE, ARCH, ISA)     \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH,  \
-  {ISA CSKY_ISA_FEATURE_GET(none)}},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, 0, NULL},
 #include "abiv2_csky_cores.def"
 #undef CSKY_ARCH
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}}
+  {CSKY_ISA_FEATURE_GET(none)}, 0, NULL}
 };
 
 static const struct csky_fpu_desc all_fpus[] =
@@ -817,7 +817,7 @@ create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
   else
     from = get_insns();
   /* The instruction after which we will insert the jump.  */
-  rtx selected = NULL;
+  rtx_insn *selected = NULL;
   int selected_cost;
   /* The address at which the jump instruction will be placed.  */
   HOST_WIDE_INT selected_address;
@@ -878,6 +878,16 @@ create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
 
   /* Make sure that we found a place to insert the jump.  */
   gcc_assert (selected);
+
+  /* Make sure we do not split a call and its corresponding
+     CALL_ARG_LOCATION note.  */
+  if (CALL_P (selected))
+    {
+      rtx_insn *next = NEXT_INSN (selected);
+      if (next && NOTE_P (next)
+          && NOTE_KIND (next) == NOTE_INSN_CALL_ARG_LOCATION)
+        selected = next;
+    }
 
   /* Create a new JUMP_INSN that branches around a barrier.  */
   from = emit_jump_insn_after (gen_jump (label), selected);

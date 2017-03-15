@@ -118,4 +118,3 @@
 #define DONT_USE_BUILTIN_SETJMP 1
 #define JMP_BUF_SIZE  76
 */
-#define UINT_LEAST32_TYPE "unsigned int"

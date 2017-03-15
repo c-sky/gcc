@@ -146,6 +146,7 @@ machine_function;
 /* 'char' is unsigned by default for backward compatiblity  */
 #define DEFAULT_SIGNED_CHAR    0
 
+#define UINT_LEAST32_TYPE "unsigned int"
 
 /******************************************************************
  *              Stack Layout and Calling Conventions              *
