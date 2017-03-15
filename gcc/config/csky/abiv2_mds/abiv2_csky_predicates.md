@@ -305,3 +305,46 @@
 
     return 0;
   })
+
+(define_special_predicate "registers_pushpop"
+  (match_code "parallel")
+{
+  if ((GET_CODE (XVECEXP (op, 0, 0)) != SET)
+      || (GET_CODE (SET_SRC (XVECEXP (op, 0, 0))) != UNSPEC)
+      || (XINT (SET_SRC (XVECEXP (op, 0, 0)), 1) != UNSPEC_PUSHPOP_MULT))
+    return false;
+
+  return true;
+})
+
+(define_predicate "push_memory_operand"
+  (match_code "mem")
+{
+  rtx x = XEXP (op, 0);
+  if (GET_CODE (x) != PRE_MODIFY)
+    return false;
+  if (XEXP (x, 0) != stack_pointer_rtx)
+    return false;
+  x = XEXP (x, 1);
+  if (GET_CODE (x) != PLUS)
+    return false;
+  if (XEXP (x, 0) != stack_pointer_rtx)
+    return false;
+  return CONST_INT_P (XEXP (x, 1));
+})
+
+(define_predicate "pop_memory_operand"
+  (match_code "mem")
+{
+  rtx x = XEXP (op, 0);
+  if (GET_CODE (x) != POST_MODIFY)
+    return false;
+  if (XEXP (x, 0) != stack_pointer_rtx)
+    return false;
+  x = XEXP (x, 1);
+  if (GET_CODE (x) != PLUS)
+    return false;
+  if (XEXP (x, 0) != stack_pointer_rtx)
+    return false;
+  return CONST_INT_P (XEXP (x, 1));
+})

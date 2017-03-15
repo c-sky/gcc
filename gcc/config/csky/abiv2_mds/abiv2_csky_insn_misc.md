@@ -40,6 +40,25 @@
   [(set_attr "length" "0")]
 )
 
+(define_insn "consttable_4"
+  [(unspec_volatile [(match_operand 0 "" "")] VUNSPEC_POOL_4)]
+  ""
+  "*
+  assemble_integer(operands[0], 4, BITS_PER_WORD, 1);
+  mark_symbol_refs_as_used(operands[0]);
+  return \"\";
+  "
+  [(set_attr "length" "4")]
+)
+
+;;FIXME record the deferred symbol_ref information with use insn
+(define_insn "*cskyv2_use_symbol_ref"
+ [(unspec_volatile [(match_operand 0 "" "")] VUNSPEC_SYMBOL_REF)]
+ ""
+ ""
+ [(set_attr "length" "0")]
+)
+
 ;;-------------------------------------------------------------
 ;; prologue & epilogue
 ;;-------------------------------------------------------------
@@ -77,6 +96,72 @@
 )
 
 /* TODO: pushpop */
+;; Push multiple registers to the stack.  Registers are in parallel (use ...)
+;; expressions.  For simplicity, the first register is also in the unspec
+;; part.
+;; To avoid the usage of GNU extension, the length attribute is computed
+;; in a C function arm_attr_length_push_multi.
+(define_insn "*push_multi"
+  [(match_parallel 2 "registers_pushpop"
+    [(set (match_operand:BLK 0 "push_memory_operand" "")
+          (unspec:BLK [(match_operand:SI 1 "register_operand" "")]
+            UNSPEC_PUSHPOP_MULT))])]
+  ""
+  "*
+  {
+    int num_saves = XVECLEN (operands[2], 0);
+
+    int i;
+    char pattern[100];
+
+    strcpy (pattern, \"push\\t%1\");
+
+    for (i = 1; i < num_saves; i++)
+      {
+        strcat (pattern, \", \");
+        strcat (pattern,
+            reg_names[REGNO (XEXP (XVECEXP (operands[2], 0, i), 0))]);
+      }
+
+    output_asm_insn (pattern, operands);
+
+    return \"\";
+  }"
+  [(set (attr "length")
+        (symbol_ref "get_csky_pushpop_length (operands)"))]
+)
+
+;; Pop (as used in epilogue RTL)
+;;
+(define_insn "*pop_multi"
+  [(match_parallel 2 "registers_pushpop"
+    [(set (match_operand:SI 1 "register_operand" "")
+          (unspec:SI [(match_operand:SI 0 "pop_memory_operand" "")]
+            UNSPEC_PUSHPOP_MULT))])]
+  ""
+  "*
+  {
+    int num_saves = XVECLEN (operands[2], 0);
+
+    int i;
+    char pattern[100];
+
+    strcpy (pattern, \"pop\\t%1\");
+
+    for (i = 1; i < num_saves; i++)
+      {
+        strcat (pattern, \", \");
+        strcat (pattern,
+            reg_names[REGNO (XEXP (XVECEXP (operands[2], 0, i), 0))]);
+      }
+
+    output_asm_insn (pattern, operands);
+
+    return \"\";
+  }"
+  [(set (attr "length")
+        (symbol_ref "get_csky_pushpop_length (operands)"))]
+)
 
 ;;
 ;; Stack allocation -- in particular, for alloca().

@@ -415,6 +415,7 @@ try_csky_constant_tricks (HOST_WIDE_INT value, HOST_WIDE_INT * x,
                           HOST_WIDE_INT * y);
 static bool is_pushpop_from_csky_live_regs(int mask);
 static bool is_stm_from_csky_live_regs(int mask, int *br, int *er);
+static void csky_add_gc_roots (void);
 
 
 static unsigned long
@@ -452,26 +453,6 @@ get_csky_current_func_type(void)
     cfun->machine->func_type = compute_csky_func_type();
 
   return cfun->machine->func_type;
-}
-
-
-/* Only output argument spill and registers save instructions if needed.  */
-
-static void
-process_csky_function_prologue (FILE *f,
-                                HOST_WIDE_INT frame_size,
-                                int asm_out,
-                                HOST_WIDE_INT *length)
-{
-  /* TODO: delete this function, need to refine function "csky_reorg"  */
-}
-
-
-const char *
-process_csky_function_epilogue (int asm_out, HOST_WIDE_INT *length)
-{
-  /* TODO: delete this function, need to refine function "csky_reorg"  */
-  return "";
 }
 
 
@@ -633,8 +614,7 @@ get_csky_jump_table_size (rtx insn)
 
 /* Scan INSN and note any of its operands that need fixing.
    If DO_PUSHES is false we do not actually push any of the fixups
-   needed.  The function returns TRUE if any fixups were needed/pushed.
-*/
+   needed.  The function returns TRUE if any fixups were needed/pushed.  */
 
 static bool
 note_csky_invalid_constants (rtx_insn *insn, HOST_WIDE_INT address, int do_pushes)
@@ -854,17 +834,16 @@ create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
 
   while (from && count < max_count)
     {
-      rtx_insn *tmp;
       int new_cost;
+      rtx_jump_table_data *table;
 
       /* Count the length of this insn.  */
       count += get_attr_length (from);
 
       /* If there is a jump table, add its length.  */
-      tmp = is_csky_jump_table (from);
-      if (tmp != NULL)
+      if (tablejump_p (from, NULL, &table))
         {
-          count += get_csky_jump_table_size (tmp);
+          count += get_csky_jump_table_size (table);
 
           /* Jump tables aren't in a basic block, so base the cost on
              the dispatch insn.  If we select this location, we will
@@ -874,13 +853,13 @@ create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
           if (count < max_count
               && (!selected || new_cost <= selected_cost))
             {
-              selected = tmp;
+              selected = table;
               selected_cost = new_cost;
               selected_address = count;
             }
 
           /* Continue after the dispatch table.  */
-          from = NEXT_INSN (tmp);
+          from = NEXT_INSN (table);
           continue;
         }
 
@@ -1129,6 +1108,34 @@ adjust_csky_minipool_address(HOST_WIDE_INT func_size)
 }
 
 
+/* Compute the attribute "length" of push or pop insn, according to
+   the registers it used.  */
+
+int
+get_csky_pushpop_length (rtx *operands)
+{
+  rtx parallel_op = operands[2];
+  /* Initialize to elements number of PARALLEL.  */
+  unsigned indx = XVECLEN (parallel_op, 0) - 1;
+  unsigned first_indx = 0;
+  unsigned regno = REGNO (operands[1]);
+
+  if (regno > CSKY_LR_REGNUM)
+    return 4;
+
+  /* Check each register in the list.  */
+  for (; indx > first_indx; indx--)
+    {
+      regno = REGNO (XEXP (XVECEXP (parallel_op, 0, indx), 0));
+      /* For the registers to push or pop, if it has the register
+         number large than 15, it will emit 32bits insn.  */
+      if (regno > CSKY_LR_REGNUM)
+        return 4;
+    }
+
+  return 2;
+}
+
 static void
 csky_reorg (void)
 {
@@ -1153,39 +1160,32 @@ csky_reorg (void)
 
     /* The following algorithm dumps constant pool to the right point. */
     rtx_insn *insn;
-    HOST_WIDE_INT address;
+    HOST_WIDE_INT address = 0;
     HOST_WIDE_INT tmp_len, prolog_len;
     Mfix * fix;
 
     minipool_fix_head = minipool_fix_tail = NULL;
-    process_csky_function_prologue(NULL, get_frame_size(), 0, &tmp_len);
-    address = prolog_len = tmp_len;
 
     /* The first insn must always be a note, or the code below won't
        scan it properly.  */
     insn = get_insns ();
-    gcc_assert (GET_CODE (insn) == NOTE);
+    gcc_assert (NOTE_P (insn));
 
     /* Scan the insns and record the operands that will need fixing.  */
     for (insn = next_nonnote_insn (insn); insn; insn = next_nonnote_insn (insn))
       {
-        if (GET_CODE (insn) == BARRIER)
+        if (BARRIER_P (insn))
           push_csky_minipool_barrier (insn, address);
-        else if (is_csky_epilogue_insn(insn))
-          {
-            process_csky_function_epilogue(0, &tmp_len);
-            address += tmp_len;
-          }
         else if (INSN_P (insn))
           {
-            rtx_insn *table;
+            rtx_jump_table_data *table;
 
             note_csky_invalid_constants (insn, address, true);
             address += get_attr_length (insn);
 
             /* If the insn is a vector jump, add the size of the table
              and skip the table.  */
-            if ((table = is_csky_jump_table (insn)) != NULL)
+            if (tablejump_p (insn, NULL, &table))
               {
                 address += get_csky_jump_table_size (table);
                 insn = table;
@@ -1220,7 +1220,7 @@ csky_reorg (void)
         /* if no pending constant, jump over barrier insn at the beginning */
         if (has_pending_const == false)
           {
-            while (fix && (GET_CODE (fix->insn) == BARRIER))
+            while (fix && BARRIER_P (fix->insn))
               fix = fix->next;
             if (fix == NULL)
               break;
@@ -1230,7 +1230,7 @@ csky_reorg (void)
 
         for (ftmp = fix; ftmp; ftmp = ftmp->next)
           {
-            if (GET_CODE (ftmp->insn) == BARRIER)
+            if (BARRIER_P (ftmp->insn))
               {
                 if (minipool_vector_head
                     && ftmp->address >= minipool_vector_head->max_address)
@@ -1247,7 +1247,7 @@ csky_reorg (void)
         if (ftmp == NULL) reach_end = true;
 
         /* If the last added fix is a barrier, dump minipool after it.  */
-        if (last_added_fix && GET_CODE (last_added_fix->insn) == BARRIER)
+        if (last_added_fix && BARRIER_P (last_added_fix->insn))
           {
             ftmp = last_barrier;
           }
@@ -1301,6 +1301,9 @@ csky_reorg (void)
               }
           }
 
+        /* TODO will_change_section and is_last_func should be added to
+           cgraphunit.c file. Try to find a solution don't edit gcc file.*/
+#if 0
         /* if the current insn list is the last part of internal function, only
          * need to modify the address constraint; Otherwise, dump the minipool. */
         #define MAX_PROLOG_LENGTH ((4 + 8 + 1 + 4 + 1 + 4) * 4)
@@ -1313,9 +1316,6 @@ csky_reorg (void)
           {
             dump_csky_minipool (last_barrier->insn);
           }
-        /* TODO will_change_section and is_last_func should be added to
-           cgraphunit.c file. Try to find a solution don't edit gcc file.*/
-#if 0
         else if (reach_end == true && will_change_section == true)
           {
             dump_csky_minipool (last_barrier->insn);
@@ -1324,7 +1324,6 @@ csky_reorg (void)
           {
             dump_csky_minipool (last_barrier->insn);
           }
-#endif
         else if (reach_end == false)
           {
             HOST_WIDE_INT pool_len;
@@ -1339,7 +1338,9 @@ csky_reorg (void)
           {
             adjust_csky_minipool_address(address);
           }
-
+#else
+        dump_csky_minipool (last_barrier->insn);
+#endif
         fix = ftmp;
         if (fix->next == NULL)
           break;
@@ -2206,6 +2207,8 @@ csky_option_override (void)
 /* Resynchronize the saved target options.  */
   cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
                          &global_options);
+
+  csky_add_gc_roots ();
 }
 
 
@@ -2672,6 +2675,17 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
 {
   enum rtx_code code = GET_CODE (addr);
 
+  /* This is to fit the address emit by const pool.
+     After reload constants split into minipools will have addresses
+     from a LABEL_REF.  */
+  if (reload_completed
+      && (code == LABEL_REF)
+      || ((code == CONST
+           && GET_CODE (XEXP (addr, 0)) == PLUS
+           && GET_CODE (XEXP (XEXP (addr, 0), 0)) == LABEL_REF
+           && CONST_INT_P (XEXP (XEXP (addr, 0), 1)))))
+    return 1;
+
   if (is_csky_address_register_rtx_p (addr, strict_p))
     return 1;
   /* It is a pc-relative load, may be generated for constpool.  */
@@ -2762,6 +2776,11 @@ decompose_csky_address (rtx addr, struct csky_address * out)
     {
       out->label = addr;
       return true;
+    }
+
+  if (GET_CODE (addr) == CONST)
+    {
+      addr = XEXP (addr, 0);
     }
 
   if (GET_CODE (addr) == PLUS)
@@ -4449,6 +4468,205 @@ expand_csky_stack_adjust (int direction, int size)
 }
 
 
+/* Generate and emit an insn that we will recognize as a push_multi.
+   Unfortunately, since this insn does not reflect very well the actual
+   semantics of the operation, we need to annotate the insn for the benefit
+   of DWARF2 frame unwind information.  DWARF_REGS_MASK is a subset of
+   MASK for registers that should be annotated for DWARF2 frame unwind
+   information.  */
+
+static rtx
+emit_csky_regs_push (unsigned long mask)
+{
+  int num_regs = 0;
+  int i, j;
+  rtx par;
+  rtx dwarf;
+  int dwarf_par_index;
+  rtx tmp, reg;
+
+  for (i = 0; i < CSKY_NGPR_REGS; i++)
+    {
+      if (mask & (1 << i))
+        num_regs++;
+    }
+
+  /* The reg range for push is:r4-r11,r15-r17,r28.  */
+  gcc_assert (num_regs && num_regs <= 12);
+
+  /* For the body of the insn we are going to generate an UNSPEC in
+     parallel with several USEs.  This allows the insn to be recognized
+     by the push_multi pattern in the arm.md file.
+
+     The body of the insn looks something like this:
+
+       (parallel [
+           (set (mem:BLK (pre_modify:SI (reg:SI sp)
+                                        (const_int:SI <num>)))
+                (unspec:BLK [(reg:SI r4)] UNSPEC_PUSHPOP_MULT))
+           (use (reg:SI XX))
+           (use (reg:SI YY))
+           ...
+        ])
+
+     For the frame note however, we try to be more explicit and actually
+     show each register being stored into the stack frame, plus a (single)
+     decrement of the stack pointer.  We do it this way in order to be
+     friendly to the stack unwinding code, which only wants to see a single
+     stack decrement per instruction.  The RTL we generate for the note looks
+     something like this:
+
+      (sequence [
+           (set (reg:SI sp) (plus:SI (reg:SI sp) (const_int -20)))
+           (set (mem:SI (reg:SI sp)) (reg:SI r4))
+           (set (mem:SI (plus:SI (reg:SI sp) (const_int 4))) (reg:SI XX))
+           (set (mem:SI (plus:SI (reg:SI sp) (const_int 8))) (reg:SI YY))
+           ...
+        ])
+
+     FIXME:: In an ideal world the PRE_MODIFY would not exist and
+     instead we'd have a parallel expression detailing all
+     the stores to the various memory addresses so that debug
+     information is more up-to-date. Remember however while writing
+     this to take care of the constraints with the push instruction.
+
+     Note also that this has to be taken care of for the VFP registers.
+
+     For more see PR43399.  */
+
+  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs));
+  dwarf = gen_rtx_SEQUENCE (VOIDmode, rtvec_alloc (num_regs + 1));
+  dwarf_par_index = 1;
+
+  for (i = 0; i < CSKY_NGPR_REGS; i++)
+    {
+      if (mask & (1 << i))
+        {
+          reg = gen_rtx_REG (SImode, i);
+
+          XVECEXP (par, 0, 0)
+            = gen_rtx_SET (gen_frame_mem
+                           (BLKmode,
+                            gen_rtx_PRE_MODIFY (Pmode,
+                                                stack_pointer_rtx,
+                                                plus_constant
+                                                (Pmode, stack_pointer_rtx,
+                                                 -4 * num_regs))
+                            ),
+                           gen_rtx_UNSPEC (BLKmode,
+                                           gen_rtvec (1, reg),
+                                           UNSPEC_PUSHPOP_MULT));
+
+          tmp = gen_rtx_SET (gen_frame_mem (SImode, stack_pointer_rtx),
+                             reg);
+          RTX_FRAME_RELATED_P (tmp) = 1;
+          XVECEXP (dwarf, 0, dwarf_par_index++) = tmp;
+
+          break;
+        }
+    }
+
+  for (j = 1, i++; j < num_regs; i++)
+    {
+      if (mask & (1 << i))
+        {
+          reg = gen_rtx_REG (SImode, i);
+
+          XVECEXP (par, 0, j) = gen_rtx_USE (VOIDmode, reg);
+
+          tmp
+            = gen_rtx_SET (gen_frame_mem
+                           (SImode,
+                            plus_constant (Pmode, stack_pointer_rtx,
+                                           4 * j)),
+                           reg);
+          RTX_FRAME_RELATED_P (tmp) = 1;
+          XVECEXP (dwarf, 0, dwarf_par_index++) = tmp;
+
+          j++;
+        }
+    }
+
+  par = emit_insn (par);
+
+  tmp = gen_rtx_SET (stack_pointer_rtx,
+                     plus_constant (Pmode, stack_pointer_rtx, -4 * num_regs));
+  RTX_FRAME_RELATED_P (tmp) = 1;
+  XVECEXP (dwarf, 0, 0) = tmp;
+
+  add_reg_note (par, REG_FRAME_RELATED_EXPR, dwarf);
+  RTX_FRAME_RELATED_P (par) = 1;
+
+  return par;
+}
+
+
+/* Generate and emit an insn pattern that we will recognize as a pop_multi.
+   SAVED_REGS_MASK shows which registers need to be restored.
+
+   Unfortunately, since this insn does not reflect very well the actual
+   semantics of the operation, we need to annotate the insn for the benefit
+   of DWARF2 frame unwind information.  */
+/* FIXME is the debug information should be added in epilogue?  */
+
+static void
+emit_csky_regs_pop (unsigned long mask)
+{
+  int num_regs = 0;
+  int i, j;
+  rtx par;
+  int dwarf_par_index;
+  rtx tmp, reg;
+
+  for (i = 0; i < CSKY_NGPR_REGS; i++)
+    {
+      if (mask & (1 << i))
+        num_regs++;
+    }
+
+  /* The reg range for push is:r4-r11,r15-r17,r28.  */
+  gcc_assert (num_regs && num_regs <= 12);
+
+  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs));
+
+  for (i = 0; i < CSKY_NGPR_REGS; i++)
+    {
+      if (mask & (1 << i))
+        {
+          reg = gen_rtx_REG (SImode, i);
+          tmp = gen_frame_mem
+            (SImode,
+             gen_rtx_POST_MODIFY (Pmode,
+                                  stack_pointer_rtx,
+                                  plus_constant (Pmode, stack_pointer_rtx,
+                                                 4 * num_regs)));
+
+          XVECEXP (par, 0, 0)
+            = gen_rtx_SET (reg,
+                           gen_rtx_UNSPEC (SImode,
+                                           gen_rtvec (1, tmp),
+                                           UNSPEC_PUSHPOP_MULT));
+
+          break;
+        }
+    }
+
+  for (j = 1, i++; j < num_regs; i++)
+    {
+      if (mask & (1 << i))
+        {
+          reg = gen_rtx_REG (SImode, i);
+
+          XVECEXP (par, 0, j) = gen_rtx_USE (VOIDmode, reg);
+
+          j++;
+        }
+    }
+
+  par = emit_insn (par);
+}
+
+
 void csky_expand_prologue(void)
 {
   rtx insn;
@@ -4498,7 +4716,7 @@ void csky_expand_prologue(void)
   /* TODO: pushpop */
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
     {
-
+      emit_csky_regs_push (fi.reg_mask);
     }
   else if (fi.reg_size > 0)
     {
@@ -4593,7 +4811,7 @@ void csky_expand_epilogue(void)
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
            && fi.arg_size == 0)
     {
-
+      emit_csky_regs_pop (fi.reg_mask);
     }
   /* TODO: stm */
   else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
@@ -4687,6 +4905,7 @@ csky_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
 
   if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
     {
+#if 0
       int rn = 4;
       int reg_end = 31;
       asm_fprintf (f, "\tpush\t");
@@ -4706,6 +4925,7 @@ csky_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
           asm_fprintf (f, ", %s", reg_names[rn]);
         }
       asm_fprintf (f, "\n");
+#endif
     }
 
   int space_allocated = fi.arg_size + fi.reg_size + fi.local_size
@@ -4806,6 +5026,7 @@ const char *csky_unexpanded_epilogue(void)
   if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
       && fi.arg_size == 0)
     {
+#if 0
       int rn = 4;
       int reg_end = 31;
       asm_fprintf (asm_out_file, "\tpop\t");
@@ -4825,6 +5046,7 @@ const char *csky_unexpanded_epilogue(void)
           asm_fprintf (asm_out_file, ", %s", reg_names[rn]);
         }
       asm_fprintf (asm_out_file, "\n");
+#endif
     }
   else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
     {
@@ -5868,6 +6090,13 @@ csky_rtx_costs (rtx x, machine_mode mode ATTRIBUTE_UNUSED, int outer_code,
   return result;
 }
 
+
+static void
+csky_add_gc_roots (void)
+{
+  gcc_obstack_init (&minipool_obstack);
+  minipool_startobj = (char *) obstack_alloc (&minipool_obstack, 0);
+}
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

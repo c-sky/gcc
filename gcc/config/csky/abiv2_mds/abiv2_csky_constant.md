@@ -40,3 +40,11 @@
    (TLS_IE32               3)
    (TLS_LE32               4)]
 )
+
+(define_c_enum "unspec" [
+  UNSPEC_PUSHPOP_MULT   ;   push or pop multiple' operation:
+                        ;   operand 0 is the first register,
+                        ;   subsequent registers are in parallel (use ...)
+                        ;   expressions.
+  ]
+)

@@ -51,11 +51,11 @@ CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
 
 #ifdef CSKY_CORE
 /* ck801 Architecture Processors */
-CSKY_CORE("ck801",    ck801,    ck801,    CK801,  , 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck801",    ck801,    ck801,    CK801,  , MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
 
 /* ck802 Architecture Processors */
-CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), 0, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), 0, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
 
 /* ck803 Architecture Processors */
 CSKY_CORE("ck803",    ck803,    ck803,    CK803,  , 0, CSKY_TUNE_GET(generic))

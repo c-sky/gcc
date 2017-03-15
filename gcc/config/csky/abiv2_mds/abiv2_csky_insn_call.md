@@ -127,3 +127,4 @@
   "flag_pic"
   "* return csky_output_call (operands, 1);"
 )
+

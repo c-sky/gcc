@@ -233,6 +233,8 @@ extern rtx legitimize_tls_address (rtx x, rtx reg);
 
 extern int register_csky_move_cost (enum machine_mode mode ATTRIBUTE_UNUSED,
                                     enum reg_class from, enum reg_class to);
+
+extern int get_csky_pushpop_length (rtx*);
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
 extern int csky_arch_isa_features[];
