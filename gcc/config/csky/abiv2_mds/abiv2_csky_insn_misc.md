@@ -275,3 +275,62 @@
   "bkpt"
   [(set (attr "length") (const_int 2))]
 )
+
+;;------------------------------------------------------------
+;; switch case optimize
+;;------------------------------------------------------------
+
+(define_expand "casesi"
+  [(match_operand:SI 0 "register_operand" "")   ; index to jump on
+   (match_operand:SI 1 "const_int_operand" "")  ; lower bound
+   (match_operand:SI 2 "const_int_operand" "")  ; total range        (max - min)
+   (match_operand:SI 3 "" "")                   ; table label
+   (match_operand:SI 4 "" "")]                  ; Out of range label (default:)
+  "CSKY_ISA_FEATURE(casesi)"
+  "{
+    enum insn_code code;
+    if (operands[1] != const0_rtx)
+      {
+        rtx reg = gen_reg_rtx (SImode);
+        emit_insn (gen_addsi3 (reg,operands[0], GEN_INT (-INTVAL (operands[1]))));
+        operands[0] = reg;
+      }
+
+    code = CODE_FOR_csky_casesi_internal;
+
+    if (!insn_data[(int) code].operand[1].predicate(operands[2], SImode))
+      operands[2] = force_reg (SImode,operands[2]);
+
+    emit_jump_insn (GEN_FCN ((int) code) (operands[0],operands[2],
+                    operands[3],operands[4]));
+    DONE;
+  }"
+)
+
+(define_expand "csky_casesi_internal"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "csky_literal_Uk_operand" "")
+   (match_operand    2 "" "")
+   (match_operand    3 "" "")]
+  ""
+  {
+    rtx reg0;
+    rtx test = gen_rtx_GTU(VOIDmode, operands[0], operands[1]);
+    emit_jump_insn (gen_cbranchsi4 (test,operands[0],operands[1], operands[3]));
+    reg0 = gen_rtx_REG (SImode, 0);
+    emit_move_insn (reg0, operands[0]);
+    emit_jump_insn (gen_csky_casesi_dispatch (operands[2]/*, operands[3]*/));
+    DONE;
+  }
+)
+
+(define_insn "csky_casesi_dispatch"
+  [(parallel [(set (pc) (unspec [(reg:SI 0) (label_ref (match_operand 0 "" ""))
+;;                                          (label_ref (match_operand 1 "" ""))
+                                ]
+                                UNSPEC_CSKY_CASESI))
+              (clobber (reg:SI 15))])]
+  ""
+  "*return csky_output_casesi(operands);"
+  [(set_attr "length" "4")]
+)

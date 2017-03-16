@@ -2123,6 +2123,28 @@ csky_configure_build_target (struct csky_build_target *target,
 
 
 static void
+csky_configure_build_special_isa(struct csky_build_target *target)
+{
+  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    {
+      flag_pic = 0;
+      warning (0, "-fPIC is not supported by arch %s", target->arch_pp_name);
+    }
+
+  if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+    bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(tls));
+  else
+    warning (0, "TLS is not supported by arch %s", target->arch_pp_name);
+
+  if (optimize_size && TARGET_CONSTANT_POOL
+      && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
+    {
+      bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(casesi));
+    }
+}
+
+
+static void
 csky_option_override (void)
 {
   csky_active_target.isa = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
@@ -2143,6 +2165,8 @@ csky_option_override (void)
   csky_arch_name = csky_active_target.arch_pp_name;
   csky_base_arch = csky_active_target.base_arch;
   current_tune = csky_active_target.tune;
+
+  csky_configure_build_special_isa(&csky_active_target);
 
   if (TARGET_HARD_FLOAT)
     {
@@ -2188,17 +2212,6 @@ csky_option_override (void)
       else
         warning (0, "-mhard-float is not supported in current CPU.");
     }
-
-  if (flag_pic && !(CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
-    {
-      flag_pic = 0;
-      warning (0, "-fPIC is not supported by arch %s", csky_arch_name);
-    }
-
-  if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
-    bitmap_set_bit(csky_active_target.isa, CSKY_ISA_FEATURE_GET(tls));
-  else
-    warning (0, "TLS is not supported by arch %s", csky_arch_name);
 
   /* Initialize boolean versions of the architectural flags, for use
      in the .md file.  */
@@ -6107,6 +6120,34 @@ csky_add_gc_roots (void)
   gcc_obstack_init (&minipool_obstack);
   minipool_startobj = (char *) obstack_alloc (&minipool_obstack, 0);
 }
+
+
+/* switch case optimize.  */
+
+const char *
+csky_output_casesi (rtx *operands)
+{
+  rtx diff_vec = PATTERN (NEXT_INSN (as_a <rtx_insn *> (operands[0])));
+
+  gcc_assert (GET_CODE (diff_vec) == ADDR_DIFF_VEC);
+
+  switch (GET_MODE(diff_vec))
+    {
+    case QImode:
+      return (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned ?
+              "jbsr\t___gnu_csky_case_uqi" :
+              "jbsr\t___gnu_csky_case_sqi");
+    case HImode:
+      return (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned ?
+              "jbsr\t___gnu_csky_case_uhi" :
+              "jbsr\t___gnu_csky_case_shi");
+    case SImode:
+      return "jbsr\t___gnu_csky_case_si";
+    default:
+      gcc_unreachable();
+    }
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

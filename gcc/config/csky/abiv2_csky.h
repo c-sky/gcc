@@ -709,7 +709,7 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 
 
 /******************************************************************
- *                           Section                              *
+ *    Dividing the Output into Sections (Texts, Data, . . . )     *
  ******************************************************************/
 
 
@@ -721,6 +721,14 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    pools which must be jumped around...  */
 #define FORCE_CODE_SECTION_ALIGN    \
   asm ("br 1f ; .literals ; .align 2 ; 1:");
+
+/* Define this macro to be an expression with a nonzero value if
+   jump tables (for tablejump insns) should be output in the text section,
+   along with the assembler instructions.  */
+#define JUMP_TABLES_IN_TEXT_SECTION \
+  (optimize_size && TARGET_CONSTANT_POOL \
+   && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
+
 
 /******************************************************************
  *                      Assembler Format                          *
@@ -916,6 +924,77 @@ extern const int csky_dbx_regno[];
 /* The machine modes of pointers and functions.  */
 #define Pmode  SImode
 #define FUNCTION_MODE  Pmode
+
+/* Define this macro to be a C expression to indicate when jump-tables
+   should contain relative addresses.  */
+#define CASE_VECTOR_PC_RELATIVE \
+  (optimize_size && TARGET_CONSTANT_POOL \
+   && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
+
+/* Return the preferred mode for and addr_diff_vec when the mininum
+   and maximum offset are known.  */
+#define CASE_VECTOR_SHORTEN_MODE(min, max, body)                    \
+  (min >= 0 && max < 512                                            \
+   ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, QImode)       \
+   : min >= -256 && max < 256                                       \
+     ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, QImode)     \
+     : min >= 0 && max < 8192                                       \
+       ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, HImode)   \
+       : min >= -4096 && max < 4096                                 \
+         ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, HImode) \
+         : SImode)
+
+/* This is how to output an element of a case-vector that is relative.  */
+#define ASM_OUTPUT_ADDR_DIFF_ELT(STREAM, BODY, VALUE, REL)          \
+  do                                                                \
+    {                                                               \
+      if (optimize_size && TARGET_CONSTANT_POOL                     \
+          && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))  \
+        {                                                           \
+          switch (GET_MODE(body))                                   \
+            {                                                       \
+            case QImode:                                            \
+              asm_fprintf (STREAM, "\t.byte\t(.L%d-.L%d)/2\n",      \
+                           VALUE, REL);                             \
+              break;                                                \
+            case HImode: /* TBH */                                  \
+              asm_fprintf (STREAM, "\t.short\t(.L%d-.L%d)/2\n",     \
+                           VALUE, REL);                             \
+              break;                                                \
+            case SImode:                                            \
+              asm_fprintf (STREAM, "\t.long\t.L%d-.L%d\n",          \
+                           VALUE, REL);                             \
+              break;                                                \
+            default:                                                \
+              gcc_unreachable();                                    \
+            }                                                       \
+        }                                                           \
+      else                                                          \
+        asm_fprintf (STREAM, "\t.long\t.L%d@GOTOFF\n", VALUE);      \
+    } while (0)
+
+/* This macro is not documented yet.
+   But we do need it to make jump table vector aligned.  */
+#define ADDR_VEC_ALIGN(JUMPTABLE) 0
+
+/* We have to undef it first because elfos.h formerly define it
+   check gcc/config.gcc and gcc/config/elfos.h for more information.  */
+#undef  ASM_OUTPUT_CASE_LABEL
+#define ASM_OUTPUT_CASE_LABEL(stream, prefix, num, table)       \
+  do                                                            \
+    {                                                           \
+      if (GET_MODE (PATTERN (table)) == SImode)                 \
+        ASM_OUTPUT_ALIGN (stream, 2);                           \
+      (*targetm.asm_out.internal_label) (stream, prefix, num);  \
+    } while (0)
+
+/* Make sure subsequent insns are aligned after a TBB.  */
+#define ASM_OUTPUT_CASE_END(stream, num, table)   \
+  do                                              \
+    {                                             \
+      if (GET_MODE (PATTERN (table)) == QImode)   \
+        ASM_OUTPUT_ALIGN (stream, 1);             \
+    } while (0)
 
 
 /******************************************************************
