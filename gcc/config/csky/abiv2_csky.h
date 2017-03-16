@@ -1022,8 +1022,8 @@ extern const int csky_dbx_regno[];
 
 /* Define this macro if it is as good or better to call a constant
    function address than to call an address kept in a register.  */
-/* On the CSKY, calling through registers is slow.  */
-#define NO_FUNCTION_CSE 1
+/* On the CSKY, jbsr calling through registers is better than jbsri.  */
+#define NO_FUNCTION_CSE 0
 
 
 /******************************************************************
