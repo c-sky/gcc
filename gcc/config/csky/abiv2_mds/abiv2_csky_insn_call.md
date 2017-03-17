@@ -12,7 +12,7 @@
             || symbol_mentioned_p (addr_ref)
             || label_mentioned_p (addr_ref)))
       {
-        pic_ref = legitimize_pic_address (addr_ref, SImode, 0, 0);
+        pic_ref = legitimize_pic_address (addr_ref, 0, 0);
         operands[0] = gen_rtx_MEM (GET_MODE (pic_ref), pic_ref);
       }
 
@@ -63,7 +63,7 @@
             || symbol_mentioned_p (addr_ref)
             || label_mentioned_p (addr_ref)))
       {
-        pic_ref = legitimize_pic_address (addr_ref, SImode, 0, 0);
+        pic_ref = legitimize_pic_address (addr_ref, 0, 0);
         operands[1] = gen_rtx_MEM (GET_MODE (pic_ref), pic_ref);
       }
 

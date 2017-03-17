@@ -47,7 +47,6 @@
                  || label_mentioned_p (operands[1])))
       {
         operands[1] = legitimize_pic_address (operands[1],
-                                              SImode,
                                               (!can_create_pseudo_p () ? operands[0] : 0),
                                               1);
       }

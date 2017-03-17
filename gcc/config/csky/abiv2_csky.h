@@ -146,7 +146,6 @@ machine_function;
 /* 'char' is unsigned by default for backward compatiblity  */
 #define DEFAULT_SIGNED_CHAR    0
 
-#define UINT_LEAST32_TYPE "unsigned int"
 
 /******************************************************************
  *              Stack Layout and Calling Conventions              *
@@ -263,8 +262,7 @@ machine_function;
 /* 1 if N is a possible register number for function argument passing.
    On the CSKY, r0-r3 are used to pass args.  */
 #define FUNCTION_ARG_REGNO_P(REGNO)         \
-  ((REGNO) >= CSKY_FIRST_PARM_REG           \
-   && (REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))
+  ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))
 
 
 /* How Large Values Are Returned  */
@@ -478,8 +476,8 @@ machine_function;
    for any hard reg, then this must be 0 for correct output.  */
 #define MODES_TIEABLE_P(MODE1, MODE2) \
   (!TARGET_HARD_FLOAT  || \
-   !((MODE1) == DFmode && (MODE1) != (MODE2) || \
-     (MODE2) == DFmode && (MODE1) != (MODE2)))
+   !(((MODE1) == DFmode && (MODE1) != (MODE2)) || \
+     ((MODE2) == DFmode && (MODE1) != (MODE2))))
 
 /*  Register classes.  */
 enum reg_class
@@ -885,7 +883,7 @@ while (0)
 
 /* How to renumber registers for dbx and gdb.  */
 extern const int csky_dbx_regno[];
-#define DBX_REGISTER_NUMBER(REGNO) csky_dbx_regno[REGNO]
+#define DBX_REGISTER_NUMBER(REGNO) ((unsigned int)csky_dbx_regno[REGNO])
 
 
 /******************************************************************

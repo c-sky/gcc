@@ -540,40 +540,6 @@ push_csky_minipool_barrier (rtx_insn *insn, HOST_WIDE_INT address)
 }
 
 
-static bool
-is_csky_epilogue_insn(rtx x)
-{
-    if ((GET_CODE(x) == JUMP_INSN)
-        && (GET_CODE(PATTERN(x)) == UNSPEC_VOLATILE)
-        && (XINT(PATTERN(x), 1) == FLAG_EPILOGUE))
-      return true;
-    else
-      return false;
-}
-
-
-/* Determines if INSN is the start of a jump table.  Returns the end
-   of the TABLE or NULL_RTX.  */
-
-static rtx_insn*
-is_csky_jump_table (rtx_insn *insn)
-{
-  rtx_insn *table;
-
-  if (GET_CODE (insn) == JUMP_INSN
-      && JUMP_LABEL (insn) != NULL
-      && ((table = next_real_insn (JUMP_LABEL (insn)))
-      == next_real_insn (insn))
-      && table != NULL
-      && GET_CODE (table) == JUMP_INSN
-      && (GET_CODE (PATTERN (table)) == ADDR_VEC
-      || GET_CODE (PATTERN (table)) == ADDR_DIFF_VEC))
-    return table;
-
-  return NULL;
-}
-
-
 static HOST_WIDE_INT
 get_csky_jump_table_size (rtx insn)
 {
@@ -808,7 +774,7 @@ get_csky_barrier_cost (rtx_insn *insn)
    it.  */
 static Mfix *
 create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
-                         HOST_WIDE_INT min_address, HOST_WIDE_INT max_address)
+                         HOST_WIDE_INT max_address)
 {
   rtx_barrier *barrier;
   rtx_insn *from;
@@ -822,11 +788,9 @@ create_csky_fix_barrier (Mfix *fix, Mfix *fix_next,
   /* The address at which the jump instruction will be placed.  */
   HOST_WIDE_INT selected_address;
   Mfix * new_fix;
-  HOST_WIDE_INT count;
+  HOST_WIDE_INT count = 0;
   if (fix)
     count = fix->address;
-  else
-    count = min_address;
   HOST_WIDE_INT max_count = max_address;
   rtx label = gen_label_rtx ();
 
@@ -1171,7 +1135,6 @@ csky_reorg (void)
     /* The following algorithm dumps constant pool to the right point. */
     rtx_insn *insn;
     HOST_WIDE_INT address = 0;
-    HOST_WIDE_INT tmp_len, prolog_len;
     Mfix * fix;
 
     minipool_fix_head = minipool_fix_tail = NULL;
@@ -1209,7 +1172,6 @@ csky_reorg (void)
     while (fix)
       {
         Mfix * ftmp;
-        Mfix * fdel;
         Mfix * last_added_fix;
         Mfix * last_barrier = NULL;
         Mfix * this_fix;
@@ -1283,7 +1245,7 @@ csky_reorg (void)
             if (ftmp->address < max_address)
               max_address = ftmp->address + 1;
             last_barrier = create_csky_fix_barrier (last_added_fix, ftmp,
-                                                    prolog_len, max_address);
+                                                    max_address);
           }
 
         assign_csky_minipool_offsets (last_barrier);
@@ -1542,7 +1504,8 @@ csky_function_arg_advance (cumulative_args_t pcum_v, machine_mode mode,
 
 
 static unsigned int
-csky_function_arg_boundary (machine_mode mode, const_tree type)
+csky_function_arg_boundary (machine_mode mode ATTRIBUTE_UNUSED,
+                            const_tree type ATTRIBUTE_UNUSED)
 {
   return PARM_BOUNDARY;
 }
@@ -1592,7 +1555,8 @@ csky_function_value(const_tree type, const_tree func,
 /* Define how to find the value returned by a library function
    assuming the value has mode MODE.  */
 static rtx
-csky_libcall_value (machine_mode mode, const_rtx libcall)
+csky_libcall_value (machine_mode mode,
+                    const_rtx libcall ATTRIBUTE_UNUSED)
 {
   return gen_rtx_REG (mode, CSKY_FIRST_RET_REG);
 }
@@ -1663,10 +1627,10 @@ csky_arg_partial_bytes (cumulative_args_t pcum_v, enum machine_mode mode,
 /* Keep track of some information about varargs for the prolog.  */
 static void
 csky_setup_incoming_varargs (cumulative_args_t pcum_v,
-          machine_mode mode,
-          tree type,
-          int *pretend_size,
-          int second_time ATTRIBUTE_UNUSED)
+                             machine_mode mode ATTRIBUTE_UNUSED,
+                             tree type ATTRIBUTE_UNUSED,
+                             int *pretend_size ATTRIBUTE_UNUSED,
+                             int second_time ATTRIBUTE_UNUSED)
 {
   CUMULATIVE_ARGS *pcum = get_cumulative_args (pcum_v);
   int reg = *pcum;
@@ -1691,16 +1655,15 @@ csky_setup_incoming_varargs (cumulative_args_t pcum_v,
 static void
 csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
                       HOST_WIDE_INT delta,
-                      HOST_WIDE_INT vcall_offset ATTRIBUTE_UNUSED,
+                      HOST_WIDE_INT vcall_offset,
                       tree function)
 {
-  char *thiz = "a0";
-  char *reg0 = "t0";
-  char *reg1 = "t1";
+  const char *thiz = "a0";
+  const char *reg0 = "t0";
+  const char *reg1 = "t1";
 
   rtx fnaddr = XEXP (DECL_RTL (function), 0);
 
-  /* TODO for ck801  */
   if (CSKY_TARGET_ARCH (CK801))
     {
       reg0 = "l0";
@@ -1724,12 +1687,12 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
     {
       if (delta > CSKY_ADDI_MAX_STEP || delta < -CSKY_ADDI_MAX_STEP)
         {
-          fprintf(file, "\tlrw\t%s, 0x%x\n", reg0, delta);
+          fprintf(file, "\tlrw\t%s, %ld\n", reg0, delta);
           fprintf(file, "\taddu\t%s, %s, %s\n", thiz, thiz, reg0);
         }
         else
           {
-            fprintf(file, "\t%s\t%s, %s, 0x%x\n",
+            fprintf(file, "\t%s\t%s, %s, %ld\n",
                     (delta > 0 ? "addi" : "subi"), thiz,
                     thiz,
                     (delta > 0 ? delta : -delta));
@@ -1744,12 +1707,12 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
       if (vcall_offset > CSKY_ADDI_MAX_STEP
           || vcall_offset < -CSKY_ADDI_MAX_STEP)
         {
-          fprintf(file, "\tlrw\t%s, 0x%x\n", reg1, vcall_offset);
+          fprintf(file, "\tlrw\t%s, %ld\n", reg1, vcall_offset);
           fprintf(file, "\taddu\t%s, %s, %s\n", reg0, reg0, reg1);
         }
       else
         {
-          fprintf(file, "\t%s\t%s, %s, 0x%x\n",
+          fprintf(file, "\t%s\t%s, %s, %ld\n",
                   (vcall_offset > 0 ? "addi" : "subi"), reg0,
                   reg0,
                   (vcall_offset > 0 ? vcall_offset : -vcall_offset));
@@ -2105,7 +2068,7 @@ csky_configure_build_target (struct csky_build_target *target,
 
   /* Setting isa features if there is no default
      which are controlled by the option.  */
-  int i = 0;
+  unsigned int i = 0;
   for (i = 0; i < sizeof(all_opt2isa)/sizeof(all_opt2isa[0]); i++)
     {
       if (target_flags & all_opt2isa[i].flags)
@@ -2131,10 +2094,8 @@ csky_configure_build_special_isa(struct csky_build_target *target)
       warning (0, "-fPIC is not supported by arch %s", target->arch_pp_name);
     }
 
-  if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+  if (TARGET_HAS_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
     bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(tls));
-  else
-    warning (0, "TLS is not supported by arch %s", target->arch_pp_name);
 
   if (optimize_size && TARGET_CONSTANT_POOL
       && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
@@ -2264,7 +2225,8 @@ csky_tls_referenced_p (rtx x)
    is checked above.  */
 
 static bool
-csky_cannot_force_const_mem (machine_mode mode, rtx x)
+csky_cannot_force_const_mem (machine_mode mode ATTRIBUTE_UNUSED,
+                             rtx x)
 {
   return csky_tls_referenced_p (x);
 }
@@ -2299,39 +2261,6 @@ is_csky_address_register_rtx_p (rtx x, int strict_p)
     return CSKY_GENERAL_REGNO_P (regno) || CSKY_GENERAL_REGNO_P (reg_renumber[regno]);
   else
     return CSKY_GENERAL_REGNO_P (regno) || regno >= FIRST_PSEUDO_REGISTER;
-}
-
-
-/* Get the bits count of offset used in ld.(bhwd) instruction
-   accordding to MODE.  */
-
-static unsigned int
-get_offset_bits_count (machine_mode mode)
-{
-  if (CSKY_TARGET_ARCH(CK801))
-    {
-      switch (GET_MODE_SIZE (mode))
-        {
-        case 1:
-          return 5;
-        case 2:
-          return 6;
-        default:
-          return 7;
-        }
-    }
-  else
-    {
-      switch (GET_MODE_SIZE (mode))
-        {
-        case 1:
-          return 12;
-        case 2:
-          return 13;
-        default:
-          return 14;
-        }
-    }
 }
 
 
@@ -2489,7 +2418,8 @@ legitimize_tls_address (rtx x, rtx reg)
    to be legitimate.  If we find one, return the new, valid address.  */
 
 static rtx
-csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
+csky_legitimize_address (rtx x, rtx orig_x ATTRIBUTE_UNUSED,
+                         enum machine_mode mode)
 {
   if (csky_tls_symbol_p (x))
     return legitimize_tls_address (x, NULL_RTX);
@@ -2566,7 +2496,8 @@ csky_legitimize_address (rtx x, rtx orig_x, enum machine_mode mode)
    others use ld and ldr.  */
 
 static int
-ck801_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
+ck801_legitimate_index_p (enum machine_mode mode, rtx index,
+                          int strict_p ATTRIBUTE_UNUSED)
 {
   enum rtx_code code = GET_CODE (index);
 
@@ -2587,7 +2518,8 @@ ck801_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
 
 
 static int
-ck802_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
+ck802_legitimate_index_p (enum machine_mode mode, rtx index,
+                          int strict_p ATTRIBUTE_UNUSED)
 {
   enum rtx_code code = GET_CODE (index);
 
@@ -2702,11 +2634,11 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
      After reload constants split into minipools will have addresses
      from a LABEL_REF.  */
   if (reload_completed
-      && (code == LABEL_REF)
-      || ((code == CONST
-           && GET_CODE (XEXP (addr, 0)) == PLUS
-           && GET_CODE (XEXP (XEXP (addr, 0), 0)) == LABEL_REF
-           && CONST_INT_P (XEXP (XEXP (addr, 0), 1)))))
+      && ((code == LABEL_REF)
+           || (code == CONST
+               && GET_CODE (XEXP (addr, 0)) == PLUS
+               && GET_CODE (XEXP (XEXP (addr, 0), 0)) == LABEL_REF
+               && CONST_INT_P (XEXP (XEXP (addr, 0), 1)))))
     return 1;
 
   if (is_csky_address_register_rtx_p (addr, strict_p))
@@ -2808,7 +2740,7 @@ decompose_csky_address (rtx addr, struct csky_address * out)
 
   if (GET_CODE (addr) == PLUS)
     {
-      rtx addends[2], op, tmp;
+      rtx addends[2], op;
 
       addends[0] = XEXP (addr, 0);
       addends[1] = XEXP (addr, 1);
@@ -2942,7 +2874,9 @@ csky_output_constpool_label (FILE * stream, rtx x)
 /* Print the operand address in X to the STREAM.  */
 
 void
-csky_print_operand_address (FILE * stream, machine_mode mode, rtx x)
+csky_print_operand_address (FILE * stream,
+                            machine_mode mode ATTRIBUTE_UNUSED,
+                            rtx x)
 {
 
   struct csky_address addr;
@@ -3056,7 +2990,7 @@ csky_print_operand (FILE * stream, rtx x, int code)
         }
       break;
     case 'H':
-      fprintf (stream, "%d", ((INTVAL (x)) & 0xFFFF0000) >> 16);
+      fprintf (stream, "%ld", ((INTVAL (x)) & 0xFFFF0000) >> 16);
       break;
     default:
       switch (GET_CODE (x))
@@ -3460,62 +3394,62 @@ output_csky_inline_const (enum machine_mode mode, rtx operands[])
     /* Add instruction 'not'.  */
     case IC_APPEND_NOT:
       sprintf (buf, "%s\n\tnot\t%s, %s\t// %ld 0x%x", load_op, dst_fmt,
-               dst_fmt, value, value);
+               dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'addi'.  */
     case IC_APPEND_ADDI:
       sprintf (buf, "%s\n\taddi\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'subi'.  */
     case IC_APPEND_SUBI:
       sprintf (buf, "%s\n\tsubi\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'addi', the last instruction is bgeni.  */
     case IC_BGENI_ADDI:
       sprintf (buf, "%s\n\taddi\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'subi', the last instruction is bgeni.  */
     case IC_BGENI_SUBI:
       sprintf (buf, "%s\n\tsubi\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'bseti'.  */
     case IC_APPEND_BSETI:
       sprintf (buf, "%s\n\tbseti\t%s, %s, %%P2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'movi'.  */
     case IC_APPEND_MOVI:
       sprintf (buf, "%s\n\tmovi\t%s, %%2\t// %ld 0x%x", load_op, dst_fmt,
-               value, value);
+               value, (unsigned int)value);
       break;
     /* Add instruction 'bclri'.  */
     case IC_APPEND_BCLRI:
       sprintf (buf, "%s\n\tbclri\t%s, %s, %%Q2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'rotli'.  */
     case IC_APPEND_ROTLI:
       sprintf (buf, "%s\n\trotli\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'lsli'.  */
     case IC_APPEND_LSLI:
       sprintf (buf, "%s\n\tlsli\t%s, %s, %%2\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'ixh'.  */
     case IC_APPEND_IXH:
       sprintf (buf, "%s\n\tixh\t%s, %s, %s\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     /* Add instruction 'ixw'.  */
     case IC_APPEND_IXW:
       sprintf (buf, "%s\n\tixw\t%s, %s, %s\t// %ld 0x%x", load_op,
-               dst_fmt, dst_fmt, dst_fmt, value, value);
+               dst_fmt, dst_fmt, dst_fmt, value, (unsigned int)value);
       break;
     default:
       return "";
@@ -3744,15 +3678,12 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
   rtx dst = operands[0];
   rtx src = operands[1];
 
-  struct csky_address op0, op1;
+  struct csky_address op1;
 
   if (REG_P (dst))
     {
       if (REG_P (src))
         {
-          int dstreg = REGNO (dst);
-          int srcreg = REGNO (src);
-
           return "mov\t%0, %1";
         }
       else if (GET_CODE (src) == MEM)
@@ -3783,9 +3714,7 @@ output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
         }
       else if (GET_CODE (src) == CONST_INT)
         {
-          HOST_WIDE_INT x, y;
-
-          if (0 <= REGNO (dst) && REGNO (dst) <= 7)
+          if (REGNO (dst) <= 7)
             {
               if (CSKY_CONST_OK_FOR_N (INTVAL (src) + 1))
                 return "movi\t%0, %1";
@@ -4092,7 +4021,7 @@ output_ck801_movedouble (rtx operands[],
         {
           split_double (src, operands + 2, operands + 3);
 
-          if (0 <= REGNO (dst) && REGNO (dst) <= 7
+          if (REGNO (dst) <= 7
               && CSKY_CONST_OK_FOR_N (INTVAL (operands[2]) + 1))
             output_asm_insn ("movi\t%0, %2", operands);
           else
@@ -4446,7 +4375,6 @@ expand_csky_stack_adjust (int direction, int size)
   if (direction > 0 && size > CSKY_ADDI_MAX_STEP)
     {
       rtx tmp = GEN_INT (CSKY_ADDI_MAX_STEP);
-      rtx memref;
 
       do
         {
@@ -4462,7 +4390,6 @@ expand_csky_stack_adjust (int direction, int size)
   if (direction < 0 && size > CSKY_SUBI_MAX_STEP)
     {
       rtx tmp = GEN_INT (CSKY_SUBI_MAX_STEP);
-      rtx memref;
 
       do
         {
@@ -4638,7 +4565,6 @@ emit_csky_regs_pop (unsigned long mask)
   int num_regs = 0;
   int i, j;
   rtx par;
-  int dwarf_par_index;
   rtx tmp, reg;
 
   for (i = 0; i < CSKY_NGPR_REGS; i++)
@@ -4881,7 +4807,8 @@ void csky_expand_epilogue(void)
 
 
 static void
-csky_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
+csky_output_function_prologue (FILE *f,
+                               HOST_WIDE_INT frame_size ATTRIBUTE_UNUSED)
 {
   unsigned long func_type = get_csky_current_func_type ();
 
@@ -5115,7 +5042,7 @@ set_csky_return_address (rtx source, rtx scratch)
   rtx addr;
   unsigned long saved_regs = fi.reg_mask;
 
-  if ((saved_regs & ((1 << CSKY_LR_REGNUM)) == 0))
+  if ((saved_regs & ((1 << CSKY_LR_REGNUM))) == 0)
     emit_move_insn (gen_rtx_REG (Pmode, CSKY_LR_REGNUM), source);
   else
     {
@@ -5238,8 +5165,8 @@ can_trans_by_csky_shlshr (unsigned HOST_WIDE_INT val)
   int i;
   for (i = 13; i <= 31; i++)
     {
-      if (((((HOST_WIDE_INT) 1) << i) - 1) == val
-          || ((((HOST_WIDE_INT) 1) << i) - 1) == ~val)
+      if ((unsigned)((((HOST_WIDE_INT) 1) << i) - 1) == val
+          || (unsigned)((((HOST_WIDE_INT) 1) << i) - 1) == ~val)
         {
           return 1;
         }
@@ -5327,7 +5254,7 @@ tls_mentioned_p (rtx x)
 
 
 rtx
-legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
+legitimize_pic_address (rtx orig, rtx reg, int flag)
 {
   rtx pic_reg = gen_rtx_REG(SImode, PIC_OFFSET_TABLE_REGNUM);
   int flag_optimize = 0;
@@ -5436,11 +5363,9 @@ legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag)
       gcc_assert (GET_CODE (XEXP(orig, 0)) == PLUS);
 
       base = legitimize_pic_address (XEXP (XEXP (orig, 0), 0),
-                                     Pmode,
                                      reg,
                                      flag);
       offset = legitimize_pic_address (XEXP (XEXP (orig, 0), 1),
-                                       Pmode,
                                        base == reg ? 0 : reg, flag);
 
       if (GET_CODE (offset) == CONST_INT)

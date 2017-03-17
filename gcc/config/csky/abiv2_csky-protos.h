@@ -35,8 +35,9 @@
 
 #define CSKY_NUM_WORDS(SIZE) ((SIZE + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
+/* Start from r0.  */
 #define CSKY_GENERAL_REGNO_P(N) \
-  (((N) < CSKY_NGPR_REGS && (N) >= 0))
+  ((N) < CSKY_NGPR_REGS)
 
 #define CSKY_VREG_P(N)    \
   ((unsigned int)((int) (N) - CSKY_FIRST_VFP_REGNUM) < CSKY_FIRST_VFP_REGNUM)
@@ -224,7 +225,7 @@ extern void set_csky_return_address (rtx source, rtx scratch);
 
 extern int symbol_mentioned_p (rtx x);
 extern int label_mentioned_p (rtx x);
-extern rtx legitimize_pic_address (rtx orig, machine_mode mode, rtx reg, int flag);
+extern rtx legitimize_pic_address (rtx orig, rtx reg, int flag);
 extern char *csky_output_call (rtx operands[], int index);
 
 extern int tls_mentioned_p(rtx x);
