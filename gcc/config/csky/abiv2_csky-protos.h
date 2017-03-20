@@ -35,9 +35,8 @@
 
 #define CSKY_NUM_WORDS(SIZE) ((SIZE + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
-/* Start from r0.  */
 #define CSKY_GENERAL_REGNO_P(N) \
-  ((N) < CSKY_NGPR_REGS)
+  ((N) < CSKY_NGPR_REGS && (N) >= 0)
 
 #define CSKY_VREG_P(N)    \
   ((unsigned int)((int) (N) - CSKY_FIRST_VFP_REGNUM) < CSKY_FIRST_VFP_REGNUM)

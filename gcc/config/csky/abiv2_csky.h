@@ -262,7 +262,8 @@ machine_function;
 /* 1 if N is a possible register number for function argument passing.
    On the CSKY, r0-r3 are used to pass args.  */
 #define FUNCTION_ARG_REGNO_P(REGNO)         \
-  ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))
+  (((REGNO) >= CSKY_FIRST_PARM_REG) &&      \
+   ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG)))
 
 
 /* How Large Values Are Returned  */
