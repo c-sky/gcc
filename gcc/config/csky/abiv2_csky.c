@@ -2094,7 +2094,7 @@ csky_configure_build_special_isa(struct csky_build_target *target)
       warning (0, "-fPIC is not supported by arch %s", target->arch_pp_name);
     }
 
-  if (TARGET_HAS_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
+  if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
     bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(tls));
 
   if (optimize_size && TARGET_CONSTANT_POOL
