@@ -2192,6 +2192,13 @@ csky_option_override (void)
   cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
                          &global_options);
 
+  /* Don't emit DWARF4 unless specifically selected.  The TPF
+     debuggers do not yet support DWARF 3/4.  */
+  if (!global_options_set.x_dwarf_strict)
+    dwarf_strict = 1;
+  if (!global_options_set.x_dwarf_version)
+    dwarf_version = 3;
+
   csky_add_gc_roots ();
 }
 
