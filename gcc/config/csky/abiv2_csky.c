@@ -1848,8 +1848,9 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
               return (regno < (CSKY_SP_REGNUM - 1));
             }
           else
-            return ((regno >= CSKY_LR_REGNUM)
-                    && (regno < CSKY_LAST_HIGH_UNFIXED_REGNUM));
+            return ((regno < (CSKY_SP_REGNUM - 1))
+                    || ((regno >= CSKY_LR_REGNUM)
+                        && (regno < CSKY_LAST_HIGH_UNFIXED_REGNUM)));
         }
     }
   else if (regno == CSKY_CC_REGNUM)
@@ -4635,7 +4636,7 @@ void csky_expand_prologue(void)
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
 
-  #if 0
+  #if 1
   if (fi.arg_size != 0)
     {
       offset = fi.arg_size + fi.pad_arg;
@@ -4842,6 +4843,7 @@ csky_output_function_prologue (FILE *f,
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
 
+#if 0
   int offset = 0;
   if (fi.arg_size != 0)
     {
@@ -4859,6 +4861,7 @@ csky_output_function_prologue (FILE *f,
                        reg_names[CSKY_SP_REGNUM], offset);
         }
     }
+#endif
 
   if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
     {
