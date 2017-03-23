@@ -2048,6 +2048,7 @@ csky_configure_build_target (struct csky_build_target *target,
       csky_selected_arch = &all_architectures[TARGET_ARCH_DEFAULT];
       csky_selected_cpu = csky_selected_arch;
       target->arch_name = csky_selected_arch->name;
+      csky_selected_arch->flags |= all_cores[csky_selected_arch->core].flags;
     }
 
   /* The selected cpu may be an architecture, so lookup tuning by core ID.  */
