@@ -220,7 +220,7 @@ static const struct csky_processors all_cores[] =
   {CSKY_ISA_FEATURE_GET(none)}, 0, NULL}
 };
 
-static const struct csky_processors all_architectures[] =
+static struct csky_processors all_architectures[] =
 {
 #undef CSKY_ARCH
 #define CSKY_ARCH(NAME, CORE, ARCH, ISA)     \
@@ -2004,8 +2004,8 @@ csky_configure_build_target (struct csky_build_target *target,
                              bool warn_compatible)
 {
   const struct csky_processors *csky_selected_tune = NULL;
-  const struct csky_processors *csky_selected_arch = NULL;
   const struct csky_processors *csky_selected_cpu = NULL;
+  struct csky_processors *csky_selected_arch = NULL;
   sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
   bitmap_clear(all_sbits);
 
@@ -2041,6 +2041,7 @@ csky_configure_build_target (struct csky_build_target *target,
     {
       csky_selected_cpu = csky_selected_arch;
       target->arch_name = csky_selected_arch->name;
+      csky_selected_arch->flags |= all_cores[csky_selected_arch->core].flags;
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
