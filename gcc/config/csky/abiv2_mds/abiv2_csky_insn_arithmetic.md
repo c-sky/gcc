@@ -490,23 +490,23 @@
 (define_insn "cskyv2_addcc"
   [(set (match_operand:SI                           0 "register_operand"          "=r,r")
         (if_then_else:SI (ne (reg:CC 33) (const_int 0))
-                         (match_operand:SI          1 "register_operand"          "r,r")
-                         (plus:SI (match_dup 1)
-                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
+                         (plus:SI (match_operand:SI 1 "register_operand"          "r,r")
+                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))
+                         (match_dup 1)))]
   "CSKY_ISA_FEATURE(E2)"
   "*{
       switch (which_alternative)
       {
          case 0:
            if (rtx_equal_p (operands[0], operands[1]))
-             return \"incf\t%0, %1, %2\";
+             return \"inct\t%0, %1, %2\";
            else
-             return \"movt\t%0, %1\;incf\t%0, %1, %2\";
+             return \"movf\t%0, %1\;inct\t%0, %1, %2\";
          case 1:
            if (rtx_equal_p (operands[0], operands[1]))
-             return \"decf\t%0, %1, %M2\";
+             return \"dect\t%0, %1, %M2\";
            else
-             return \"movt\t%0, %1\;decf\t%0, %1, %M2\";
+             return \"movf\t%0, %1\;dect\t%0, %1, %M2\";
          default:
              gcc_unreachable();
       }
@@ -521,23 +521,23 @@
 (define_insn "cskyv2_addcc_invert"
   [(set (match_operand:SI                           0 "register_operand"          "=r,r")
         (if_then_else:SI (eq (reg:CC 33) (const_int 0))
-                         (match_operand:SI          1 "register_operand"          "r,r")
-                         (plus:SI (match_dup 1)
-                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))))]
+                         (plus:SI (match_operand:SI 1 "register_operand"          "r,r")
+                                  (match_operand:SI 2 "csky_literal_K_Uh_operand" "K,Uh"))
+                         (match_dup 1)))]
   "CSKY_ISA_FEATURE(E2)"
   "*{
     switch (which_alternative)
     {
       case 0:
         if (rtx_equal_p (operands[0], operands[1]))
-          return \"inct\t%0, %1, %2\";
+          return \"incf\t%0, %1, %2\";
         else
-          return \"movf\t%0, %1\;inct\t%0, %1, %2\";
+          return \"movt\t%0, %1\;incf\t%0, %1, %2\";
       case 1:
         if (rtx_equal_p (operands[0], operands[1]))
-          return \"dect\t%0, %1, %M2\";
+          return \"decf\t%0, %1, %M2\";
         else
-          return \"movf\t%0, %1\;dect\t%0, %1, %M2\";
+          return \"movt\t%0, %1\;decf\t%0, %1, %M2\";
       default:
           gcc_unreachable();
     }

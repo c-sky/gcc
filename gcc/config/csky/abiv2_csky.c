@@ -4828,8 +4828,11 @@ csky_output_function_prologue (FILE *f,
     case CSKY_FT_NORMAL:
       break;
     case CSKY_FT_INTERRUPT:
-      asm_fprintf (f, "\t# Interrupt Service Routine.\n");
-      break;
+      {
+        asm_fprintf (f, "\t# Interrupt Service Routine.\n");
+        asm_fprintf (f, "\tnie\n\tipush\n");
+        break;
+      }
     case CSKY_FT_FIQ:
       asm_fprintf (f, "\t# Fast Interrupt Service Routine.\n");
       break;
