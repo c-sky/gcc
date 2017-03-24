@@ -1322,6 +1322,35 @@ csky_reorg (void)
     obstack_free (&minipool_obstack, minipool_startobj);
 }
 
+static bool
+ck801_far_jump_used_p(void)
+{
+  rtx_insn *insn;
+  if (cfun->machine->far_jump_used)
+    return true;
+
+  /* Check to see if the function contains a branch
+     insn with the far jump attribute set.  */
+  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      if (GET_CODE (insn) == JUMP_INSN
+          /* Ignore tablejump patterns.  */
+          && GET_CODE (PATTERN (insn)) != ADDR_VEC
+          && GET_CODE (PATTERN (insn)) != ADDR_DIFF_VEC
+          && get_attr_far_jump (insn) == FAR_JUMP_YES)
+        {
+          cfun->machine->far_jump_used = 1;
+          return true;
+        }
+    }
+  return false;
+}
+
+static bool
+ck801_force_lr_save(void)
+{
+  return (!leaf_function_p() || ck801_far_jump_used_p());
+}
 
 static int
 get_csky_live_regs (int *count)
@@ -1338,7 +1367,11 @@ get_csky_live_regs (int *count)
       live_regs_mask |= (1 << FRAME_POINTER_REGNUM);
     }
 
-  /* TODO for ck801 */
+  if (CSKY_TARGET_ARCH (CK801) && ck801_force_lr_save())
+    {
+      (*count)++;
+      live_regs_mask |= (1 << CSKY_LR_REGNUM);
+    }
 
   for (reg = 0; reg < CSKY_NGPR_REGS; reg++)
     {
