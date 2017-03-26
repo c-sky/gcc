@@ -673,7 +673,8 @@
         (zero_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "m")))]
   ""
   "ld.h\t%0, %1"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "4")
+   (set_attr "type" "load")]
 )
 
 (define_insn "zero_extendqisi2"
@@ -688,7 +689,8 @@
         (zero_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "m")))]
   ""
   "ld.b\t%0, %1"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "4")
+   (set_attr "type" "load")]
 )
 
 (define_insn "zero_extendqihi2"
@@ -703,7 +705,8 @@
         (zero_extend:HI (match_operand:QI 1 "csky_addr_reg_disp" "m")))]
   ""
   "ld.b\t%0, %1"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "4")
+   (set_attr "type" "load")]
 )
 
 ;; -------------------------------------------------------------------------

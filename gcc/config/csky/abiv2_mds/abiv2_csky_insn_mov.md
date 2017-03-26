@@ -58,7 +58,8 @@
         (match_operand:SI 1 "general_operand"       "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, SImode);"
-  [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")]
+  [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")
+   (set_attr "type" "alu,alu,alu,alu,alu,store,alu,alu,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movsi"
@@ -66,7 +67,8 @@
        (match_operand:SI 1 "general_operand"        "r, Up,T,mi,F,c,r"))]
  "CSKY_ISA_FEATURE(E1)"
  "* return output_ck801_move (insn, operands, SImode);"
- [(set_attr "length" "2,2,2,4,4,2,4")]
+ [(set_attr "length" "2,2,2,4,4,2,4")
+  (set_attr "type" "alu,alu,alu,store,alu,alu,store")]
 )
 
 ;;Convert negative assignments to zero minus positive numbers.
@@ -132,7 +134,8 @@
         (match_operand:HI 1 "general_operand"       "r, i,c,m,r,*r,*y,*r,*v"))]
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, HImode);"
-  [(set_attr "length" "4,8,4,4,4,4,4,4,4")]
+  [(set_attr "length" "4,8,4,4,4,4,4,4,4")
+   (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movhi"
@@ -140,7 +143,8 @@
         (match_operand:HI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
   "CSKY_ISA_FEATURE(E1)"
   "* return output_ck801_move (insn, operands, HImode);"
-  [(set_attr "length" "2,2,2,4,4,2,4")]
+  [(set_attr "length" "2,2,2,4,4,2,4")
+   (set_attr "type" "alu,alu,alu,alu,store,alu,store")]
 )
 
 
@@ -171,7 +175,8 @@
         (match_operand:QI 1 "general_operand"      "r, i,c,m,r,*r,*y,*r,*v,*v"))]
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, QImode);"
-  [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")]
+  [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")
+   (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movqi"
@@ -179,7 +184,8 @@
         (match_operand:QI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
   "CSKY_ISA_FEATURE(E1)"
   "* return output_ck801_move (insn, operands, QImode);"
-  [(set_attr "length" "2,2,2,4,4,2,4")]
+  [(set_attr "length" "2,2,2,4,4,2,4")
+   (set_attr "type" "alu,alu,alu,alu,store,alu,store")]
 )
 
 
@@ -285,7 +291,8 @@
         (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v"))]
  "CSKY_ISA_FEATURE(E2)"
  "* return output_csky_movedouble (operands, DImode);"
- [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")]
+ [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")
+  (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movdi"
@@ -293,7 +300,8 @@
         (match_operand:DI 1 "general_operand"       "r, Up,T,i,m,F,r"))]
  "CSKY_ISA_FEATURE(E1)"
  "* return output_ck801_movedouble (operands, DImode);"
- [(set_attr "length" "4,4,4,8,8,8,8")]
+ [(set_attr "length" "4,4,4,8,8,8,8")
+  (set_attr "type" "alu,alu,alu,alu,store,alu,store")]
 )
 
 

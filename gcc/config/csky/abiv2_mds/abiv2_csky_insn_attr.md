@@ -9,3 +9,7 @@
 ; distance jump. If we do so, set the attribute to yes and the function
 ; will save lr at the prologue according to this.
 (define_attr "far_jump" "yes,no" (const_string "no"))
+
+; Used for insn schedule
+(define_attr "type" "alu,load,store,cmp,branch"
+    (const_string "alu"))

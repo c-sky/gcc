@@ -402,6 +402,17 @@ static GTY(()) int tls_labelno;
                                     && optimize_size) ? 127 : 4095)
 
 
+/******************************************************************
+ *           Adjusting the Instruction Scheduler                  *
+ ******************************************************************/
+
+
+#undef  TARGET_SCHED_ISSUE_RATE
+#define TARGET_SCHED_ISSUE_RATE csky_sched_issue_rate
+
+#undef  TARGET_SCHED_ADJUST_COST
+#define  TARGET_SCHED_ADJUST_COST csky_sched_adjust_cost
+
 
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
@@ -2228,7 +2239,7 @@ csky_option_override (void)
 
   /* TODO  */
 
-/* Resynchronize the saved target options.  */
+  /* Resynchronize the saved target options.  */
   cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
                          &global_options);
 
@@ -6152,6 +6163,28 @@ csky_output_casesi (rtx *operands)
     }
 }
 
+/* Implement TARGET_SCHED_ISSUE_RATE.  Lookup the issue rate in the
+   per-core tuning structs.  */
+static int
+csky_sched_issue_rate (void)
+{
+  if (CSKY_TARGET_ARCH (CK810))
+    return 2;
+  else
+    return 1;
+}
+
+
+static int
+csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
+                        rtx link,
+                        rtx_insn *dep ATTRIBUTE_UNUSED,
+                        int cost ATTRIBUTE_UNUSED)
+{
+  if (REG_NOTE_KIND (link) == REG_DEP_ANTI
+      || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
+    return 0;
+}
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

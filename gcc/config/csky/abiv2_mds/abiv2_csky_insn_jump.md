@@ -19,6 +19,7 @@
    (use (label_ref (match_operand 1 ""                 "")))]
   ""
   "jmp  %0"
+  [(set_attr "type" "branch")]
 )
 
 ;; ------------------------------------------------------------------------
@@ -34,6 +35,7 @@
   [(set (pc) (label_ref (match_operand 0 "" "")))]
   "CSKY_ISA_FEATURE(E2)"
   "jbr  %l0"
+  [(set_attr "type" "branch")]
 )
 
 ;;FIXME the length of bsr is not really 5, it's used to distinguish
@@ -47,7 +49,8 @@
     else
       return \"bsr\\t%l0\\t//too far jump\";
   }"
-  [(set (attr "far_jump")
+  [(set_attr "type" "branch")
+   (set (attr "far_jump")
         (if_then_else (eq_attr "length" "5")
                       (const_string "yes")
                       (const_string "no")))
@@ -67,7 +70,8 @@
   "@
     jmp\t%0
     jmp\t%0"
-  [(set_attr "length" "2,4")]
+  [(set_attr "length" "2,4")
+   (set_attr "type" "branch")]
 )
 
 
@@ -112,6 +116,7 @@
                            (pc)))]
   "CSKY_ISA_FEATURE(E2)"
   "jbt\t%l0"
+  [(set_attr "type" "branch")]
 )
 
 (define_insn "csky_jbf"
@@ -120,6 +125,7 @@
                            (pc)))]
   "CSKY_ISA_FEATURE(E2)"
   "jbf\t%l0"
+  [(set_attr "type" "branch")]
 )
 
 ;;FIXME the length of bsr is not really 7, it's used to distinguish
@@ -139,7 +145,8 @@
       return \"jbt\\t%l0\";
    }
   "
-  [(set (attr "far_jump")
+  [(set_attr "type" "branch")
+   (set (attr "far_jump")
         (if_then_else
         (eq_attr "length" "7")
         (const_string "yes")
@@ -171,7 +178,8 @@
       return \"jbf\\t%l0\";
   }
   "
-  [(set (attr "far_jump")
+  [(set_attr "type" "branch")
+   (set (attr "far_jump")
         (if_then_else
         (eq_attr "length" "7")
         (const_string "yes")
