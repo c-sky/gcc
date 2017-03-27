@@ -4351,6 +4351,10 @@ expand_csky_stack_adjust (int direction, int size)
 {
   rtx insn;
 
+  /* FIXME 810 can use movih and ori to replace lrw to improve
+     performance.  */
+  /* Use lrw & add or sub insn to adjust stack when the adjust
+     size cannot be handled by to addi or subi insn.  */
   if (size > CSKY_ADDI_MAX_STEP * 2)
     {
       struct csky_stack_frame fi;
@@ -4360,69 +4364,78 @@ expand_csky_stack_adjust (int direction, int size)
       if (fi.reg_size != 0)
         {
           rtx tmp;
+          rtx dwarf;
 
           if (!(fi.reg_mask & (1 << 4)))
             df_set_regs_ever_live (4, true);
 
           tmp = gen_rtx_REG (SImode, 4);
           insn = emit_insn (gen_movsi (tmp, GEN_INT (size)));
-          RTX_FRAME_RELATED_P (insn) = 1;
 
           if (direction > 0)
-            insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+            {
+              insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+              dwarf = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx,
+                                  GEN_INT (size));
+            }
           else
-            insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+            {
+              insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, tmp);
+              dwarf = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx,
+                                  GEN_INT (size));
+            }
+
+          insn = emit_insn (insn);
+          add_reg_note (insn, REG_FRAME_RELATED_EXPR, dwarf);
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+    }
+  /* Use one or two addi or subi insn to adjust stack.  */
+  else
+    {
+      if (direction > 0 && size > CSKY_ADDI_MAX_STEP)
+        {
+          rtx tmp = GEN_INT (CSKY_ADDI_MAX_STEP);
+
+          do
+            {
+              insn = emit_insn (gen_addsi3 (stack_pointer_rtx,
+                                            stack_pointer_rtx,
+                                            tmp));
+              RTX_FRAME_RELATED_P (insn) = 1;
+              size -= CSKY_ADDI_MAX_STEP;
+            }
+          while (size > CSKY_ADDI_MAX_STEP);
+        }
+
+      if (direction < 0 && size > CSKY_SUBI_MAX_STEP)
+        {
+          rtx tmp = GEN_INT (CSKY_SUBI_MAX_STEP);
+
+          do
+            {
+              insn = emit_insn (gen_subsi3 (stack_pointer_rtx,
+                                            stack_pointer_rtx,
+                                            tmp));
+              RTX_FRAME_RELATED_P (insn) = 1;
+              size -= CSKY_SUBI_MAX_STEP;
+            }
+          while (size > CSKY_SUBI_MAX_STEP);
+        }
+
+      if (size)
+        {
+          rtx insn;
+          rtx val = GEN_INT (size);
+
+          if (direction > 0)
+            insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
+          else
+            insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
 
           insn = emit_insn (insn);
           RTX_FRAME_RELATED_P (insn) = 1;
-          size = 0;
         }
-      /*  SIZE is now the residual for the last adjustment,
-         which doesn't require a probe.  */
-    }
-
-  if (direction > 0 && size > CSKY_ADDI_MAX_STEP)
-    {
-      rtx tmp = GEN_INT (CSKY_ADDI_MAX_STEP);
-
-      do
-        {
-          insn = emit_insn (gen_addsi3 (stack_pointer_rtx,
-                                        stack_pointer_rtx,
-                                        tmp));
-          RTX_FRAME_RELATED_P (insn) = 1;
-          size -= CSKY_ADDI_MAX_STEP;
-        }
-      while (size > CSKY_ADDI_MAX_STEP);
-    }
-
-  if (direction < 0 && size > CSKY_SUBI_MAX_STEP)
-    {
-      rtx tmp = GEN_INT (CSKY_SUBI_MAX_STEP);
-
-      do
-        {
-          insn = emit_insn (gen_subsi3 (stack_pointer_rtx,
-                                        stack_pointer_rtx,
-                                        tmp));
-          RTX_FRAME_RELATED_P (insn) = 1;
-          size -= CSKY_SUBI_MAX_STEP;
-        }
-      while (size > CSKY_SUBI_MAX_STEP);
-    }
-
-  if (size)
-    {
-      rtx insn;
-      rtx val = GEN_INT (size);
-
-      if (direction > 0)
-        insn = gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
-      else
-        insn = gen_subsi3 (stack_pointer_rtx, stack_pointer_rtx, val);
-
-      insn = emit_insn (insn);
-      RTX_FRAME_RELATED_P (insn) = 1;
     }
 }
 
