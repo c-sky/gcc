@@ -5130,6 +5130,7 @@ output_csky_bclri (rtx dst, rtx src, int mask)
 {
   rtx out_operands[3];
   int bit;
+  bool first_set = true;
 
   out_operands[0] = dst;
   out_operands[1] = src;
@@ -5140,7 +5141,13 @@ output_csky_bclri (rtx dst, rtx src, int mask)
         {
           out_operands[2] = GEN_INT (bit);
 
-          output_asm_insn ("bclri\t%0, %1, %2", out_operands);
+          if (first_set)
+            {
+              output_asm_insn ("bclri\t%0, %1, %2", out_operands);
+              first_set = false;
+            }
+          else
+           output_asm_insn ("bclri\t%0, %0, %2", out_operands);
         }
 
       mask >>= 1;
@@ -5158,6 +5165,7 @@ output_csky_bseti (rtx dst, rtx src, int mask)
 {
   rtx out_operands[3];
   int bit;
+  bool first_set = true;
 
   out_operands[0] = dst;
   out_operands[1] = src;
@@ -5168,7 +5176,13 @@ output_csky_bseti (rtx dst, rtx src, int mask)
         {
           out_operands[2] = GEN_INT (bit);
 
-          output_asm_insn ("bseti\t%0, %1, %2", out_operands);
+          if (first_set)
+            {
+              output_asm_insn ("bseti\t%0, %1, %2", out_operands);
+              first_set = false;
+            }
+          else
+            output_asm_insn ("bseti\t%0, %0, %2", out_operands);
         }
 
       mask >>= 1;
