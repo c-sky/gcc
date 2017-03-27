@@ -10,7 +10,9 @@
 #define TARGET_ARCH_DEFAULT CSKY_TARGET_ARCH_GET(CK810)
 #endif
 
-#define TARGET_DEFAULT (MASK_PUSHPOP)
+#define TARGET_DEFAULT      \
+  (  MASK_PUSHPOP           \
+   | MASK_STRICT_ALIGNMENT)
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
