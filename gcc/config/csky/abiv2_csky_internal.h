@@ -29,7 +29,7 @@ struct tune_params
 
 struct csky_option2isa
 {
-  int flags;
+  int flag;
   enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
 };
 

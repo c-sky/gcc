@@ -208,7 +208,7 @@ static const struct attribute_spec csky_attribute_table[] =
 
 #include "abiv2_csky_tune_tables.h"
 
-static const struct csky_processors all_cores[] =
+static struct csky_processors all_cores[] =
 {
 #undef CSKY_CORE
 #define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TARGET_FLAGS, TUNE)  \
@@ -2022,7 +2022,7 @@ static void
 csky_initialize_isa (sbitmap isa, const enum csky_isa_feature *isa_bits)
 {
   bitmap_clear (isa);
-  while (*isa_bits != CSKY_ISA_FEATURE_DEFINE(none))
+  while (*isa_bits != CSKY_ISA_FEATURE_GET(none))
     bitmap_set_bit (isa, *(isa_bits++));
 }
 
@@ -2037,7 +2037,7 @@ csky_configure_build_target (struct csky_build_target *target,
                              bool warn_compatible)
 {
   const struct csky_processors *csky_selected_tune = NULL;
-  const struct csky_processors *csky_selected_cpu = NULL;
+  struct csky_processors *csky_selected_cpu = NULL;
   struct csky_processors *csky_selected_arch = NULL;
   sbitmap all_sbits = sbitmap_alloc (CSKY_ISA_FEATURE_GET(max));
   bitmap_clear(all_sbits);
@@ -2100,24 +2100,36 @@ csky_configure_build_target (struct csky_build_target *target,
   target->arch_core = csky_selected_cpu->core;
   target->tune = csky_selected_tune->tune;
 
-  target_flags |= csky_selected_cpu->flags;
-
   /* Setting isa features if there is no default
      which are controlled by the option.  */
   unsigned int i = 0;
   for (i = 0; i < sizeof(all_opt2isa)/sizeof(all_opt2isa[0]); i++)
     {
-      if (target_flags & all_opt2isa[i].flags)
+      if (!(global_options_set.x_target_flags & all_opt2isa[i].flag))
+        target_flags |= csky_selected_cpu->flags & all_opt2isa[i].flag;
+      csky_selected_cpu->flags &= ~all_opt2isa[i].flag;
+
+      if (all_opt2isa[i].isa_bits[0] != CSKY_ISA_FEATURE_GET(none))
         {
-          if (!bitmap_bit_p(target->isa, all_opt2isa[i].isa_bits[0]))
+          if (target_flags & all_opt2isa[i].flag)
+            {
+              if (!bitmap_bit_p(target->isa, all_opt2isa[i].isa_bits[0]))
+                {
+                  csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
+                  bitmap_ior (target->isa, target->isa, all_sbits);
+                }
+            }
+          else
             {
               csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
-              bitmap_ior (target->isa, target->isa, all_sbits);
+              bitmap_and_compl (target->isa, target->isa, all_sbits);
             }
         }
     }
 
   sbitmap_free(all_sbits);
+
+  target_flags |= csky_selected_cpu->flags;
 }
 
 
