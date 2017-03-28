@@ -4312,7 +4312,7 @@ output_csky_return_instruction(void)
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
   if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
-      && fi.arg_size == 0)
+      && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     return "";
 
   if (CSKY_FUNCTION_IS_INTERRUPT(func_type))
@@ -4814,7 +4814,7 @@ void csky_expand_epilogue(void)
     }
   /* TODO: pushpop */
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
-           && fi.arg_size == 0)
+           && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     {
       emit_csky_regs_pop (fi.reg_mask);
     }
