@@ -1123,7 +1123,7 @@
   [(set (match_operand:SI         0 "register_operand" "=r")
         (div:SI (match_operand:SI 1 "register_operand" "r")
                 (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E3)"
+  "CSKY_ISA_FEATURE(div)"
   "divs\t%0, %1, %2"
 )
 
@@ -1131,6 +1131,6 @@
   [(set (match_operand:SI          0 "register_operand" "=r")
         (udiv:SI (match_operand:SI 1 "register_operand" "r")
                  (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E3)"
+  "CSKY_ISA_FEATURE(div)"
   "divu\t%0, %1, %2"
 )

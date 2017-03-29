@@ -22,6 +22,7 @@ enum csky_isa_feature
   };
 
 #define CSKY_ISA_FEAT(x) x,
+#define CSKY_ISA_FEAT_NONE CSKY_ISA_FEAT(isa_bit_none)
 
 
 #endif /* GCC_CSKY_ISA_FEATURE_H */

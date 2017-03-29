@@ -29,14 +29,13 @@ CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(
 
 #ifdef CSKY_OPTION
 CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
-CSKY_OPTION(MASK_HIGH_REGISTERS, CSKY_ISA_FEAT(isa_bit_none))
-CSKY_OPTION(MASK_CONSTANT_POOL, CSKY_ISA_FEAT(isa_bit_none))
+CSKY_OPTION(MASK_DIV, CSKY_ISA_FEAT(isa_bit_div))
 #endif
 
 
 /* Before using #include to read this file, define a macro:
 
-      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA, TARGET_FLAGS, TUNE)
+      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA, TUNE)
 
       The isa features of core will inherit the ARCH.
 
@@ -47,39 +46,37 @@ CSKY_OPTION(MASK_CONSTANT_POOL, CSKY_ISA_FEAT(isa_bit_none))
    should be made, represented as an identifier.
    The ARCH is the architecture revision implemented by the chip.
    The ISA is the detailed architectural capabilities of the core.
-   The TARGET_FLAGS is the isa features controller by macro CSKY_OPTION,
-   and MASK_* has define in *.opt file.
    The TUNE is tuning data (e.g. insns COSTS) for specific core.  */
 
 #ifdef CSKY_CORE
 /* ck801 Architecture Processors */
-CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT(isa_bit_none), MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 
 /* ck802 Architecture Processors */
-CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), MASK_CONSTANT_POOL, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), CSKY_TUNE_GET(generic))
 
 /* ck803 Architecture Processors */
-CSKY_CORE("ck803",    ck803,    ck803,    CK803,  CSKY_ISA_FEAT(isa_bit_none), 0, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803",    ck803,    ck803,    CK803,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
 
 /* ck803s Architecture Processors */
-CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  CSKY_ISA_FEAT(isa_bit_none), 0, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT(isa_bit_none), 0, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
 
 /* ck807 Architecture Processors */
-CSKY_CORE("ck807",    ck807,    ck807,    CK807,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807",    ck807,    ck807,    CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 
 /* ck810 Architecture Processors */
-CSKY_CORE("ck810",    ck810,    ck810,    CK810,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
-CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT(isa_bit_none), MASK_DSP|MASK_HIGH_REGISTERS, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810",    ck810,    ck810,    CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 #endif
 
 

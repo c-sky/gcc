@@ -211,13 +211,13 @@ static const struct attribute_spec csky_attribute_table[] =
 static struct csky_processors all_cores[] =
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TARGET_FLAGS, TUNE)  \
+#define CSKY_CORE(NAME, CORE, X, ARCH, ISA, TUNE)  \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH, \
-  {ISA CSKY_ISA_FEATURE_GET(none)}, TARGET_FLAGS, TUNE},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, TUNE},
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}, 0, NULL}
+  {CSKY_ISA_FEATURE_GET(none)}, NULL}
 };
 
 static struct csky_processors all_architectures[] =
@@ -225,11 +225,11 @@ static struct csky_processors all_architectures[] =
 #undef CSKY_ARCH
 #define CSKY_ARCH(NAME, CORE, ARCH, ISA)     \
   {NAME, TARGET_CPU_##CORE, #ARCH, CSKY_BASE_ARCH_##ARCH,  \
-  {ISA CSKY_ISA_FEATURE_GET(none)}, 0, NULL},
+  {ISA CSKY_ISA_FEATURE_GET(none)}, NULL},
 #include "abiv2_csky_cores.def"
 #undef CSKY_ARCH
   {NULL, TARGET_CPU_csky_none, NULL, CSKY_BASE_ARCH_NONE, \
-  {CSKY_ISA_FEATURE_GET(none)}, 0, NULL}
+  {CSKY_ISA_FEATURE_GET(none)}, NULL}
 };
 
 static const struct csky_fpu_desc all_fpus[] =
@@ -2074,14 +2074,12 @@ csky_configure_build_target (struct csky_build_target *target,
     {
       csky_selected_cpu = csky_selected_arch;
       target->arch_name = csky_selected_arch->name;
-      csky_selected_arch->flags |= all_cores[csky_selected_arch->core].flags;
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
       csky_selected_arch = &all_architectures[TARGET_ARCH_DEFAULT];
       csky_selected_cpu = csky_selected_arch;
       target->arch_name = csky_selected_arch->name;
-      csky_selected_arch->flags |= all_cores[csky_selected_arch->core].flags;
     }
 
   /* The selected cpu may be an architecture, so lookup tuning by core ID.  */
@@ -2105,21 +2103,17 @@ csky_configure_build_target (struct csky_build_target *target,
   unsigned int i = 0;
   for (i = 0; i < sizeof(all_opt2isa)/sizeof(all_opt2isa[0]); i++)
     {
-      if (!(global_options_set.x_target_flags & all_opt2isa[i].flag))
-        target_flags |= csky_selected_cpu->flags & all_opt2isa[i].flag;
-      csky_selected_cpu->flags &= ~all_opt2isa[i].flag;
-
-      if (all_opt2isa[i].isa_bits[0] != CSKY_ISA_FEATURE_GET(none))
+      if (target_flags & all_opt2isa[i].flag)
         {
-          if (target_flags & all_opt2isa[i].flag)
+          if (!bitmap_bit_p(target->isa, all_opt2isa[i].isa_bits[0]))
             {
-              if (!bitmap_bit_p(target->isa, all_opt2isa[i].isa_bits[0]))
-                {
-                  csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
-                  bitmap_ior (target->isa, target->isa, all_sbits);
-                }
+              csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
+              bitmap_ior (target->isa, target->isa, all_sbits);
             }
-          else
+        }
+      else
+        {
+          if (global_options_set.x_target_flags & all_opt2isa[i].flag)
             {
               csky_initialize_isa (all_sbits, all_opt2isa[i].isa_bits);
               bitmap_and_compl (target->isa, target->isa, all_sbits);
@@ -2128,8 +2122,6 @@ csky_configure_build_target (struct csky_build_target *target,
     }
 
   sbitmap_free(all_sbits);
-
-  target_flags |= csky_selected_cpu->flags;
 }
 
 

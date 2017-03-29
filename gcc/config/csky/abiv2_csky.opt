@@ -70,10 +70,6 @@ mdiv
 Target Report Mask(DIV)
 Use the divide instruction
 
-mrelax-immediates
-Target Report Mask(RELAX_IMM)
-Use arbitrary sized immediates in bit operations
-
 mwide-bitfields
 Target Report Mask(W_FIELD)
 Always treat bitfields as int-sized

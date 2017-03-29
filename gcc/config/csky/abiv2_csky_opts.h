@@ -7,7 +7,7 @@
 enum csky_processor_type
 {
 #undef CSKY_CORE
-#define CSKY_CORE(NAME, INTERNAL_IDENT, IDENT, ARCH, ISA, X, T) \
+#define CSKY_CORE(NAME, INTERNAL_IDENT, IDENT, ARCH, ISA, T) \
   TARGET_CPU_##INTERNAL_IDENT,
 #include "abiv2_csky_cores.def"
 #undef CSKY_CORE

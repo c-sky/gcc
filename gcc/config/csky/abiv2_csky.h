@@ -11,8 +11,11 @@
 #endif
 
 #define TARGET_DEFAULT      \
-  (  MASK_PUSHPOP           \
-   | MASK_STRICT_ALIGNMENT)
+  (  MASK_HIGH_REGISTERS    \
+   | MASK_PUSHPOP           \
+   | MASK_STRICT_ALIGNMENT  \
+   | MASK_CONSTANT_POOL     \
+   | MASK_STACK_SIZE)
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
