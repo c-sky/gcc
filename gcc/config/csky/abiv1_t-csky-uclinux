@@ -1,0 +1,42 @@
+# Copyright (C) 2000, 2001, 2008 Free Software Foundation, Inc.
+#
+# This file is part of GCC.
+#
+# GCC is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# GCC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GCC; see the file COPYING3.  If not see
+# <http://www.gnu.org/licenses/>.
+
+#EXTRA_PARTS = crtbegin.o crtend.o crti.o crtn.o
+
+
+MULTILIB_OPTIONS     = mlittle-endian/mbig-endian
+MULTILIB_DIRNAMES    = little big
+MULTILIB_MATCHES	 = mlittle-endian=EL
+MULTILIB_MATCHES	 = mbig-endian=EB
+MULTILIB_EXCEPTIONS	 =
+
+## For option -msoft-float/-mhard-float
+MULTILIB_OPTIONS	 += msoft-float/mhard-float
+MULTILIB_DIRNAMES	 += soft-fp hard-fp
+MULTILIB_EXCEPTIONS	 += *mhard-float/*mno-stm*
+#
+## For option -mmultiple-stld
+MULTILIB_OPTIONS	 += mno-stm/mstm
+MULTILIB_DIRNAMES	 += no-stm stm
+MULTILIB_MATCHES	 += mstm=mmultiple-stld
+
+EXTRA_PARTS          =
+EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crti.o crtn.o 
+LIBGCC               = stmp-multilib
+INSTALL_LIBGCC       = install-multilib
+

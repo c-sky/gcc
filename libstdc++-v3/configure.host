@@ -102,14 +102,14 @@ case "${host_cpu}" in
   alpha*)
     try_cpu=alpha
     ;;
+  csky*)
+    try_cpu=csky
+    ;;
   arm*)
     try_cpu=arm
     ;;
   crisv32)
     try_cpu=cris
-    ;;
-  csky)
-    try_cpu=csky
     ;;
   i[567]86 | x86_64)
     try_cpu=i486

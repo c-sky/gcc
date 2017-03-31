@@ -120,3 +120,12 @@
 #define DONT_USE_BUILTIN_SETJMP 1
 #define JMP_BUF_SIZE  76
 */
+#undef FUNCTION_PROFILER
+#define SAVE_LR     \
+  (TARGET_CSKYV2 ?  \
+  "push\tlr" : "subi\tsp, 4\n\tstw\tlr, (sp)")
+#define FUNCTION_PROFILER(file, labelno)                \
+{                                                       \
+    fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
+}
+#define NO_PROFILE_COUNTERS 1

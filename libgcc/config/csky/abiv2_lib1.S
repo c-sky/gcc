@@ -113,7 +113,7 @@ SYM (\name):
 #endif
 
 #if defined(__CK801__)
-.macro LDHS_M rx, ry 
+.macro LDHS_M rx, ry
     ld.h \rx, (\ry, 0x0)
     sexth \rx, \rx
 .endm
@@ -157,17 +157,17 @@ FUNC_START udivsi3
 
 // run the remaining bits
 
-1:  
+1:
     LSLC_M  a0          // 1 bit left shift of a3-a0
     addc    a3, a3
     cmphs   a3, a1      // upper 32 of dividend >= divisor?
     bf      2f
     subu    a3, a1      // if yes, subtract divisor
-2:  
+2:
     addc    a2, a2      // shift by 1 and count subtracts
     bf      1b          // if sentinel falls out of quotient, stop
 
-4:  
+4:
     mov     a0, a2      // return quotient
     mov     a1, a3      // and piggyback the remainder
     pop     l0
@@ -228,7 +228,7 @@ FUNC_START divsi3
     mov     l1, a0
     xor     l1, a1      //// calc sign of quotient
     ABS_M   a0
-    ABS_M   a1    
+    ABS_M   a1
     movi    a2, 1       // a2 is quotient (1 for a sentinel)
     mov     a3, a0
     FF1_M   l0, a3      // figure distance to skip
@@ -269,7 +269,7 @@ FUNC_START divsi3
     addi    a0, 1
     not     a1
     addi    a1, 1
-3:    
+3:
     pop     l0, l1
 FUNC_END div32
 FUNC_END divsi3
@@ -466,15 +466,15 @@ COMPARE_SF_JUMP nesf2
 #ifdef  L_gtsf2
 COMPARE_SF_JUMP gtsf2
 #endif /* L_gtsf2 */
-        
-#ifdef  L_gesf2 
+
+#ifdef  L_gesf2
 COMPARE_SF_JUMP __gesf2
 #endif /* L_gesf2 */
-        
-#ifdef  L_ltsf2 
+
+#ifdef  L_ltsf2
 COMPARE_SF_JUMP __ltsf2
 #endif /* L_ltsf2 */
-        
-#ifdef  L_lesf2 
+
+#ifdef  L_lesf2
 COMPARE_SF_JUMP lesf2
 #endif /* L_lesf2 */
