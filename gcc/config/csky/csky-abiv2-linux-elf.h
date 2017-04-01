@@ -18,7 +18,6 @@
   "
 
 #undef ASM_SPEC
-#ifdef __CSKYABIV2__
 #define ASM_SPEC                \
   "%{mbig-endian:-mbig-endian}  \
   %{EB:-EB}                     \
@@ -31,24 +30,6 @@
   %{mmac:-mmac}                 \
   %{manchor:-manchor}           \
   "
-#else   /* ABIV2 */
-#define ASM_SPEC                \
-  "%{mbig-endian:-mbig-endian}  \
-  %{EB:-EB}                     \
-  %{EL:-EL}                     \
-  %{fpic|fPIC:-pic}             \
-  %{mno-stm:-mno-stm}           \
-  %{mcpu=*:-mcpu=%*}            \
-  %{march=*:-march=%*}          \
-  %{mhard-float:-mhard-float}   \
-  %{mdsp:-mdsp}                 \
-  %{mmac:-mmac}                 \
-  %{manchor:-manchor}           \
-  %{mkstq:-mkstq}               \
-  %{mkstq2:-mkstq2}             \
-  %{mkstq3:-mkstq3}             \
-  "
-#endif
 
 #define LINUX_DYNAMIC_LINKER  "/lib/ld.so.1"
 
@@ -122,8 +103,7 @@
 */
 #undef FUNCTION_PROFILER
 #define SAVE_LR     \
-  (TARGET_CSKYV2 ?  \
-  "push\tlr" : "subi\tsp, 4\n\tstw\tlr, (sp)")
+  "push\tlr"
 #define FUNCTION_PROFILER(file, labelno)                \
 {                                                       \
     fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
