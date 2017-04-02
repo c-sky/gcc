@@ -175,8 +175,7 @@ extern int const csky_dbg_register_map[];
     | MASK_DIV              \
     | MASK_HIGH_REGISTERS   \
     | MASK_LITTLE_ENDIAN    \
-    /*| MASK_LRA*/              \
-    | MASK_STACK_SIZE )
+    /*| MASK_LRA*/ )
 
 /* Target machine storage Layout.  */
 
