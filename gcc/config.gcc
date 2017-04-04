@@ -2021,7 +2021,7 @@ csky-*-*)
               default_use_cxa_atexit=no
               ;;
           csky-*-linux*)
-            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-{with_cskyabi}-linux-elf.h"
+            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
             tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-linux"
             extra_options="${extra_options} linux.opt"
               case ${with_cskylibc} in

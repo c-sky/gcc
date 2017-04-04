@@ -106,8 +106,6 @@ extern int const csky_dbg_register_map[];
       builtin_define ("__CSKYABI__=1");             \
       builtin_define ("__cskyabi__=1");             \
                                                     \
-      builtin_define ("NO_TRAMPOLINES");            \
-                                                    \
       if (TARGET_LITTLE_ENDIAN)                     \
         {                                           \
           builtin_define ("__ckcoreLE__");          \

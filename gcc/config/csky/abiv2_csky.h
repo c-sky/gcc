@@ -630,8 +630,6 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
         builtin_define ("__CSKYABI__=2");             \
         builtin_define ("__cskyabi__=2");             \
                                                       \
-        builtin_define ("NO_TRAMPOLINES");            \
-                                                      \
         if (TARGET_BIG_ENDIAN)                        \
         {                                             \
           builtin_define ("__ckcoreBE__");            \
