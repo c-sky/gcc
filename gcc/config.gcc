@@ -2014,14 +2014,14 @@ csky-*-*)
               default_use_cxa_atexit=no
               ;;
           csky-*-uclinux*)
-            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
+            tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
             extra_options="${extra_options} linux.opt"
             tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky-uclinux"
             tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
               default_use_cxa_atexit=no
               ;;
           csky-*-linux*)
-            tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
+            tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
             tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-linux"
             extra_options="${extra_options} linux.opt"
               case ${with_cskylibc} in
@@ -2070,13 +2070,13 @@ csky-*-*)
               default_use_cxa_atexit=no
               ;;
           csky-*-uclinux*)
-              tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
+              tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
               tmake_file="t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-uclinux"
               tm_defines="UCLIBC_DEFAULT=1 OPTION_GLIBC=0"
               default_use_cxa_atexit=no
               ;;
           csky-*-linux*)
-              tm_file="dbxelf.h elfos.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
+              tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
               tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
               case ${with_cskylibc} in
                   glibc)
