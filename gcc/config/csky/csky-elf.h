@@ -40,7 +40,6 @@
 	%{EB:-EB}	\
 	%{EL:-EL}	\
 	%{fpic|fPIC:-pic}	\
-	%{mno-stm:-mno-stm}		\
 	%{mcpu=*:-mcpu=%*}		\
 	%{march=*:-march=%*}	\
 	%{mhard-float:-mhard-float}	\

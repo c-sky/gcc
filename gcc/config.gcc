@@ -1989,7 +1989,7 @@ csky-*-*)
       md_file="csky/${with_cskyabi}_csky.md"
       out_file="csky/${with_cskyabi}_csky.c"
       tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
-      extra_options="csky/${with_cskyabi}_csky.opt"
+      extra_options="${extra_options} csky/${with_cskyabi}_csky.opt"
 
       case ${target} in
           csky-*-elf*)
