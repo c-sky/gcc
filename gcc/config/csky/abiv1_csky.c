@@ -109,23 +109,6 @@ static const struct csky_processors csky_all_processors[] = {
   {"ck620", MASK_ARCH_CK610 | MASK_INST_CSKYV1, 0UL, MASK_SECURITY},
   {"ck620f", MASK_ARCH_CK610 | MASK_INST_CSKYV1, 0UL,
    MASK_SECURITY | MASK_FPUV1},
-  /* ck802 Serial */
-  {"ck802p", MASK_ARCH_CK802 | MASK_INST_CSKYV2, 0UL, 0UL},
-
-  /* ck803 Serial */
-  {"ck803p", MASK_ARCH_CK803 | MASK_INST_CSKYV2, MASK_MU, 0UL},
-  {"ck803a", MASK_ARCH_CK803 | MASK_INST_CSKYV2, MASK_MU, 0UL},
-  {"ck803pe", MASK_ARCH_CK803 | MASK_INST_CSKYV2, MASK_MU,
-   MASK_DSP},
-  /* ck810p Serial */
-  {"ck810p", MASK_ARCH_CK810 | MASK_INST_CSKYV2, MASK_MU,
-   MASK_DSP},
-  {"ck810pe", MASK_ARCH_CK810 | MASK_INST_CSKYV2, MASK_MU,
-   MASK_DSP},
-  {"ck810pf", MASK_ARCH_CK810 | MASK_INST_CSKYV2, MASK_MU,
-   MASK_DSP | MASK_FPUV2},
-  {"ck810pef", MASK_ARCH_CK810 | MASK_INST_CSKYV2, MASK_MU,
-   MASK_DSP | MASK_FPUV2}
 };
 
 static const int csky_num_cpu =
@@ -135,9 +118,6 @@ static const int csky_num_cpu =
 static const struct csky_architectures csky_all_architectures[] = {
   {"ck510", MASK_ARCH_CK510 | MASK_INST_CSKYV1, 0UL},
   {"ck610", MASK_ARCH_CK610 | MASK_INST_CSKYV1, 0UL},
-  {"ck802p", MASK_ARCH_CK802 | MASK_INST_CSKYV2, 0UL},
-  {"ck803p", MASK_ARCH_CK803 | MASK_INST_CSKYV2, MASK_MU},
-  {"ck810p", MASK_ARCH_CK810 | MASK_INST_CSKYV2, MASK_MU}
 };
 
 static const int csky_num_arch =
