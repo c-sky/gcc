@@ -18,5 +18,6 @@
 (include "abiv2_mds/abiv2_csky_insn_dsp.md")
 (include "abiv2_mds/abiv2_csky_insn_fpu.md")
 
-(include "abiv2_mds/abiv2_csky_sched_ck802.md")
-(include "abiv2_mds/abiv2_csky_sched_ck810.md")
+;;FIXME there is a bug when add instruction schedule.
+;;(include "abiv2_mds/abiv2_csky_sched_ck802.md")
+;;(include "abiv2_mds/abiv2_csky_sched_ck810.md")
