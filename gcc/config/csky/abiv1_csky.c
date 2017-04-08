@@ -1334,7 +1334,7 @@ csky_output_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           else if (try_constant_tricks (INTVAL (src), &x, &y))        /* R-P */
             return output_inline_const (SImode, operands);        /* 1-2 insns */
           else
-            return "lrw\t%0, %x1\t// %1";        /* Get it from literal pool.  */
+            return "lrw\t%0, %O1";        /* Get it from literal pool.  */
         }
       else if (GET_CODE (src) == CONST_DOUBLE && GET_MODE (src) == SFmode)
         {
@@ -1356,7 +1356,7 @@ csky_output_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
           else if (try_constant_tricks (INTVAL (src), &x, &y))        /* R-P */
             return output_inline_const (SImode, operands);        /* 1-2 insns */
           else
-            return "lrw\t%0, %x1\t// %1";        /* Get it from literal pool.  */
+            return "lrw\t%0, %O1";        /* Get it from literal pool.  */
         }
       else
         return "lrw\t%0, %1";        /* Into the literal pool.  */

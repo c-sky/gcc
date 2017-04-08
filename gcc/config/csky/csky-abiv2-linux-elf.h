@@ -95,8 +95,6 @@
 #undef CPP_SPEC
 #define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
 
-#define UINT_LEAST32_TYPE "unsigned int"
-
 /*
 #define DONT_USE_BUILTIN_SETJMP 1
 #define JMP_BUF_SIZE  76

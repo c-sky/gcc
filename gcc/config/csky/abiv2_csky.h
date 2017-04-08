@@ -141,6 +141,20 @@ machine_function;
    when given unaligned data.  */
 #define STRICT_ALIGNMENT    (TARGET_STRICT_ALIGNMENT)
 
+#undef SIZE_TYPE
+#define SIZE_TYPE "unsigned int"
+
+#undef PTRDIFF_TYPE
+#define PTRDIFF_TYPE "int"
+
+#undef WCHAR_TYPE
+#define WCHAR_TYPE "long int"
+
+#undef UINT_LEAST32_TYPE
+#define UINT_LEAST32_TYPE "unsigned int"
+
+#undef WCHAR_TYPE_SIZE
+#define WCHAR_TYPE_SIZE BITS_PER_WORD
 
 /******************************************************************
  *              Layout of Source Language Data Types              *
