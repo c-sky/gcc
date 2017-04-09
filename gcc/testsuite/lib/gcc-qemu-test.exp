@@ -1,0 +1,107 @@
+proc gcc_qemu_run { prog  args } {
+  global spawn_id
+  global tmpdir
+   if { [llength $args] > 0 } {
+        set program_args [lindex $args 0]
+    } else {
+        set program_args ""
+    }
+    if { ![board_info target exists QEMU] } {
+	perror "qemu  program does not point in  gcc_qemu_run."
+        verbose -log "qemu program  does not point." 3
+        return "untested"
+    }
+    set qemu_name [board_info target QEMU]
+    set libpath ""
+    set cflags [board_info target cflags]
+#    if { [string first "-static" "${cflags}"] < 0 } {
+	
+#	set libpath [which [ transform gcc ] ]
+#        set first [string first "\/bin\/" $libpath]
+#	set libpath [string range $libpath 0 [string first "\/bin\/"  $libpath]-1]
+#        set libpath "-L $libpath\/csky-linux\/"
+#	if [string match "big-endian" cflags ] {
+#	   set libpath "$libpath\/big"
+#        }
+#	set libpath "-L $libpath\/pic\/"
+#  }
+                                                            
+    if { [string first "-static" "${cflags}"] < 0 } {                                                             
+        set libpath "-L $tmpdir"
+    }
+        
+    verbose "libpath= $libpath"
+    if { [llength $args] > 0 } {
+        set parg [lindex $args 0]
+    } else {
+        set parg ""
+    }
+
+    if { [llength $args] > 1 } {
+        set inp [lindex $args 1]
+    } else {
+        set inp ""
+    }
+
+    if ![file exists $prog] then {
+        # We call both here because this should never happen.
+        perror "$prog does not exist in  gcc_qemu_run."
+        verbose -log "$prog does not exist." 3
+        return "untested"
+    }
+    if { "$inp" != "" } {
+       set command "$qemu_name $libpath $prog $parg < $inp"
+    } else {
+       #set command "$qemu_name $libpath $prog $parg"
+       set command "$qemu_name  $prog $parg"
+    }
+#    if { "$inp" != "" } {
+#       set command "$qemu_name $libpath $prog $parg < $inp"
+#    } else {
+#	if { [string first "system" "qemu_name" ] < 0 } {
+#		set command "$qemu_name $libpath -kernel $prog $parg"
+#	} else {
+#       		set command "$qemu_name $libpath $prog $parg"
+#	}
+#    }
+    if ![info exists ld_library_path] {
+            set ld_library_path ""
+   }
+
+   set orig_ld_library_path "[getenv LD_LIBRARY_PATH]"
+   setenv LD_LIBRARY_PATH "$ld_library_path:$orig_ld_library_path"
+   setenv SHLIB_PATH "$ld_library_path:$orig_ld_library_path"
+   verbose -log "Setting LD_LIBRARY_PATH to $ld_library_path:$orig_ld_library_path" 2
+   verbose -log "Executing $prog on $qemu_name"
+   verbose -log "command is $command"
+   #set id [remote_spawn host "$command" "readonly"]
+   set id [remote_spawn host "$command" ]
+   if { $id < 0 } {
+       set output "remote_spawn failed"
+       set status -1
+   } else {
+       set status [remote_wait host 30]
+       set output [lindex $status 1]
+       set status [lindex $status 0]
+   }
+   # Unset them so we don't potentially get hosed when we try to run a
+   # non-testcase executable. (Setting LD_LIBRARY_PATH is the wrong
+   # fix in the first place; this just tries to minimize the resulting
+   # crap.)
+   setenv LD_LIBRARY_PATH $orig_ld_library_path
+   setenv SHLIB_PATH $orig_ld_library_path
+
+   verbose "Executed $prog on $qemu_name, status $status" 2
+   if ![string match "" $output] {
+       verbose -- "$output" 2
+   }
+   if { $status == 0 } {
+       set result "pass"
+   } else {
+       set result "fail"
+   }
+   return [list $result $output]
+
+
+}
+

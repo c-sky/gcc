@@ -230,12 +230,19 @@ proc check_runtime_nocache {basename contents args} {
     set ok 0
     if { [string match "" $lines] } {
 	# No error messages, everything is OK.
-	set result [remote_load target "./$output" "" ""]
-	set status [lindex $result 0]
-	verbose "check_runtime_nocache $basename: status is <$status>" 2
-	if { $status == "pass" } {
-	    set ok 1
-	}
+	if { ! [ board_info target  exists COMPILE_TESTS_ONLY ] } { 
+	    set result [remote_load target "./$output" "" ""]
+	    set status [lindex $result 0]
+	    verbose "check_runtime_nocache $basename: status is <$status>" 2
+	    if { $status == "pass" } {
+	       set ok 1
+	    }
+        } else {
+           set status "untested"
+           verbose "check_runtime_nocache $basename: status is <$status>" 2
+           set ok 0
+           return $ok
+        }
     }
     remote_file build delete $output
     return $ok
@@ -529,6 +536,10 @@ proc check_profiling_available { test_what } {
     # necessarily find mcrt1.o even if we have it.
     if { [istarget *-*-solaris2*] && $test_what == "-p" } {
 	return 0
+    }
+
+    if { [istarget "csky-*-*"]  } {
+       return 0
     }
 
     # We don't yet support profiling for MIPS16.
