@@ -1503,6 +1503,9 @@
   (clobber (reg:SI LK_REGNUM))]
   ""
   "*
+     /* Insert \".no_literal_dump 1\" to avoid dumping literals
+        pool after bsr in assembler.  */
+    asm_fprintf (asm_out_file, \"\t.no_literal_dump 1\\n\");
     output_asm_insn(\"bsr\t.LTLS%3\", operands);
     default_internal_label (asm_out_file, \"LTLS\",
                                 INTVAL (operands[3]));
@@ -1571,7 +1574,8 @@
   ""
   "*
   {
-    /* Insert \".no_literal_dump 1\" to avoid dumping literals pool after bsr in assembler*/
+    /* Insert \".no_literal_dump 1\" to avoid dumping literals
+       pool after bsr in assembler.  */
     asm_fprintf (asm_out_file, \"\t.no_literal_dump 1\\n\");
     output_asm_insn(\"bsr\t%l0\", operands);
     default_internal_label (asm_out_file, \"L\",
