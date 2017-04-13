@@ -628,6 +628,13 @@ csky_address_cost (rtx x ATTRIBUTE_UNUSED, machine_mode mode,
 bool
 csky_gen_compare (enum rtx_code code, rtx op0, rtx op1)
 {
+  if (TARGET_HARD_FLOAT && TARGET_FPUV1)
+    {
+      if ((GET_MODE (op0) == SFmode || GET_MODE (op0) == DFmode)
+          || (GET_MODE (op1) == SFmode || GET_MODE (op1) == DFmode))
+        return csky_gen_compare_float(code, op0, op1);
+    }
+
   rtx cc_reg = gen_rtx_REG (CCmode, CC_REG);
   bool invert;
 
@@ -661,7 +668,7 @@ csky_gen_compare (enum rtx_code code, rtx op0, rtx op1)
     }
 
   if (CONSTANT_P (op1) && GET_CODE (op1) != CONST_INT)
-    op1 = force_reg (SImode, op1);
+    op1 = force_reg (GET_MODE(op1), op1);
 
   /* cmpnei: 0-31 (K immediate)
      cmplti: 1-32 (J immediate, 0 using btsti x,31).  */
