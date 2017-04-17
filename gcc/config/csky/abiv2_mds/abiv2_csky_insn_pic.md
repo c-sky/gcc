@@ -1,13 +1,12 @@
 
 (define_insn "prologue_get_pc"
-  [(set (match_operand:SI 1 "" "=r")
-        (match_operand:SI 0 "" "X"))
-   (clobber (reg:SI 28))]
+  [(set (reg:SI 28)
+        (match_operand:SI 0 "" "X"))]
   "(GET_CODE(operands[0]) == UNSPEC)
    && (XINT(operands[0], 1) == PIC_SYMBOL_GOTPC_GRS)"
   "*{
     operands[0] = XVECEXP(operands[0], 0, 0);
-    output_asm_insn(\"grs\t%1, %0\", operands);
+    output_asm_insn(\"grs\tgb, %0\", operands);
     default_internal_label (asm_out_file, \"L\",
                             CODE_LABEL_NUMBER (XEXP(operands[0], 0)));
     return \"\";
@@ -65,12 +64,9 @@
                                       gen_rtvec (1, grs_label),
                                       PIC_SYMBOL_GOTPC);
 
-    emit_insn(gen_prologue_get_pc(tmp0_unspec, reg_gb));
-
+    emit_insn (gen_prologue_get_pc(tmp0_unspec));
     emit_move_insn(reg_temp, tmp1_unspec);
-
     emit_insn(gen_addsi3(reg_gb, reg_gb, reg_temp));
-
     emit_use (reg_gb);
 
     DONE;

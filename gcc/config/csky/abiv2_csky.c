@@ -4788,10 +4788,8 @@ void csky_expand_prologue(void)
                                         gen_rtvec (1, grs_label),
                                         PIC_SYMBOL_GOTPC);
 
-      emit_insn(gen_prologue_get_pc(tmp0_unspec, reg_gb));
-
+      emit_insn(gen_prologue_get_pc(tmp0_unspec));
       emit_move_insn(reg_temp, tmp1_unspec);
-
       emit_insn(gen_addsi3(reg_gb, reg_gb, reg_temp));
     }
 }
