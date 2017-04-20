@@ -174,6 +174,9 @@ static const struct attribute_spec csky_attribute_table[] =
 #undef  TARGET_ASM_FUNCTION_EPILOGUE
 #define TARGET_ASM_FUNCTION_EPILOGUE csky_output_function_epilogue
 
+#undef  TARGET_WARN_FUNC_RETURN
+#define TARGET_WARN_FUNC_RETURN csky_warn_func_return
+
 
 /******************************************************************
  *                Implementing the Varargs Macros                 *
@@ -6183,6 +6186,15 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
       || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
     return 0;
 }
+
+static bool
+csky_warn_func_return (tree decl)
+{
+  /* Naked functions are implemented entirely in assembly, including the
+     return sequence, so suppress warnings about this.  */
+  return lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) == NULL_TREE;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
