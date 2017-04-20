@@ -2773,6 +2773,14 @@ csky_conditional_register_usage (void)
           call_used_regs[regno] = 1;
         }
     }
+
+  if (flag_pic)
+    {
+      fixed_regs[PIC_OFFSET_TABLE_REGNUM] = 1;
+      call_used_regs[PIC_OFFSET_TABLE_REGNUM] = 1;
+      call_really_used_regs[PIC_OFFSET_TABLE_REGNUM] = 0;
+      reg_names[PIC_OFFSET_TABLE_REGNUM] = "gb";
+    }
 }
 
 /* Return TRUE if X references a SYMBOL_REF.  */
@@ -3206,7 +3214,7 @@ csky_set_eh_return_address (rtx source, rtx scratch)
 static bool
 csky_lra_p (void)
 {
-  return true;
+  return TARGET_LRA;
 }
 
 /* Implement RETURN_ADDR_RTX.  We do not support moving back to  a previous frame.  */

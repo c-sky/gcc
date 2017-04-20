@@ -1012,16 +1012,17 @@
     && (CONSTANT_P (addr_ref)
       || symbol_mentioned_p (addr_ref)
       || label_mentioned_p (addr_ref)))
-  {
+    {
 
-    pic_ref = legitimize_pic_address (addr_ref, SImode, 0, 0);
-    operands[1] = gen_rtx_MEM (GET_MODE (pic_ref), pic_ref);
-  }
+      pic_ref = legitimize_pic_address (addr_ref, SImode, 0, 0);
+      operands[1] = gen_rtx_MEM (GET_MODE (pic_ref), pic_ref);
+    }
   else if (GET_CODE (operands[0]) == MEM
       && ! register_operand (XEXP (operands[0], 0), SImode)
       && ! csky_symbolic_address_p (XEXP (operands[0], 0)))
     operands[1] = gen_rtx_MEM (GET_MODE (operands[1]),
-         force_reg (Pmode, XEXP (operands[1], 0)));
+                               force_reg (Pmode,
+                                          XEXP (operands[1], 0)));
 }")
 
 (define_insn "call_value_internal"
