@@ -338,7 +338,7 @@ calc_live_r0_r31_regs (int *count)
 
   for (reg = 0; reg < 32; reg++)
     {
-      if (df_regs_ever_live_p (reg) && !call_used_regs[reg])
+      if (df_regs_ever_live_p (reg) && !call_really_used_regs[reg])
         {
           (*count)++;
           live_regs_mask |= (1 << reg);

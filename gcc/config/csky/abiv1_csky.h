@@ -421,6 +421,34 @@ extern int const csky_dbg_register_map[];
      1,    1,    1,    1,    1,    1,    1,    1                        \
    }
 
+/* Like `CALL_USED_REGISTERS' but used to overcome a historical
+   problem which makes CALL_USED_REGISTERS *always* include
+   all the FIXED_REGISTERS.  Until this problem has been
+   resolved this macro can be used to overcome this situation.
+   In particular, block_propagate() requires this list
+   be accurate, or we can remove registers which should be live.
+   This macro is used in get_csky_live_regs().  */
+#define CALL_REALLY_USED_REGISTERS                                      \
+ /*  sp   r1   r2   r3   r4   r5   r6   r7  */                          \
+   { 1,   1,   1,   1,   1,   1,   1,   1,                              \
+ /*  r8   r9   r10  r11  r12  r13  r14  r15 */                          \
+     0,   0,   0,   0,   0,   0,   0,   0,                              \
+ /*  r16  r17  r18  r19  r20  r21  r22  r23 */                          \
+     0,   0,   0,   0,   1,   1,   1,   1,                              \
+ /*  r24  r25  r26  r27  r28  r29  r30  r31 */                          \
+     1,   1,   1,   1,   1,   1,   1,   1,                              \
+ /*  vap  c    vfp  epc  hi   lo */                                     \
+     1,   1,   1,   1,   1,   1,                                        \
+ /* fr0   fr1   fr2   fr3   fr4   fr5   fr6   fr7 */                    \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* fr8   fr9   fr10  fr11  fr12  fr13  fr14  fr15 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* fr16  fr17  fr18  fr19  fr20  fr21  fr22  fr23 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* fr24  fr25  fr26  fr27  fr28  fr29  fr30  fr31 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1                        \
+   }
+
 /* The order in which register should be allocated.  */
 #define REG_ALLOC_ORDER  \
 /*   r7    r6    r5    r4    r3    r2   r15   r14     */        \
