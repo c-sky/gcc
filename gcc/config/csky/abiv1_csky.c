@@ -345,6 +345,17 @@ calc_live_r0_r31_regs (int *count)
         }
     }
 
+  /* If eh_return, save EH_RETURN_DATA_REGNO.  */
+  if (crtl->calls_eh_return)
+    {
+      unsigned int i;
+      for (i = 0; EH_RETURN_DATA_REGNO (i) != INVALID_REGNUM; i++)
+        {
+          live_regs_mask |= (1 << EH_RETURN_DATA_REGNO (i));
+          (*count)++;
+        }
+    }
+
   return live_regs_mask;
 }
 
@@ -3194,6 +3205,13 @@ csky_set_eh_return_address (rtx source, rtx scratch)
       if (frame_pointer_needed
           && ((saved_regs & (1 << HARD_FRAME_POINTER_REGNUM)) != 0))
         delta -= 4;
+      /* If eh_return, EH_RETURN_DATA_REGNO saved above r15.  */
+      if (crtl->calls_eh_return)
+        {
+          unsigned int i;
+          for (i = 0; EH_RETURN_DATA_REGNO (i) != INVALID_REGNUM; i++)
+            delta -= 4;
+        }
 
       if (delta > 32)
         {

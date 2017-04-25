@@ -74,6 +74,7 @@
 
 (define_c_enum "unspec_volatile" [
   VUNSPEC_EH_RETURN
+  UNSPEC_PROLOGUE_USE
 ])
 
 ;; -------------------------------------------------------------------------
@@ -1091,6 +1092,12 @@
  ""
  )
 
+(define_insn "prologue_use"
+  [(unspec:SI [(match_operand:SI 0 "register_operand" "")] UNSPEC_PROLOGUE_USE)]
+  ""
+  ""
+)
+
 (define_expand "prologue"
   [(const_int 0)]
   ""
@@ -1099,7 +1106,13 @@
 (define_expand "epilogue"
   [(return)]
   ""
-  "csky_expand_epilog ();")
+  "
+  {
+    if (crtl->calls_eh_return)
+      emit_insn (gen_prologue_use (gen_rtx_REG (Pmode, 4)));
+
+    csky_expand_epilog ();
+  }")
 
 ;; ------------------------------------------------------------------------
 ;; Scc instructions
