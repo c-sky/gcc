@@ -96,6 +96,17 @@ SECTIONS
             *(.gcc_exc);
             *(.gcc_except_table)   
             . = ALIGN(4) ;
+	     __CTOR_LIST__ = .;
+             LONG( (__CTOR_LIST_END__ - __CTOR_LIST__) / 4 - 2 )
+             KEEP(*(SORT(.ctors*)))
+             __CTOR_END__ = .;
+             LONG( 0 )
+             __CTOR_LIST_END__ = .;
+             __DTOR_LIST__ = .;
+             LONG( (__DTOR_END__ - __DTOR_LIST__) / 4 - 2 )
+             KEEP (*(SORT(.dtors*)))
+             LONG( 0 )
+             __DTOR_END__ = .;
             *(.data*)
             *(.data.*)
             /*
