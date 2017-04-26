@@ -351,14 +351,6 @@
  "TARGET_HARD_FLOAT && TARGET_FPUV1"
  "fcmpzhss\t%S0, %2")
 
-(define_insn "*fpuv1_lez"
- [(set (reg:CC CC_REGNUM)
-       (le:CC (match_operand:SF 0 "register_operand" "f")
-              (match_operand:SF 1 "csky_const_float_0" "i")))
-  (clobber (match_scratch:SI 2 "=a"))]
- "TARGET_HARD_FLOAT && TARGET_FPUV1"
- "fcmpzlts\t%S0, %2")
-
 (define_insn "*fpuv1_nez"
  [(set (reg:CC CC_REGNUM)
        (ne:CC (match_operand:SF 0 "register_operand" "f")
@@ -444,14 +436,6 @@
   (clobber (match_scratch:SI 2 "=a"))]
  "TARGET_HARD_FLOAT && TARGET_FPUV1"
  "fcmpzhsd\t%0, %2")
-
-(define_insn "*fpuv1_dlez"
- [(set (reg:CC CC_REGNUM)
-       (le:CC (match_operand:DF 0 "register_operand" "f")
-              (match_operand:DF 1 "csky_const_float_0" "i")))
-  (clobber (match_scratch:SI 2 "=a"))]
- "TARGET_HARD_FLOAT && TARGET_FPUV1"
- "fcmpzltd\t%0, %2")
 
 (define_insn "*fpuv1_dnez"
  [(set (reg:CC CC_REGNUM)
