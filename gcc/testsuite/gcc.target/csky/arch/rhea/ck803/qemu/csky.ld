@@ -90,6 +90,8 @@ SECTIONS
             *(.shdata)
             *(.sdata)
             *(.sdata.*)
+            *(.tdata)
+            *(.tdata.*)
             *(.data)
             *(.gcc_exc);
             *(.gcc_except_table)   

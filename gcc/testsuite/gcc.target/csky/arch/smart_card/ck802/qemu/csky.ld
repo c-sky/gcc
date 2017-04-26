@@ -77,6 +77,8 @@ SECTIONS
 		*(.data*)
 		*(.data1)
 		*(.data.*)
+                *(.tdata)
+                *(.tdata.*)
 		*(.gnu.linkonce.d*)
 		*(.data1)
 		*(.gcc_except_table)

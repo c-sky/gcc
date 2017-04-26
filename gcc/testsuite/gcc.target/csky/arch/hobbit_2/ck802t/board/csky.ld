@@ -62,6 +62,8 @@ SECTIONS
             *(.sdata)
             *(.sdata.*)
             *(.data)
+            *(.tdata)
+            *(.tdata.*)
             *(.gcc_exc);
             *(.gcc_except_table)   
             . = ALIGN(4) ;

@@ -98,6 +98,8 @@ SECTIONS {
 		*(.data)
 		*(.data*)
 		*(.data1)
+                *(.tdata)
+                *(.tdata.*)
 		*(.data.*)
 		*(.gnu.linkonce.d*)
 		*(.data1)
