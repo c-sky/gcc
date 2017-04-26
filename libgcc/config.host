@@ -861,15 +861,15 @@ csky-*-*)
             extra_parts="$extra_parts crti.o crtn.o"
             ;;
         csky-*-ecos*)
-            tmake_file="csky/${with_cskyabi}_t-csky t-fdpbit"
+            tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky t-fdpbit"
             extra_parts="$extra_parts crti.o crtn.o"
             ;;
         csky-*-uclinux*)
-            tmake_file="t-linux csky/${with_cskyabi}_t-csky t-fdpbit"
+            tmake_file="${tmake_file} t-linux csky/${with_cskyabi}_t-csky t-fdpbit"
             extra_parts="$extra_parts crti.o crtn.o"
             ;;
         csky-*-linux*)
-            tmake_file="csky/t-slibgcc-elf-ver-csky csky/${with_cskyabi}_t-csky t-slibgcc-libgcc t-fdpbit"
+            tmake_file="t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-linux csky/t-slibgcc-elf-ver-csky csky/${with_cskyabi}_t-csky t-slibgcc-libgcc t-fdpbit"
             extra_parts="$extra_parts crti.o crtn.o"
             md_unwind_header=csky/linux-unwind.h
             ;;
