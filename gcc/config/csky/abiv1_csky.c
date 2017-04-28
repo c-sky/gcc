@@ -1905,7 +1905,11 @@ csky_expand_prolog (void)
     }
 
   if (csky_naked_function_p ())
-    return;
+    {
+      if (flag_stack_usage_info)
+        current_function_static_stack_size = 0;
+      return;
+    }
 
   /* Handle stdarg+regsaves in one shot: can't be more than 64 bytes.  */
   output_stack_adjust (-1, fi.growth[growth++]);        /* Grows it.  */
@@ -2048,6 +2052,9 @@ csky_expand_prolog (void)
                  ((XEXP (DECL_RTL (current_function_decl), 0)),
                   GEN_INT (space_allocated)));
     }
+
+  if (flag_stack_usage_info)
+    current_function_static_stack_size = space_allocated;
 }
 
 /* Emit RTL sequence for function epilogue. */

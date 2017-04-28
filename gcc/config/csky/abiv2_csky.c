@@ -4697,7 +4697,11 @@ void csky_expand_prologue(void)
   unsigned long func_type = get_csky_current_func_type();
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
-    return;
+    {
+      if (flag_stack_usage_info)
+        current_function_static_stack_size = 0;
+      return;
+    }
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
@@ -4794,6 +4798,16 @@ void csky_expand_prologue(void)
       emit_insn(gen_prologue_get_pc(tmp0_unspec));
       emit_move_insn(reg_temp, tmp1_unspec);
       emit_insn(gen_addsi3(reg_gb, reg_gb, reg_temp));
+    }
+
+  if (flag_stack_usage_info)
+    {
+      int space_allocated = fi.arg_size + fi.reg_size
+                            + fi.local_size
+                            + fi.outbound_size
+                            + fi.pad_outbound
+                            + fi.pad_local + fi.pad_reg;
+      current_function_static_stack_size = space_allocated;
     }
 }
 
