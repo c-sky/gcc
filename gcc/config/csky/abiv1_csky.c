@@ -3089,6 +3089,7 @@ legitimize_pic_address (rtx orig, enum machine_mode mode ATTRIBUTE_UNUSED,
 {
   /* FIXME replace the 14 by macro */
   rtx pic_reg = gen_rtx_REG (SImode, 14);
+  int flag_optimize = 0;
 
   if (GET_CODE (orig) == SYMBOL_REF || GET_CODE (orig) == LABEL_REF)
     {
@@ -3109,9 +3110,13 @@ legitimize_pic_address (rtx orig, enum machine_mode mode ATTRIBUTE_UNUSED,
           emit_insn (gen_pic_get_symbol
                      (address, orig, GEN_INT (PIC_SYMBOL_GOTOFF)));
           pic_ref = gen_rtx_PLUS (Pmode, address, pic_reg);
+
+          flag_optimize = 1;
         }
       else
         {
+          flag_optimize = flag;
+
           /* when flag != 0 generate sym@GOT, otherwise generate sym@PLT */
           emit_insn (gen_pic_get_symbol
                      (address, orig,
@@ -3120,8 +3125,10 @@ legitimize_pic_address (rtx orig, enum machine_mode mode ATTRIBUTE_UNUSED,
           pic_ref = gen_const_mem (Pmode, address);
         }
       insn = emit_move_insn (reg, pic_ref);
+
       /* Put a REG_EQUAL note on this insn, so that it can be optimized by loop */
-      set_unique_reg_note (insn, REG_EQUAL, orig);
+      if (flag_optimize)
+        set_unique_reg_note (insn, REG_EQUAL, orig);
 
       return reg;
     }
