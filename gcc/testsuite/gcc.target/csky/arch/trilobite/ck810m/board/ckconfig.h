@@ -1,5 +1,5 @@
 /*
- * file: config.h
+ * file: ckconfig.h
  *
  * Some CPU configure infomation:
  * Data type, Baudrate for UART;

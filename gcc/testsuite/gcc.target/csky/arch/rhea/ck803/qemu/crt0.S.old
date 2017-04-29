@@ -15,12 +15,12 @@
  * Copyright (C) 2008  Hangzhou C-SKY Microsystems Co., Ltd
  */
 
-#include "config.h"
+#include "ckconfig.h"
 
 .file "crt0.S"
 
 /*
- * From "config.h"
+ * From "ckconfig.h"
  */
 	/* MGU & CACHE */
 /* CONFIG_CK510_MGU_BLOCKS	---- MGU block priority setting value */

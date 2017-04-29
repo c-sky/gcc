@@ -1,5 +1,5 @@
 /*
- * file: config.h
+ * file: ckconfig.h
  *
  * Some CPU configure infomation:
  * Data type, Baudrate for UART;
@@ -36,9 +36,9 @@
 #define CONFIG_SYS_SPARK	0
 
 /* CPU frequence definition */
-#define SYS_FREQ			12000000   /* MHz */
+#define SYS_FREQ			80000000  /* MHz */
 /* APB frequence definition */
-#define APB_FREQ			12000000   /* MHz */ 
+#define APB_FREQ			40000000   /* MHz */ 
 
 
 /*******************************
@@ -57,8 +57,8 @@
 /* 3- baseaddr: 0x0; size: 64k */
 #undef CONFIG_CK510_MGU_REGION4
 
-#define CONFIG_CK510_ICACHE		0
-#define CONFIG_CK510_DCACHE		0
+#define CONFIG_CK510_ICACHE		1
+#define CONFIG_CK510_DCACHE		1
 
 /*********************************
  *  Config CKCORE SPM
@@ -67,7 +67,7 @@
 /* Having SPM ? */
 #define	CONFIG_CKCORE_SPM			0
 /* Enable SPM?*/
-#define	CONFIG_CKCORE_SPM_ENABLE	0
+#define	CONFIG_CKCORE_SPM_ENABLE	1
 /* Uniform SPM ? */
 #define	CONFIG_CKCORE_SPM_UNIFORM	0
 /* 
