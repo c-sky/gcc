@@ -3,7 +3,7 @@
 #ifndef __CKUART_H__
 #define __CKUART_H__
 
-#include "config.h"
+#include "ckconfig.h"
 
 #define _UART           volatile U32 *
 //#if defined(CONFIG_HAVE_MMU)

@@ -1,5 +1,5 @@
 /*
- * file: config.h
+ * file: ckconfig.h
  *
  * Some CPU configure infomation:
  * Data type, Baudrate for UART;
@@ -36,7 +36,7 @@
 #define CONFIG_SYS_SPARK	0
 
 /* CPU frequence definition */
-#define SYS_FREQ			80000000   /* MHz */
+#define SYS_FREQ			80000000  /* MHz */
 /* APB frequence definition */
 #define APB_FREQ			40000000   /* MHz */ 
 
@@ -100,7 +100,6 @@
 /* SPM Transfer ? */
 #define	CONFIG_CKCORE_ISPM_TRANSFER	1	/* 0 - NO, 1 - YES */
 #define	CONFIG_CKCORE_DSPM_TRANSFER	1	/* 0 - NO, 1 - YES */
-
 
 
 #endif /* __DEMO_CONFIG_H */

@@ -4,7 +4,7 @@
  * Copyright (C) 2008  Hangzhou C-SKY Microsystems Co., Ltd
  */
 
-#include "config.h"
+#include "ckconfig.h"
 #include "ckuart.h"
 #include <stdarg.h>
 #include <stdio.h>
