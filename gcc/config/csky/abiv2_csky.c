@@ -352,6 +352,9 @@ static GTY(()) int tls_labelno;
 #undef  TARGET_ASM_UNALIGNED_SI_OP
 #define TARGET_ASM_UNALIGNED_SI_OP "\t.long\t"
 
+#undef  TARGET_DWARF_REGISTER_SPAN
+#define TARGET_DWARF_REGISTER_SPAN csky_dwarf_register_span
+
 
 /******************************************************************
  *                    Miscellaneous Parameters                    *
@@ -1916,14 +1919,10 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
       else
         return 1;
     }
-  else if ((regno >= CSKY_FIRST_VFP_REGNUM)
-           && (regno <= CSKY_LAST_VFP_REGNUM)
+  else if (CSKY_VREG_P (regno)
            && TARGET_HARD_FLOAT)
     {
-      if (CSKY_TARGET_ARCH (CK803S))
-        return (CSKY_NUM_REGS(mode) < 2);
-      else
-        return 1;
+      return 1;
     }
 
   return 0;
@@ -6209,6 +6208,41 @@ csky_warn_func_return (tree decl)
   return lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) == NULL_TREE;
 }
 
+/* Dwarf models VFP registers as  64-bit or 128-bit registers default.
+   GCC models tham as 32-bit registers, so we need to describe this to
+   the DWARF generation code.  Other registers can use the default.  */
+static rtx
+csky_dwarf_register_span (rtx rtl)
+{
+  machine_mode mode;
+  unsigned regno;
+  rtx parts[16];
+  int nregs;
+  int i;
+
+  regno = REGNO (rtl);
+  if (!CSKY_VREG_P (regno))
+    return NULL_RTX;
+
+  mode = GET_MODE (rtl);
+  if (GET_MODE_SIZE (mode) < 8)
+    return NULL_RTX;
+
+  nregs = GET_MODE_SIZE (mode) / 4;
+  for (i = 0; i < nregs; i += 2)
+  if (TARGET_BIG_ENDIAN)
+    {
+      parts[i] = gen_rtx_REG (SImode, regno + i + 1);
+      parts[i + 1] = gen_rtx_REG (SImode, regno + i);
+    }
+  else
+    {
+      parts[i] = gen_rtx_REG (SImode, regno + i);
+      parts[i + 1] = gen_rtx_REG (SImode, regno + i + 1);
+    }
+
+  return gen_rtx_PARALLEL (VOIDmode, gen_rtvec_v (nregs , parts));
+}
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

@@ -38,8 +38,9 @@
 #define CSKY_GENERAL_REGNO_P(N) \
   ((N) < CSKY_NGPR_REGS && (N) >= 0)
 
-#define CSKY_VREG_P(N)    \
-  ((unsigned int)((int) (N) - CSKY_FIRST_VFP_REGNUM) < CSKY_FIRST_VFP_REGNUM)
+#define CSKY_VREG_P(N)               \
+  (((N) >= CSKY_FIRST_VFP_REGNUM)    \
+   && ((N) <= CSKY_LAST_VFP_REGNUM))
 
 #define CSKY_HILO_REG_P(N)   \
   ((N == CSKY_HI_REGNUM) || (N == CSKY_LO_REGNUM))
