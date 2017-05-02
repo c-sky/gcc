@@ -10,7 +10,7 @@
 
 #ifdef CSKY_ARCH
 CSKY_ARCH("ck801",  ck801,  CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801))
-CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802))
+CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart))
 CSKY_ARCH("ck803",  ck803,  CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
 CSKY_ARCH("ck803s", ck803s, CK803S, CSKY_ISA_FEAT(CSKY_ISA_CK803S))
 CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_DSP))
@@ -53,8 +53,8 @@ CSKY_OPTION(MASK_DIV, CSKY_ISA_FEAT(isa_bit_div))
 CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 
 /* ck802 Architecture Processors */
-CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT(isa_bit_smart), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_java), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_java), CSKY_TUNE_GET(generic))
 
 /* ck803 Architecture Processors */
 CSKY_CORE("ck803",    ck803,    ck803,    CK803,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
