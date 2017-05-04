@@ -5517,14 +5517,17 @@ csky_asm_trampoline_template (FILE *f)
   else
     {
       fprintf (f, "\tpush\tr4, lr\n");
+      fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
       fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
                reg_names[STATIC_CHAIN_REGNUM]);
-      fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
-      /* To align 32bits for lrw. And add nop here eliminate
-         the delay cause by lrw.  */
-      fprintf (f, "\tnop\n");
       fprintf (f, "\tjsr\tr4\n");
-      fprintf (f, "\tpush\tr4, lr\n");
+      fprintf (f, "\tpop\tr4, lr\n");
+
+      if (CSKY_TARGET_ARCH(CK801))
+        {
+          /* To align 32bits for lrw.  */
+          fprintf (f, "\tnop\n");
+        }
     }
     fprintf (f, ".Lstatic_chain:\n");
     fprintf (f, "\t.long 0\n");
