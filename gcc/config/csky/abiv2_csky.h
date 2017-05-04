@@ -293,6 +293,15 @@ machine_function;
    the register pair r0/r1.  */
 #define DEFAULT_PCC_STRUCT_RETURN 0
 
+/* EXIT_IGNORE_STACK should be nonzero if, when returning from a function,
+   the stack pointer does not matter.  The value is tested only in
+   functions that have frame pointers.
+   No definition is equivalent to always zero.
+
+   On the CSKY, the function epilogue recovers the stack pointer from the
+   frame.  */
+#define EXIT_IGNORE_STACK 1
+
 
 /******************************************************************
  *              Register Usage & Register Classes                 *
@@ -1038,7 +1047,7 @@ extern const int csky_dbx_regno[];
 /* Define this macro if it is as good or better to call a constant
    function address than to call an address kept in a register.  */
 /* On the CSKY, jbsr calling through registers is better than jbsri.  */
-#define NO_FUNCTION_CSE 0
+#define NO_FUNCTION_CSE 1
 
 
 /******************************************************************

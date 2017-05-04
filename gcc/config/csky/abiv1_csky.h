@@ -741,8 +741,11 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 /* EXIT_IGNORE_STACK should be nonzero if, when returning from a function,
    the stack pointer does not matter.  The value is tested only in
    functions that have frame pointers.
-   No definition is equivalent to always zero.  */
-#define EXIT_IGNORE_STACK 0
+   No definition is equivalent to always zero.
+
+   On the CSKY, the function epilogue recovers the stack pointer from the
+   frame.  */
+#define EXIT_IGNORE_STACK 1
 
 /* Length in units of the trampoline for entering a nested function.  */
 #define TRAMPOLINE_SIZE  12

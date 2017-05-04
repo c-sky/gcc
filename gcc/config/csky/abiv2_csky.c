@@ -4705,7 +4705,6 @@ void csky_expand_prologue(void)
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
 
-  #if 1
   if (fi.arg_size != 0)
     {
       offset = fi.arg_size + fi.pad_arg;
@@ -4732,14 +4731,12 @@ void csky_expand_prologue(void)
           RTX_FRAME_RELATED_P (insn) = 1;
         }
     }
-  #endif
 
   /* TODO: backtrace */
   if (0 /* target_flags & MASK_BACKTRACE */)
     {
 
     }
-  /* TODO: pushpop */
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
     {
       emit_csky_regs_push (fi.reg_mask);
