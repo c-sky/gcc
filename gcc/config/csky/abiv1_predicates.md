@@ -196,9 +196,15 @@
   if (csky_arith_reg_operand (op, mode))
     return 1;
 
-  if (GET_CODE (op) == CONST_INT
-         && (CONST_OK_FOR_J (INTVAL (op)) || CONST_OK_FOR_L (INTVAL (op))))
+  if (GET_CODE (op) == CONST_INT)
+    {
+      /* We do need to check to make sure that the constant is not too
+      big, especially if we are running on a 64-bit OS...  */
+      if (trunc_int_for_mode (INTVAL (op), mode) != INTVAL (op))
+        return 0;
+
       return 1;
+    }
 
   return 0;
 })
