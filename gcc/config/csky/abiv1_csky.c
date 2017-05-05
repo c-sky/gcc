@@ -287,7 +287,7 @@ static const struct attribute_spec csky_attribute_table[] = {
 #undef  TARGET_CANNOT_FORCE_CONST_MEM
 #define TARGET_CANNOT_FORCE_CONST_MEM csky_cannot_force_const_mem
 
-#undef  TARGET_MAX_ANCHOR_OFFSET 
+#undef  TARGET_MAX_ANCHOR_OFFSET
 #define TARGET_MAX_ANCHOR_OFFSET 15
 
 struct gcc_target targetm = TARGET_INITIALIZER;
@@ -2888,6 +2888,7 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
 
   const char *this_reg, *temp0_reg, *temp1_reg;
   rtx fnaddr;
+  int flag_restore = 0;
 
   fnaddr = XEXP (DECL_RTL (function), 0);
 
@@ -2900,6 +2901,14 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
     this_reg = "a1";
   else
     this_reg = "a0";
+
+  if (flag_pic || (vcall_offset > 32 || vcall_offset < -32))
+    {
+      fprintf(file, "\tsubi\tsp, sp, 8\n");
+      fprintf(file, "\tst.w\tr15, (sp, 0)\n");
+
+      flag_restore = 1;
+    }
 
   /* Add delta to this_rtx.  */
   if (delta != 0)
@@ -2941,6 +2950,41 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
       /* Load the offset and add it to this_rtx  */
       fprintf (file, "\tld.w\t%s, (%s, 0)\n", temp0_reg, temp0_reg);
       fprintf (file, "\taddu\t%s, %s, %s\n", this_reg, this_reg, temp0_reg);
+    }
+
+  if (flag_pic)
+    {
+      fprintf(file, "\tbsr \t");
+      output_addr_const(file, fnaddr);
+      fprintf(file, "_GET_PC\n");
+      output_addr_const(file, fnaddr);
+      fprintf(file, "_GET_PC:\n");
+
+      fprintf(file, "\tlrw \t%s, ", temp0_reg);
+      output_addr_const(file, fnaddr);
+      fprintf(file, "_GET_PC@GOTPC\n");
+
+      fprintf(file, "\taddu\t%s, %s, %s\n", temp1_reg, temp1_reg, temp0_reg);
+
+      fprintf(file, "\tlrw \t%s, ", temp0_reg);
+      output_addr_const(file, fnaddr);
+      fprintf(file, "@GOTOFF\n");
+
+      fprintf(file, "\taddu\t%s, %s, %s\n", temp0_reg, temp0_reg, temp1_reg);
+
+      fprintf(file, "\tld.w\tr15, (sp, 0)\n");
+      fprintf(file, "\taddi\tsp, sp, 8\n");
+
+      fprintf(file, "\tjmp \t%s\n", temp0_reg);
+
+      return;
+    }
+
+  /* Restore r15 if it is needed */
+  if (flag_restore)
+    {
+      fprintf(file, "\tld.w\tr15, (sp, 0)\n");
+      fprintf(file, "\taddi\tsp, sp, 8\n");
     }
 
   /* Jump to the function */
