@@ -2589,7 +2589,7 @@ csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
 static bool
 csky_legitimate_constant_p (machine_mode mode ATTRIBUTE_UNUSED, rtx x)
 {
-  return !csky_tls_referenced_p (x) && (flag_pic || !label_mentioned_p (x));
+  return !csky_tls_referenced_p (x) && CONSTANT_P (x);
 }
 
 /* Helper function for `csky_legitimate_address_p'.  */
