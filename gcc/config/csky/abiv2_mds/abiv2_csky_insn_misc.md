@@ -292,7 +292,9 @@
     if (operands[1] != const0_rtx)
       {
         rtx reg = gen_reg_rtx (SImode);
-        emit_insn (gen_addsi3 (reg,operands[0], GEN_INT (-INTVAL (operands[1]))));
+        emit_insn (gen_subsi3 (reg,
+                               operands[0],
+                               GEN_INT (INTVAL (operands[1]))));
         operands[0] = reg;
       }
 
