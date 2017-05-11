@@ -11,6 +11,7 @@
 #define CSKY_FIRST_RET_REG            0
 #define CSKY_FIRST_VFP_REGNUM         52
 #define CSKY_LAST_VFP_REGNUM          67
+#define CSKY_NVFP_REGS                16
 #define CSKY_FIRST_HIGH_REGNUM        16
 #define CSKY_LAST_HIGH_REGNUM         (CSKY_NGPR_REGS - 1)
 #define CSKY_FIRST_MINI_REGNUM        0
@@ -242,5 +243,7 @@ extern int csky_arch_isa_features[];
 #define CSKY_ISA_FEATURE_FAST !CSKY_ISA_FEATURE(smart)
 
 #define TARGET_SOFT_TP      !TARGET_HARD_TP
+
+#define TARGET_SOFT_FPU     (csky_fpu_index == TARGET_FPU_fpv2_sf)
 
 #endif /* GCC_CSKY_PROTOS_H */

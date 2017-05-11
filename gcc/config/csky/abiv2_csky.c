@@ -3872,9 +3872,10 @@ output_csky_movedouble (rtx operands[],
             }
           else if (CSKY_VREG_P (srcreg))
             {
-              /* Since the vector registers in ck803s are 32bits width,
-                 it just need one insn to complete the move operator.  */
-              if (CSKY_TARGET_ARCH (CK803S))
+              /* Since the vector registers in fpuv2_soft like ck803sf
+                 are 32bits width, it just need one insn to complete the
+                 move operator.  */
+              if (TARGET_SOFT_FPU)
                 {
                   return "fmfvrl\t%0, %1";
                 }
@@ -3888,7 +3889,7 @@ output_csky_movedouble (rtx operands[],
             }
           else if (CSKY_VREG_P (dstreg))
             {
-              if (CSKY_TARGET_ARCH (CK803S))
+              if (TARGET_SOFT_FPU)
                 {
                   return "fmtvrl\t%0, %1";
                 }
@@ -6208,6 +6209,7 @@ csky_warn_func_return (tree decl)
   return lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) == NULL_TREE;
 }
 
+
 /* Dwarf models VFP registers as  64-bit or 128-bit registers default.
    GCC models tham as 32-bit registers, so we need to describe this to
    the DWARF generation code.  Other registers can use the default.  */
@@ -6228,17 +6230,30 @@ csky_dwarf_register_span (rtx rtl)
   if (GET_MODE_SIZE (mode) < 8)
     return NULL_RTX;
 
-  nregs = GET_MODE_SIZE (mode) / 4;
-  for (i = 0; i < nregs; i += 2)
-  if (TARGET_BIG_ENDIAN)
+  if (TARGET_SOFT_FPU)
     {
-      parts[i] = gen_rtx_REG (SImode, regno + i + 1);
-      parts[i + 1] = gen_rtx_REG (SImode, regno + i);
+      nregs = GET_MODE_SIZE (mode) / 4;
+      for (i = 0; i < nregs; i += 2)
+      if (TARGET_BIG_ENDIAN)
+        {
+          parts[i] = gen_rtx_REG (SImode, regno + i + 1);
+          parts[i + 1] = gen_rtx_REG (SImode, regno + i);
+        }
+      else
+        {
+          parts[i] = gen_rtx_REG (SImode, regno + i);
+          parts[i + 1] = gen_rtx_REG (SImode, regno + i + 1);
+        }
     }
   else
     {
-      parts[i] = gen_rtx_REG (SImode, regno + i);
-      parts[i + 1] = gen_rtx_REG (SImode, regno + i + 1);
+      /* FIXME dwarf2 consider all general registers are the same
+         as the CPU bit width. Transform the 64bits FPU register to
+         32bits here, and we will modify the unwind processing to
+         fit CSKY architecture later.  */
+      nregs = GET_MODE_SIZE (mode) / 8;
+      for (i = 0; i < nregs; i++)
+        parts[i] = gen_rtx_REG (SImode, regno + i);
     }
 
   return gen_rtx_PARALLEL (VOIDmode, gen_rtvec_v (nregs , parts));
