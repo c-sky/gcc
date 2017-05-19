@@ -112,7 +112,7 @@
   "@
     jsr\t%1
     jsr\t%1
-    jbsr\t%0"
+    jbsr\t%1"
   [(set_attr "length" "2,4,4")]
 )
 
