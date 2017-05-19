@@ -950,4 +950,12 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define LEGITIMATE_PIC_OPERAND_P(X)   \
   (!(symbol_mentioned_p (X) || label_mentioned_p (X)) || tls_mentioned_p (X))
 
+#if defined(__MINGW32__)
+/* Add for mingw32 toolchain build to avoid mingw changing
+   it.  */
+#undef NATIVE_SYSTEM_HEADER_DIR
+#define NATIVE_SYSTEM_HEADER_DIR "/usr/include"
+#endif
+
+
 #endif /* ! GCC_ABIV1_CSKY_H */
