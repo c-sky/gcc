@@ -177,6 +177,9 @@ static const struct attribute_spec csky_attribute_table[] =
 #undef  TARGET_WARN_FUNC_RETURN
 #define TARGET_WARN_FUNC_RETURN csky_warn_func_return
 
+#undef  TARGET_RETURN_IN_MEMORY
+#define TARGET_RETURN_IN_MEMORY csky_return_in_memory
+
 
 /******************************************************************
  *                Implementing the Varargs Macros                 *
@@ -6207,6 +6210,18 @@ csky_warn_func_return (tree decl)
   /* Naked functions are implemented entirely in assembly, including the
      return sequence, so suppress warnings about this.  */
   return lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) == NULL_TREE;
+}
+
+
+/* Decide whether TYPE should be returned in memory (true)
+   or in a register (false).  FNTYPE is the type of the function making
+   the call.  */
+static bool
+csky_return_in_memory (const_tree type,
+                       const_tree fntype ATTRIBUTE_UNUSED)
+{
+  const HOST_WIDE_INT size = int_size_in_bytes (type);
+  return (size == -1 || size > 2 * UNITS_PER_WORD);
 }
 
 
