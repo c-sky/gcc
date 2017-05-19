@@ -2890,6 +2890,8 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
   rtx fnaddr;
   int flag_restore = 0;
 
+  final_start_function (emit_barrier (), file, 1);
+
   fnaddr = XEXP (DECL_RTL (function), 0);
 
   /* We need two temporary registers in some cases.  */
@@ -2977,6 +2979,8 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
 
       fprintf(file, "\tjmp \t%s\n", temp0_reg);
 
+      final_end_function ();
+
       return;
     }
 
@@ -2991,6 +2995,8 @@ csky_output_mi_thunk (FILE * file, tree thunk_fndecl ATTRIBUTE_UNUSED,
   fprintf (file, "\tjbr\t");
   output_addr_const (file, fnaddr);
   fprintf (file, "\n");
+
+  final_end_function ();
 }
 
 static GTY (()) int tls_labelno;
