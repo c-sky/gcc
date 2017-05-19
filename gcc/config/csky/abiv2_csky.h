@@ -1020,6 +1020,13 @@ extern const int csky_dbx_regno[];
         ASM_OUTPUT_ALIGN (stream, 1);             \
     } while (0)
 
+#if defined(__MINGW32__)
+/* Add for mingw32 toolchain build to avoid mingw changing
+   it.  */
+#undef NATIVE_SYSTEM_HEADER_DIR
+#define NATIVE_SYSTEM_HEADER_DIR "/usr/include"
+#endif
+
 
 /******************************************************************
  *                Trampolines for Nested Functions                *
