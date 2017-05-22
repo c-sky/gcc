@@ -858,7 +858,7 @@ csky-*-*)
     case ${host} in
         csky-*-elf*)
             tmake_file="csky/${with_cskyabi}_t-csky t-fdpbit"
-            extra_parts="$extra_parts crti.o crtn.o"
+            extra_parts=""
             ;;
         csky-*-ecos*)
             tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky t-fdpbit"
