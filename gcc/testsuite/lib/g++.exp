@@ -25,7 +25,6 @@ load_lib prune.exp
 load_lib gcc-defs.exp
 load_lib timeout.exp
 load_lib target-libpath.exp
-load_lib gcc.exp
 
 #
 # GXX_UNDER_TEST is the compiler under test.
@@ -223,10 +222,6 @@ proc g++_init { args } {
 	}
     }
 
-    if { [ istarget csky* ] && [board_info target exists c++compiler ] } {
-	set GXX_UNDER_TEST  [ board_info target c++compiler ]
-    }
-
     # Bleah, nasty. Bad taste.
     if [ishost "*-dos-*" ] {
 	regsub "c\\+\\+" "$GXX_UNDER_TEST" "gcc" GXX_UNDER_TEST
@@ -296,47 +291,13 @@ proc g++_init { args } {
 #
 
 proc g++_target_compile { source dest type options } {
-    global tmpdir srcdir
+    global tmpdir
     global gpp_compile_options
     global gluefile wrap_flags
     global ALWAYS_CXXFLAGS
     global GXX_UNDER_TEST
     global flags_to_postpone
     global board_info
-
-    if { [ board_info target exists my_ld_library_path ] } {
-        setenv LD_LIBRARY_PATH [ board_info target my_ld_library_path ]
-    }
-    if { [ istarget "csky*elf*" ] } {
-
-        set SOC [board_info target SOC]
-        set CPU [board_info target CPU]
-        set cflags [board_info target cflags]
-        set c_options  ""
-        lappend c_options "additional_flags=$cflags"
-        if { [board_info target exists GDB] }  {
-                if ![ file exists .gdbinit ] {
-                    file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/board/gdbinit .gdbinit
-                }
-                if ![ file exists csky.ld ] {
-                   file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/board/csky.ld csky.ld
-                }
-                set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/board/crt0.S" "crt0.o" object  $c_options ]
-                set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/board/uart.c" "uart.o" object  $c_options ]
-            }
-            if { [board_info target exists QEMU] } {
-                if ![ file exists .gdbinit ] {
-                    file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/gdbinit .gdbinit
-                }
-                 if ![ file exists csky.ld ] {
-                   file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/csky.ld csky.ld
-                 }
-
-                set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/crt0.S" "crt0.o" object  $c_options ]
-                set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/uart.c" "uart.o" object  $c_options ]
-
-            }
-     }
 
     if { [target_info needs_status_wrapper] != "" && [info exists gluefile] } {
 	lappend options "libs=${gluefile}"
