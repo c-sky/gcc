@@ -2204,7 +2204,7 @@ csky_option_override (void)
           if (csky_active_target.core_name != NULL
               && !strchr (csky_active_target.core_name, 'f'))
             target_fpu_name = "auto";
-          else if (CSKY_TARGET_ARCH (CK803S))
+          else if (CSKY_TARGET_ARCH (CK803S) || !TARGET_DOUBLE_FLOAT)
             target_fpu_name = "fpv2_sf";
           else if (TARGET_DOUBLE_FLOAT && TARGET_FDIVDU)
             target_fpu_name = "fpv2_divd";
