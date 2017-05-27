@@ -293,9 +293,25 @@ static const struct attribute_spec csky_attribute_table[] = {
 struct gcc_target targetm = TARGET_INITIALIZER;
 
 /* Adjust the stack and return the number of bytes taken to do it.  */
+static int
+output_stack_adjust_for_nested (int direction, int size)
+{
+  int s = size;
+  if (cfun->static_chain_decl != NULL)
+    {
+      for (; s && s > 32; s -= 32)
+        {
+          output_stack_adjust(direction, 32);
+        }
+    }
+  return s;
+}
+
 static void
 output_stack_adjust (int direction, int size)
 {
+  size = output_stack_adjust_for_nested(direction, size);
+
   if (size)
     {
       rtx insn;
