@@ -15,7 +15,8 @@
    | MASK_PUSHPOP           \
    | MASK_STRICT_ALIGNMENT  \
    | MASK_CONSTANT_POOL     \
-   | MASK_DOUBLE_FLOAT )
+   | MASK_DOUBLE_FLOAT      \
+   | MASK_FDIVDU )
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
