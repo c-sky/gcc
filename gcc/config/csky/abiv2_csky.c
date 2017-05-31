@@ -1715,6 +1715,8 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   const char *reg0 = "t0";
   const char *reg1 = "t1";
 
+  final_start_function (emit_barrier (), file, 1);
+
   rtx fnaddr = XEXP (DECL_RTL (function), 0);
 
   if (CSKY_TARGET_ARCH (CK801))
@@ -1726,7 +1728,7 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
         {
           fprintf (file, "\tpush l0, l1\n");
         }
-            else
+      else
         {
           fprintf (file, "\tpush l0\n");
         }
@@ -1743,13 +1745,13 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
           fprintf(file, "\tlrw\t%s, %ld\n", reg0, delta);
           fprintf(file, "\taddu\t%s, %s, %s\n", thiz, thiz, reg0);
         }
-        else
-          {
-            fprintf(file, "\t%s\t%s, %s, %ld\n",
-                    (delta > 0 ? "addi" : "subi"), thiz,
-                    thiz,
-                    (delta > 0 ? delta : -delta));
-          }
+      else
+        {
+          fprintf(file, "\t%s\t%s, %s, %ld\n",
+                  (delta > 0 ? "addi" : "subi"), thiz,
+                  thiz,
+                  (delta > 0 ? delta : -delta));
+        }
     }
 
   /* If needed, add *(*this_rtx + vcall_offset) to this_rtx.  */
@@ -1782,7 +1784,7 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
         {
           fprintf (file, "\tpop l0, l1\n");
         }
-            else
+      else
         {
           fprintf (file, "\tpop l0\n");
         }
@@ -1791,6 +1793,8 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   fprintf(file, "\tjbr \t");
   output_addr_const(file, fnaddr);
   fprintf(file, "\n");
+
+  final_end_function ();
 }
 
 
