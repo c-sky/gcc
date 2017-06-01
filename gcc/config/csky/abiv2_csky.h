@@ -848,6 +848,10 @@ while (0)
     }                                             \
   while (0)
 
+/* The prefix to add to user-visible assembler symbols.  */
+#undef  USER_LABEL_PREFIX
+#define USER_LABEL_PREFIX "_"
+
 
 /******************************************************************
  *              Controlling the Compilation Driver                *

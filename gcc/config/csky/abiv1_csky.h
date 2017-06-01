@@ -875,8 +875,7 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 /* Output a reference to a label.  */
 #undef  ASM_OUTPUT_LABELREF
 #define ASM_OUTPUT_LABELREF(STREAM, NAME)     \
-  fprintf (STREAM, "%s%s", USER_LABEL_PREFIX, \
-    (* targetm.strip_name_encoding) (NAME))
+  fprintf (STREAM, "%s", (* targetm.strip_name_encoding) (NAME))
 
 /* This is how to output an assembler line
    that says to advance the location counter
@@ -890,7 +889,7 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 
 /* The prefix to add to user-visible assembler symbols.  */
 #undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX ""
+#define USER_LABEL_PREFIX "_"
 
 /* Make an internal label into a string.  */
 #undef  ASM_GENERATE_INTERNAL_LABEL
