@@ -94,12 +94,15 @@ am33_2.0-*-linux*)
 arc*-*-*)
 	cpu_type=arc
 	;;
+csky*-*-*)
+	cpu_type=csky
+	;;
 arm*-*-*)
 	cpu_type=arm
 	;;
 avr-*-*)
 	cpu_type=avr
-	;;    
+	;;
 bfin*-*)
 	cpu_type=bfin
 	;;
@@ -794,7 +797,7 @@ lm32-*-rtems*)
 lm32-*-uclinux*)
         extra_parts="$extra_parts crtbegin.o crtendS.o crtbeginT.o"
         tmake_file="lm32/t-lm32 lm32/t-uclinux t-libgcc-pic t-softfp-sfdf t-softfp"
-	;;	
+	;;
 m32r-*-elf*)
 	tmake_file=t-fdpbit
  	;;
@@ -841,6 +844,41 @@ mcore-*-elf)
 	tmake_file="mcore/t-mcore t-fdpbit"
 	extra_parts="$extra_parts crti.o crtn.o"
 	;;
+csky-*-*)
+	case "$with_cskyabi" in
+	abiv1 | abiv2 )
+		#OK
+		;;
+	*)
+		echo "Unknown ABI used in --with-cskyabi=$with_cskyabi"
+		exit 1
+		;;
+	esac
+
+    case ${host} in
+        csky-*-elf*)
+            tmake_file="csky/${with_cskyabi}_t-csky t-fdpbit"
+            extra_parts=""
+            ;;
+        csky-*-ecos*)
+            tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky t-fdpbit"
+            extra_parts="$extra_parts crti.o crtn.o"
+            ;;
+        csky-*-uclinux*)
+            tmake_file="${tmake_file} t-linux csky/${with_cskyabi}_t-csky t-fdpbit"
+            extra_parts="$extra_parts crti.o crtn.o"
+            ;;
+        csky-*-linux*)
+            tmake_file="t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-linux csky/t-slibgcc-elf-ver-csky csky/${with_cskyabi}_t-csky t-slibgcc-libgcc t-fdpbit"
+            extra_parts="$extra_parts crti.o crtn.o"
+            md_unwind_header=csky/linux-unwind.h
+            ;;
+        *)
+            echo "*** Configuration ${target} not  supported !!" 1>&2
+            exit 1
+            ;;
+    esac
+    ;;
 microblaze*-linux*)
 	tmake_file="${tmake_file} microblaze/t-microblaze t-fdpbit t-slibgcc-libgcc"
 	;;

@@ -174,7 +174,7 @@
 #			the --with-sysroot configure option or the
 #			--sysroot command line option is used this
 #			will be relative to the sysroot.
-# target_type_format_char 
+# target_type_format_char
 # 			The default character to be used for formatting
 #			the attribute in a
 #			.type symbol_name, ${t_t_f_c}<property>
@@ -1982,6 +1982,132 @@ mcore-*-elf)
 	tmake_file=mcore/t-mcore
 	inhibit_libc=true
 	;;
+csky-*-*)
+	case "$with_cskyabi" in
+	  abiv1)
+      tm_file="csky/${with_cskyabi}_csky.h"
+      md_file="csky/${with_cskyabi}_csky.md"
+      out_file="csky/${with_cskyabi}_csky.c"
+      tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
+      extra_options="${extra_options} csky/${with_cskyabi}_csky.opt"
+
+      case ${target} in
+          csky-*-elf*)
+              if test x"${with_aps}" = xyes
+              then
+                  aps_name=_aps
+              else
+                  aps_name=
+              fi
+              tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-elf.h"
+              tmake_file="${tmake_file} csky/${with_cskyabi}${aps_name}_t-csky-elf"
+              inhibit_libc=true
+              csky_elf_libgcov=true
+              tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-ecos*)
+              tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"
+              tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky-elf"
+              inhibit_libc=true
+              tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-uclinux*)
+            tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
+            extra_options="${extra_options} linux.opt"
+            tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky-uclinux"
+            tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-linux*)
+            tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
+            tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-linux"
+            extra_options="${extra_options} linux.opt"
+              case ${with_cskylibc} in
+                  glibc)
+                      tm_file="$tm_file ./sysroot-suffix.h"
+                      tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
+                      ;;
+                  uclibc)
+                      tm_file="$tm_file ./sysroot-suffix.h"
+                      tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
+                      default_use_cxa_atexit=no
+                      ;;
+
+                  *)
+                      tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
+                      default_use_cxa_atexit=no
+                      ;;
+              esac
+              ;;
+          *)
+              echo "*** Configuration ${target} not  supported !!" 1>&2
+              exit 1
+              ;;
+      esac
+      ;;
+    abiv2)
+      tm_file="csky/${with_cskyabi}_csky.h"
+      md_file="csky/${with_cskyabi}_csky.md"
+      out_file="csky/${with_cskyabi}_csky.c"
+      tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
+      extra_options="${extra_options} csky/${with_cskyabi}_csky.opt csky/${with_cskyabi}_csky_tables.opt"
+
+      case ${target} in
+          csky-*-elf*)
+              tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/${with_cskyabi}_csky_elf.h"
+              tmake_file="csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-elf"
+              inhibit_libc=true
+              csky_elf_libgcov=true
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-ecos*)
+              tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"
+              tmake_file="csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-elf"
+              inhibit_libc=true
+              tm_defines="${tm_defines} UCLIBC_DEFAULT=1"
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-uclinux*)
+              tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
+              tmake_file="t-linux csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-uclinux"
+              tm_defines="UCLIBC_DEFAULT=1 OPTION_GLIBC=0"
+              default_use_cxa_atexit=no
+              ;;
+          csky-*-linux*)
+              tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
+              tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
+              case ${with_cskylibc} in
+                  glibc)
+                      tm_file="$tm_file ./sysroot-suffix.h"
+                      tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-glibc"
+                      tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
+                      ;;
+                  uclibc)
+                      tm_file="$tm_file ./sysroot-suffix.h"
+                      tmake_file="$tmake_file csky/t-sysroot-suffix"
+                      tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
+                      default_use_cxa_atexit=no
+                      ;;
+                  *)
+                      tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
+                      default_use_cxa_atexit=no
+                      ;;
+              esac
+              ;;
+          *)
+              echo "*** Configuration ${target} not  supported !!" 1>&2
+              exit 1
+              ;;
+      esac
+		  ;;
+	  *)
+		  echo "Unknown ABI used in --with-cskyabi=$with_cskyabi"
+		  exit 1
+		  ;;
+  esac
+  ;;
 mep-*-*)
 	tm_file="dbxelf.h elfos.h ${tm_file} newlib-stdint.h"
 	tmake_file=mep/t-mep
@@ -3388,7 +3514,7 @@ if test x$with_cpu = x ; then
          with_cpu=8548
       else
          with_cpu=8540
-      fi       
+      fi
       ;;
     sparc*-*-*)
       case ${target} in

@@ -1,0 +1,110 @@
+;; FIXME how to deal with obselete options
+;; m4align m8align mslow-bytes mmmu 4byte-functions lsim
+
+
+march=
+Target RejectNegative Joined Report Var(csky_arch_string)
+Specify the name of the target architecture.
+
+
+mcpu=
+Target RejectNegative Joined Report Var(csky_cpu_string)
+Specify the name of the target CPU.
+
+
+mdsp
+Target RejectNegative Report Mask(DSP)
+Use Csky DSP instructions.
+
+
+mfpuv1
+Target RejectNegative Report Mask(FPUV1)
+Use Csky FPU Version-1 instructions.
+
+
+mfpuv2
+Target RejectNegative Report Mask(FPUV2)
+Use Csky FPU Version-2 instructions.
+
+
+mmac
+Target RejectNegative Report Mask(SECURITY)
+Use Csky SECURE instruction.
+
+mbig-endian
+Target RejectNegative Report InverseMask(LITTLE_ENDIAN)
+Generate big-endian code.
+
+
+EB
+Target RejectNegative Report InverseMask(LITTLE_ENDIAN)
+Alias of -mbig-endian.
+
+
+mlittle-endian
+Target RejectNegative Report Mask(LITTLE_ENDIAN)
+Generate little-endian code.
+
+
+EL
+Target RejectNegative Report Mask(LITTLE_ENDIAN) MaskExists
+Alias of -mlittle-endian.
+
+
+;; FIXME this option should be delete !
+mhardlit
+Target Report Report Mask(HARDLIT)
+Inline constants if it can be done in 2 insns or less.
+
+mdiv
+Target Report Mask(DIV)
+Use the divide instruction.
+
+mrelax-immediates
+Target Report Mask(RELAX_IMM)
+Use arbitrary sized immediates in bit operations.
+
+mhard-float
+Target Report RejectNegative Mask(HARD_FLOAT)
+Use hardware floating point instructions (ck6××f/ck8××f).
+
+
+msoft-float
+Target Report RejectNegative InverseMask(HARD_FLOAT)
+Use library calls to perform FP operations, default.
+
+mmultiple-stld
+Target Report Mask(MULTIPLE_STLD)
+Generate code with stm instruction, -mno-multiple-stld is default.
+
+
+mstm
+Target Report Mask(MULTIPLE_STLD) MaskExists
+Alias of -mmultiple-stld.
+
+
+mhigh-registers
+Target Report Mask(HIGH_REGISTERS)
+Use R16-R31(default).
+
+
+manchor
+Target Report Mask(ANCHOR)
+Use global anchor symbol address.
+
+
+mstack-size
+Target Report RejectNegative Mask(STACK_SIZE)
+Output stack size information.
+
+mbacktrace
+Target Report RejectNegative Mask(BACKTRACE) Undocumented
+Generate target can be backtraced.
+
+mccrt
+Target RejectNegative Report Var(csky_libccrt)
+Use csky compiler runtime instead of libgcc.
+
+mlra
+Target Report Mask(LRA)
+Use lra to do register allocation instead of reload.

@@ -8891,7 +8891,11 @@ case $host_os in
     lt_prog_compiler_pic=
     ;;
   *)
-    lt_prog_compiler_pic="$lt_prog_compiler_pic -DPIC"
+    if test "$host_cpu" = "csky"; then
+      lt_prog_compiler_pic="$lt_prog_compiler_pic"
+    else
+      lt_prog_compiler_pic="$lt_prog_compiler_pic -DPIC"
+    fi
     ;;
 esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $lt_prog_compiler_pic" >&5
@@ -13810,7 +13814,11 @@ case $host_os in
     lt_prog_compiler_pic_CXX=
     ;;
   *)
-    lt_prog_compiler_pic_CXX="$lt_prog_compiler_pic_CXX -DPIC"
+    if test "$host_cpu" = "csky"; then
+      lt_prog_compiler_pic_CXX="$lt_prog_compiler_pic_CXX"
+    else
+      lt_prog_compiler_pic_CXX="$lt_prog_compiler_pic_CXX -DPIC"
+    fi
     ;;
 esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $lt_prog_compiler_pic_CXX" >&5
@@ -28877,6 +28885,15 @@ else
 
 
     $as_echo "#define HAVE_ICONV 1" >>confdefs.h
+
+    case "${target}" in
+        csky-*-ecos*)
+            # Not for eCos $as_echo "#define HAVE_ICONV 1" >>confdefs.h
+            ;;
+        *)
+            $as_echo "#define HAVE_ICONV 1" >>confdefs.h
+            ;;
+    esac
 
   else
 
@@ -53613,7 +53630,8 @@ $as_echo "#define HAVE_TLS 1" >>confdefs.h
 	;;
     esac
     ;;
-  *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-knetbsd*-gnu | *-cygwin*)
+
+  csky-*-elf* | *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-knetbsd*-gnu | *-cygwin*)
 
   # All these tests are for C++; save the language and the compiler flags.
   # The CXXFLAGS thing is suspicious, but based on similar bits previously

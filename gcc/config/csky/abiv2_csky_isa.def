@@ -1,0 +1,47 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_ISA(CNAME, DESCRIPTION)
+   */
+
+/* Common insns */
+CSKY_ISA(E1,    "Extended insns for arch ck801  from base")
+CSKY_ISA(E2,    "Extended insns for arch ck802  from base")
+CSKY_ISA(2E3,   "Extended insns for arch ck803  from ck802")
+CSKY_ISA(3E3s,  "Extended insns for arch ck803s from ck803")
+CSKY_ISA(3sE7,  "Extended insns for arch ck807  from ck803s")
+CSKY_ISA(7E10,  "Extended insns for arch ck810  from ck807")
+
+/* Special insns */
+CSKY_ISA(div,    "divide insns")
+
+/* Extended insns */
+CSKY_ISA(dsp,   "Extended insns for DSP")
+CSKY_ISA(java,  "Extended insns for Java")
+
+CSKY_ISA(fpv2_sf,    "Single precision operations supported")
+CSKY_ISA(fpv2_df,    "Double precision operations supported")
+CSKY_ISA(fpv2_divd,  "Double precision div operations supported")
+
+/* Specific insns mode */
+CSKY_ISA(smart,    "TODO")
+CSKY_ISA(security, "Do nothing, just forward to as")
+CSKY_ISA(tls,      "Support thread-local storage")
+CSKY_ISA(casesi,   "Switch case optimize")
+
+
+#ifdef  CSKY_ISA_MACRO
+#define CSKY_ISA_CK801      CSKY_ISA_FEATURE_GET(E1)
+#define CSKY_ISA_CK802      CSKY_ISA_FEATURE_GET(E2)
+#define CSKY_ISA_CK803      CSKY_ISA_CK802, CSKY_ISA_FEATURE_GET(2E3), \
+                            CSKY_ISA_FEATURE_GET(div)
+#define CSKY_ISA_CK803S     CSKY_ISA_CK803, CSKY_ISA_FEATURE_GET(3E3s)
+#define CSKY_ISA_CK807      CSKY_ISA_CK803S, CSKY_ISA_FEATURE_GET(3sE7)
+#define CSKY_ISA_CK810      CSKY_ISA_CK807, CSKY_ISA_FEATURE_GET(7E10)
+
+#define CSKY_ISA_DSP        CSKY_ISA_FEATURE_GET(dsp)
+
+#define CSKY_ISA_FPv2_SF    CSKY_ISA_FEATURE_GET(fpv2_sf)
+#define CSKY_ISA_FPv2       CSKY_ISA_FPv2_SF, CSKY_ISA_FEATURE_GET(fpv2_df)
+#define CSKY_ISA_FPv2_DIVD  CSKY_ISA_FPv2, CSKY_ISA_FEATURE_GET(fpv2_divd)
+#endif

@@ -1,0 +1,142 @@
+
+HeaderInclude
+config/csky/abiv2_csky_opts.h
+
+march=
+Target RejectNegative ToLower Joined Enum(csky_arch) Var(csky_arch_option) Save
+Specify the name of the target architecture.
+
+; Other csky_arch values are loaded from abiv2_csky_tables.opt
+EnumValue
+Enum(csky_arch) String(native) Value(-1) DriverOnly
+
+mcpu=
+Target RejectNegative ToLower Joined Enum(csky_processor_type) Var(csky_cpu_option) Init(TARGET_CPU_csky_none) Save
+Specify the name of the target CPU.
+
+; Other csky_processor_type values are loaded from abiv2_csky_tables.opt
+EnumValue
+Enum(csky_processor_type) String(native) Value(-1) DriverOnly
+
+mfpu=
+Target RejectNegative Joined Enum(csky_fpu) Var(csky_fpu_index) Init(TARGET_FPU_auto) Save
+Specify the name of the target floating point hardware/format.
+
+mdouble-float
+Target Report Mask(DOUBLE_FLOAT)
+Use CSKY FPU double float instructions.
+
+mdsp
+Target RejectNegative Report Mask(DSP)
+Use CSKY DSP instructions.
+
+mmac
+Target RejectNegative Report Mask(SECURITY)
+Use CSKY SECURE instruction.
+
+mcp
+Target RejectNegative Report Mask(CP)
+Coprocessor instruction.
+
+-mcoprocessor
+Target RejectNegative Report Alias(mcp) Undocumented
+
+mmp
+Target RejectNegative Report Mask(MP)
+Multiple processor instructions.
+
+-mmultiple-processor
+Target RejectNegative Report Alias(mmp) Undocumented
+
+-mcache
+Target RejectNegative Report Mask(CACHE)
+Cache prefetch instruction.
+
+mbig-endian
+Target RejectNegative Report Mask(BIG_ENDIAN)
+Generate big-endian code.
+
+EB
+Target RejectNegative Report Alias(mbig-endian) Undocumented
+
+mlittle-endian
+Target RejectNegative Report InverseMask(BIG_ENDIAN)
+Generate little-endian code.
+
+EL
+Target RejectNegative Report Alias(mlittle-endian) Undocumented
+
+mdiv
+Target Report Mask(DIV)
+Use the divide instruction.
+
+mwide-bitfields
+Target Report Mask(W_FIELD)
+Always treat bitfields as int-sized.
+
+mhard-float
+Target Report RejectNegative Mask(HARD_FLOAT)
+Use hardware floating point instructions.
+
+msoft-float
+Target Report RejectNegative InverseMask(HARD_FLOAT)
+Use library calls to perform FP operations, default.
+
+mmultiple-stld
+Target Report Mask(MULTIPLE_STLD)
+Generate code with stm instruction.
+
+mstm
+Target Report RejectNegative Alias(mmultiple-stld) Undocumented
+
+mhigh-registers
+Target Report Mask(HIGH_REGISTERS)
+Use R16-R31(default).
+
+manchor
+Target Report Mask(ANCHOR) Undocumented
+Use global anchor symbol address.
+
+msmart
+Target RejectNegative Report Mask(SMART)
+Let CPU work in Smart Mode.
+
+mpushpop
+Target Report Mask(PUSHPOP)
+Generate code with push/pop instruction, -mpushpop is default.
+
+-mhard-tp
+Target RejectNegative Report Mask(HARD_TP)
+Generate TLS code use TLS register.
+
+mstrict-align
+Target Report Mask(STRICT_ALIGNMENT)
+Do not use unaligned memory references.
+
+mfdivdu
+Target Report Mask(FDIVDU)
+Use frecipd/fsqrtd/fdivd insns.
+
+mistack
+Target Report Mask(ATTRIBUTE_ISR)
+Decide whether use interrput attribute.
+
+mconstpool
+Target Report Mask(CONSTANT_POOL)
+Dump the constant pool by compiler.
+
+melrw
+Target Report Mask(ELRW)
+Use the extend LRW instruction(elrw).
+
+mstack-size
+Target Report Mask(STACK_SIZE)
+Output stack size information, default.
+
+mbacktrace
+Target Report RejectNegative Mask(BACKTRACE) Undocumented
+Generate target can be backtraced.
+
+mccrt
+Target RejectNegative Report Var(csky_libccrt)
+Use CSKY compiler runtime instead of libgcc.

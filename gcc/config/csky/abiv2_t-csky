@@ -1,0 +1,11 @@
+
+
+
+TM_H += $(srcdir)/config/csky/abiv2_csky_cores.def
+OPTIONS_H_EXTRA += $(srcdir)/config/csky/abiv2_csky_cores.def
+
+
+$(srcdir)/config/csky/abiv2_csky_tables.opt: $(srcdir)/config/csky/abiv2_csky_genopt.sh \
+  $(srcdir)/config/csky/abiv2_csky_cores.def
+	$(SHELL) $(srcdir)/config/csky/abiv2_csky_genopt.sh $(srcdir)/config/csky > \
+		$(srcdir)/config/csky/abiv2_csky_tables.opt

@@ -1,0 +1,95 @@
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_ARCH(NAME, CORE, ARCH, ISA)
+
+   The NAME is the name of the architecture, represented as a string
+   constant.  The CORE is the identifier for a core representative of
+   this architecture.  ARCH is the architecture revision.  ISA is the
+   detailed architectural capabilities of the core.  */
+
+#ifdef CSKY_ARCH
+CSKY_ARCH("ck801",  ck801,  CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801))
+CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart))
+CSKY_ARCH("ck803",  ck803,  CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
+CSKY_ARCH("ck803s", ck803s, CK803S, CSKY_ISA_FEAT(CSKY_ISA_CK803S))
+CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_DSP))
+CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(CSKY_ISA_DSP))
+#endif
+
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_OPTION(MASK, ISA)
+
+   List all isa options here, and 'ISA' is full feature bits about
+   for this option, and you need to put the least bit of this feature
+   in elements[0] to skip when including the bit by default isa features
+   which are from CSKY_CORE.  */
+
+#ifdef CSKY_OPTION
+CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
+CSKY_OPTION(MASK_DIV, CSKY_ISA_FEAT(isa_bit_div))
+#endif
+
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_CORE(CORE_NAME, INTERNAL_IDENT, TUNE_IDENT, ARCH, ISA, TUNE)
+
+      The isa features of core will inherit the ARCH.
+
+   The CORE_NAME is the name of the core, represented as a string constant.
+   The INTERNAL_IDENT is the name of the core represented as an identifier.
+   This must be unique for each entry in this table.
+   The TUNE_IDENT is the name of the core for which scheduling decisions
+   should be made, represented as an identifier.
+   The ARCH is the architecture revision implemented by the chip.
+   The ISA is the detailed architectural capabilities of the core.
+   The TUNE is tuning data (e.g. insns COSTS) for specific core.  */
+
+#ifdef CSKY_CORE
+/* ck801 Architecture Processors */
+CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+
+/* ck802 Architecture Processors */
+CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_java), CSKY_TUNE_GET(generic))
+
+/* ck803 Architecture Processors */
+CSKY_CORE("ck803",    ck803,    ck803,    CK803,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
+
+/* ck803s Architecture Processors */
+CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
+
+/* ck807 Architecture Processors */
+CSKY_CORE("ck807",    ck807,    ck807,    CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807e",   ck807e,   ck807e,   CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807f",   ck807f,   ck807f,   CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+
+/* ck810 Architecture Processors */
+CSKY_CORE("ck810",    ck810,    ck810,    CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+#endif
+
+
+/* Before using #include to read this file, define a macro:
+
+      CSKY_FPU(NAME, CNAME, ISA)
+
+   NAME is the publicly visible option name.
+   CNAME is a C-compatible variable name substring.
+   ISA is the list of feature bits that this FPU provides.  */
+
+#ifdef CSKY_FPU
+CSKY_FPU("fpv2_sf",   fpv2_sf,   CSKY_ISA_FEAT(CSKY_ISA_FPv2_SF))
+CSKY_FPU("fpv2",      fpv2,      CSKY_ISA_FEAT(CSKY_ISA_FPv2))
+CSKY_FPU("fpv2_divd", fpv2_divd, CSKY_ISA_FEAT(CSKY_ISA_FPv2_DIVD))
+#endif
