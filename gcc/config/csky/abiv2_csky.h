@@ -804,7 +804,7 @@ while (0)
 /* Output a reference to a label.  */
 #undef  ASM_OUTPUT_LABELREF
 #define ASM_OUTPUT_LABELREF(STREAM, NAME)     \
-  fprintf (STREAM, "%s%s", user_label_prefix  \
+  fprintf (STREAM, "%s%s", user_label_prefix, \
     (* targetm.strip_name_encoding) (NAME))
 
 /* Make an internal label into a string.  */
