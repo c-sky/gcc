@@ -130,4 +130,7 @@ extern void csky_set_eh_return_address (rtx, rtx);
 
 extern rtx csky_return_addr (int, rtx);
 
+extern int csky_default_branch_cost (bool speed_p, bool predictable_p);
+extern bool csky_default_logical_op_non_short_circuit(void);
+
 #endif /* ! GCC_ABIV1_CSKY_PROTOS_H */

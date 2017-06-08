@@ -827,6 +827,16 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 /* Calling from registers is a massive pain. */
 #define NO_FUNCTION_CSE 1
 
+/* Try to generate sequences that don't involve branches, we can then use
+   conditional instructions.  */
+#define BRANCH_COST(speed_p, predictable_p) \
+  (global_options_set.x_csky_branch_cost ? csky_branch_cost \
+   : csky_default_branch_cost (speed_p, predictable_p))
+
+/* False if short circuit operation is preferred.  */
+#define LOGICAL_OP_NON_SHORT_CIRCUIT \
+  (csky_default_logical_op_non_short_circuit)
+
 /* The machine modes of pointers and functions.  */
 #define Pmode          SImode
 #define FUNCTION_MODE  Pmode

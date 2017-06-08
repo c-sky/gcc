@@ -24,6 +24,7 @@
 #include "target.h"
 #include "rtl.h"
 #include "tree.h"
+#include "cfghooks.h"
 #include "df.h"
 #include "tm_p.h"
 #include "optabs.h"
@@ -292,6 +293,19 @@ static const struct attribute_spec csky_attribute_table[] = {
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
+
+int
+csky_default_branch_cost (bool speed_p, bool predictable_p)
+{
+  return 1;
+}
+
+bool
+csky_default_logical_op_non_short_circuit(void)
+{
+  return BRANCH_COST (optimize_function_for_speed_p (cfun), false) >= 2;
+}
+
 /* Adjust the stack and return the number of bytes taken to do it.  */
 static int
 output_stack_adjust_for_nested (int direction, int size)
