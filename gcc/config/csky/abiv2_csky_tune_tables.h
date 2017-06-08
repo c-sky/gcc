@@ -16,7 +16,7 @@ const struct tune_params csky_generic_tune =
   &generic_extra_costs,			/* Insn extra costs.  */
   NULL,                     /* Sched adj cost.  */
   csky_default_branch_cost,
-  (BRANCH_COST (optimize_function_for_speed_p (cfun), false) >= 2),
+  csky_default_logical_op_non_short_circuit,
 };
 
 #define CSKY_TUNE_GET(name) &csky_ ## name ## _tune
