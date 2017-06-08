@@ -24,6 +24,10 @@ struct cpu_cost_table
 struct tune_params
 {
   const struct cpu_cost_table *insn_extra_cost;
+  bool (*sched_adjust_cost) (rtx_insn *, int, rtx_insn *, int *);
+
+  int (*branch_cost) (bool, bool);
+  bool logical_op_non_short_circuit: 1;
 };
 
 

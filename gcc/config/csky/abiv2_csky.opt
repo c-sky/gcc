@@ -26,6 +26,10 @@ mdouble-float
 Target Report Mask(DOUBLE_FLOAT)
 Use CSKY FPU double float instructions.
 
+mbranch-cost=
+Target Report Joined RejectNegative UInteger Var(csky_branch_cost) Undocumented
+Set the branch costs for conditional branch instructions.  Reasonable values are small, non-negative integers.
+
 mdsp
 Target RejectNegative Report Mask(DSP)
 Use CSKY DSP instructions.

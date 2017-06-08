@@ -212,6 +212,12 @@ static const struct attribute_spec csky_attribute_table[] =
 #define TARGET_OPTION_OVERRIDE csky_option_override
 
 
+static int
+csky_default_branch_cost (bool speed_p, bool predictable_p ATTRIBUTE_UNUSED)
+{
+  return 1;
+}
+
 #include "abiv2_csky_tune_tables.h"
 
 static struct csky_processors all_cores[] =
