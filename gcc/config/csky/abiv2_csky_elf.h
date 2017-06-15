@@ -30,6 +30,7 @@
   %{manchor:-manchor}           \
   %{melrw:-melrw}               \
   %{mistack:-mistack}           \
+  %{mtrust:-mtrust}             \
   "
 
 #undef  LINK_SPEC

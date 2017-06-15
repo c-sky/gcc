@@ -29,6 +29,7 @@
   %{mdsp:-mdsp}                 \
   %{mmac:-mmac}                 \
   %{manchor:-manchor}           \
+  %{mtrust:-mtrust}             \
   "
 
 #define LINUX_DYNAMIC_LINKER  "/lib/ld.so.1"

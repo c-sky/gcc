@@ -6,33 +6,44 @@ MULTILIB_MATCHES     = mbig-endian=EB
 MULTILIB_EXCEPTIONS  =
 
 # For arch
-MULTILIB_OPTIONS     += mcpu=ck801/mcpu=ck802/mcpu=ck803/mcpu=ck810
-MULTILIB_DIRNAMES    += ck801/ck802 ck803 ck810
-
-# For arch ck801
-MULTILIB_MATCHES     += mcpu?ck801=march?ck801
+MULTILIB_OPTIONS     += mcpu=ck802/mcpu=ck801/mcpu=ck803/mcpu=ck803sf/mcpu=ck807f/mcpu=ck810f
+MULTILIB_DIRNAMES    += ck802 ck801 ck803 ck803s ck807 ck810
 
 # For arch ck802
 MULTILIB_MATCHES     += mcpu?ck802=march?ck802
+MULTILIB_MATCHES     += mcpu?ck802=mcpu?ck802t
 MULTILIB_MATCHES     += mcpu?ck802=mcpu?ck802j
+
+# For arch ck801
+MULTILIB_MATCHES     += mcpu?ck801=march?ck801
+MULTILIB_MATCHES     += mcpu?ck801=mcpu?ck801t
 
 # For arch ck803
 MULTILIB_MATCHES     += mcpu?ck803=march?ck803
 MULTILIB_MATCHES     += mcpu?ck803=mcpu?ck803e
 
 # For arch ck803s
-MULTILIB_MATCHES     += mcpu?ck803=march?ck803s
-MULTILIB_MATCHES     += mcpu?ck803=mcpu?ck803s
+MULTILIB_MATCHES     += mcpu?ck803sf=march?ck803s
+MULTILIB_MATCHES     += mcpu?ck803sf=mcpu?ck803s
+MULTILIB_MATCHES     += mcpu?ck803sf=mcpu?ck803st
+MULTILIB_MATCHES     += mcpu?ck803sf=mcpu?ck803se
+MULTILIB_MATCHES     += mcpu?ck803sf=mcpu?ck803sf
+MULTILIB_MATCHES     += mcpu?ck803sf=mcpu?ck803sef
 
 # For arch ck810
-MULTILIB_MATCHES     += mcpu?ck810=march?ck810
-MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810f
-MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810e
-MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck810ef
+MULTILIB_MATCHES     += mcpu?ck810f=march?ck810
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810t
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810e
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810et
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ef
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810eft
 
 # For arch ck807
-MULTILIB_MATCHES     += mcpu?ck810=march?ck807
-MULTILIB_MATCHES     += mcpu?ck810=mcpu?ck807
+MULTILIB_MATCHES     += mcpu?ck807f=march?ck807
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807e
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807ef
 
 
 # For option -msoft-float/-mhard-float

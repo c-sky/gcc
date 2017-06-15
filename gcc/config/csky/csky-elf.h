@@ -17,24 +17,6 @@
 	"
 
 #undef ASM_SPEC
-#ifdef __CSKYABIV2__
-#define ASM_SPEC 	\
-	"%{mbig-endian:-mbig-endian}	\
-	%{EB:-EB}	\
-	%{EL:-EL}	\
-	%{fpic|fPIC:-pic}	\
-	%{mcpu=*:-mcpu=%*}		\
-	%{march=*:-march=%*}	\
-	%{mhard-float:-mhard-float}	\
-	%{mdsp:-mdsp}	\
-	%{mmac:-mmac}	\
-	%{manchor:-manchor}	\
-	%{melrw:-melrw}	\
-	%{mistack:-mistack}	\
-    %{mbranch-stub:-mbranch-stub} \
-    %{mno-branch-stub:-mno-branch-stub} \
-	"
-#else /* ABIV2 */
 #define ASM_SPEC 	\
 	"%{mbig-endian:-mbig-endian}	\
 	%{EB:-EB}	\
@@ -47,7 +29,6 @@
 	%{mmac:-mmac}	\
 	%{manchor:-manchor}	\
 	"
-#endif
 
 #undef	LINK_SPEC
 #define LINK_SPEC		\

@@ -144,3 +144,7 @@ Generate target can be backtraced.
 mccrt
 Target RejectNegative Report Var(csky_libccrt)
 Use CSKY compiler runtime instead of libgcc.
+
+mtrust
+Target Report Var(flag_csky_trust)
+Use Csky TRUST instructions.

@@ -51,9 +51,11 @@ CSKY_OPTION(MASK_DIV, CSKY_ISA_FEAT(isa_bit_div))
 #ifdef CSKY_CORE
 /* ck801 Architecture Processors */
 CSKY_CORE("ck801",    ck801,    ck801,    CK801,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck801t",   ck801t,   ck801t,   CK801,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 
 /* ck802 Architecture Processors */
 CSKY_CORE("ck802",    ck802,    ck802,    CK802,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck802t",   ck802t,   ck802t,   CK802,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck802j",   ck802j,   ck802j,   CK802,  CSKY_ISA_FEAT(isa_bit_java), CSKY_TUNE_GET(generic))
 
 /* ck803 Architecture Processors */
@@ -62,6 +64,7 @@ CSKY_CORE("ck803e",   ck803e,   ck803e,   CK803,  CSKY_ISA_FEAT(CSKY_ISA_DSP), C
 
 /* ck803s Architecture Processors */
 CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803st",  ck803st,  ck803st,  CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803se",  ck803se,  ck803se,  CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803sf",  ck803sf,  ck803sf,  CK803S,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803sef", ck803sef, ck803sef, CK803S,  CSKY_ISA_FEAT(CSKY_ISA_DSP), CSKY_TUNE_GET(generic))
@@ -74,9 +77,13 @@ CSKY_CORE("ck807ef",  ck807ef,  ck807ef,  CK807,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_
 
 /* ck810 Architecture Processors */
 CSKY_CORE("ck810",    ck810,    ck810,    CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810t",   ck810t,   ck810t,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck810e",   ck810e,   ck810e,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810et",  ck810et,  ck810et,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck810f",   ck810f,   ck810f,   CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810ft",  ck810ft,  ck810ft,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck810ef",  ck810ef,  ck810ef,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck810eft", ck810eft, ck810eft, CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 #endif
 
 
