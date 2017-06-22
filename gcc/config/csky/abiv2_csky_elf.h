@@ -26,6 +26,7 @@
   %{march=*:-march=%*}          \
   %{mhard-float:-mhard-float}   \
   %{mdsp:-mdsp}                 \
+  %{medsp:-medsp}                 \
   %{mmac:-mmac}                 \
   %{manchor:-manchor}           \
   %{melrw:-melrw}               \

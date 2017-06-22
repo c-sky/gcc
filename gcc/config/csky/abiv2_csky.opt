@@ -148,3 +148,7 @@ Use CSKY compiler runtime instead of libgcc.
 mtrust
 Target Report Var(flag_csky_trust)
 Use Csky TRUST instructions.
+
+medsp
+Target Report Var(flag_csky_enhance_dsp)
+Use Csky Enhance DSP instructions.
