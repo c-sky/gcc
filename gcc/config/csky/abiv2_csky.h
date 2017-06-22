@@ -1067,7 +1067,7 @@ extern const int csky_dbx_regno[];
 
 /* False if short circuit operation is preferred.  */
 #define LOGICAL_OP_NON_SHORT_CIRCUIT \
-  (current_tune->logical_op_non_short_circuit)
+  (current_tune->logical_op_non_short_circuit ())
 
 
 /******************************************************************

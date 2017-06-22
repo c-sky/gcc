@@ -835,7 +835,7 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 
 /* False if short circuit operation is preferred.  */
 #define LOGICAL_OP_NON_SHORT_CIRCUIT \
-  (csky_default_logical_op_non_short_circuit)
+  (csky_default_logical_op_non_short_circuit ())
 
 /* The machine modes of pointers and functions.  */
 #define Pmode          SImode

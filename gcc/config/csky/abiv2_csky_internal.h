@@ -27,7 +27,7 @@ struct tune_params
   bool (*sched_adjust_cost) (rtx_insn *, int, rtx_insn *, int *);
 
   int (*branch_cost) (bool, bool);
-  bool logical_op_non_short_circuit: 1;
+  bool (*logical_op_non_short_circuit) (void);
 };
 
 
