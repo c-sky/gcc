@@ -417,6 +417,9 @@ static GTY(()) int tls_labelno;
 #undef  TARGET_RTX_COSTS
 #define TARGET_RTX_COSTS          csky_rtx_costs
 
+#undef  TARGET_ADDRESS_COST
+#define TARGET_ADDRESS_COST       csky_address_cost
+
 
 /******************************************************************
  *                        Anchor address                          *
@@ -6407,6 +6410,27 @@ csky_init_libfuncs(void)
   set_optab_libfunc (le_optab,     DFmode, CSKY_GCC_SYM(ledf2));
   set_optab_libfunc (gt_optab,     SFmode, CSKY_GCC_SYM(gtsf2));
   set_optab_libfunc (gt_optab,     DFmode, CSKY_GCC_SYM(gtdf2));
+}
+
+
+/* Return cost of the memory address x.
+   For csky, it is same cost between (register) and (register + offset).
+   Other situations will cost more.  */
+
+static int
+csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
+                   addr_space_t as ATTRIBUTE_UNUSED, bool speed ATTRIBUTE_UNUSED)
+{
+  enum rtx_code code = GET_CODE (x);
+
+  if (code == REG)
+    return 1;
+  if (code == PLUS
+      && REG_P (XEXP (x, 0))
+      && CONST_INT_P (XEXP (x, 1)))
+    return 1;
+
+  return 2;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
