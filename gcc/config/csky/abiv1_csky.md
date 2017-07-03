@@ -795,14 +795,6 @@
 {
   if (can_create_pseudo_p () && MEM_P (operands[0]))
     operands[1] = force_reg (DImode, operands[1]);
-  else if (CONST_INT_P (operands[1]))
-    {
-      int i;
-      for (i = 0; i < UNITS_PER_WORD * 2; i += UNITS_PER_WORD)
-        emit_move_insn (simplify_gen_subreg (SImode, operands[0], DImode, i),
-            simplify_gen_subreg (SImode, operands[1], DImode, i));
-      DONE;
-    }
 }")
 
 (define_insn "*cskyv1_movdi"

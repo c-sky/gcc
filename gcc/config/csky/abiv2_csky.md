@@ -282,14 +282,6 @@
   {
     if (can_create_pseudo_p () && GET_CODE (operands[0]) == MEM)
       operands[1] = force_reg (DImode, operands[1]);
-    else if (GET_CODE (operands[1]) == CONST_INT)
-      {
-        int i;
-        for (i = 0; i < UNITS_PER_WORD * 2; i += UNITS_PER_WORD)
-            emit_move_insn (simplify_gen_subreg (SImode, operands[0], DImode, i),
-                            simplify_gen_subreg (SImode, operands[1], DImode, i));
-        DONE;
-      }
   }"
 )
 
