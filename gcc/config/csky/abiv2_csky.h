@@ -636,6 +636,9 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    Shifts in addresses can't be by a register.  */
 #define MAX_REGS_PER_ADDRESS 2
 
+/* Nonzero if target donot support negative index in operand
+   addresses.  */
+#define TARGET_UNSUPPORT_NEGATIVE_INDEX 1
 
 /******************************************************************
  *                        Run-time Target                         *
