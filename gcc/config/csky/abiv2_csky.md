@@ -1434,20 +1434,6 @@
  "andn\t%0, %2, %1"
 )
 
-
-(define_insn_and_split "csky_zero_extendsidi2"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-        (zero_extend:DI (match_operand:SI 1 "register_operand" "r")))]
-  ""
-  "#"
-  "reload_completed"
-  [(set (match_dup 2) (match_dup 1))
-   (set (match_dup 3) (const_int 0))]
-  {
-    operands[2] = gen_lowpart (SImode, operands[0]);
-    operands[3] = gen_highpart (SImode, operands[0]);
-  })
-
 (define_expand "anddi3"
   [(set (match_operand:DI 0 "register_operand" "")
         (and:DI (match_operand:DI 1 "register_operand" "")
@@ -1460,7 +1446,8 @@
         HOST_WIDE_INT ival = INTVAL (operands[2]);
         if (ival == (HOST_WIDE_INT) 0xffffffff)
           {
-            emit_insn (gen_csky_zero_extendsidi2 (operands[0], gen_lowpart (SImode, operands[1])));
+            emit_move_insn (gen_lowpart (SImode, operands[0]), gen_lowpart (SImode, operands[1]));
+            emit_move_insn (gen_highpart(SImode, operands[0]), const0_rtx);
             DONE;
           }
         else
