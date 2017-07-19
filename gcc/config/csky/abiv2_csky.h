@@ -5,9 +5,8 @@
 
 #define CSKY_SP_REGNUM                14
 
-
-#ifndef TARGET_ARCH_DEFAULT
-#define TARGET_ARCH_DEFAULT CSKY_TARGET_ARCH_GET(CK810)
+#ifndef TARGET_CPU_DEFAULT
+#define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810)
 #endif
 
 #define TARGET_DEFAULT      \
@@ -865,6 +864,14 @@ while (0)
 #undef MULTILIB_DEFAULTS
 #define MULTILIB_DEFAULTS    \
     {"mlittle-endian", "mcpu=ck810f", " msoft-float"}
+
+/* Support for a compile-time default CPU, et cetera.  The rules are:
+   --with-arch is ignored if -march or -mcpu are specified.
+   --with-cpu is ignored if -march or -mcpu are specified, and is overridden
+    by --with-arch. */
+#define OPTION_DEFAULT_SPECS \
+  {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
+  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" },
 
 
 /******************************************************************

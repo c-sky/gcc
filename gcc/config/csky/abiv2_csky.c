@@ -2121,9 +2121,10 @@ csky_configure_build_target (struct csky_build_target *target,
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
-      csky_selected_arch = &all_architectures[TARGET_ARCH_DEFAULT];
-      csky_selected_cpu = csky_selected_arch;
-      target->arch_name = csky_selected_arch->name;
+      csky_selected_cpu = &all_cores[TARGET_CPU_DEFAULT];
+      csky_selected_arch = &all_architectures[csky_selected_cpu->base_arch];
+      csky_initialize_isa (all_sbits, csky_selected_arch->isa_bits);
+      target->core_name = csky_selected_cpu->name;
     }
 
   /* The selected cpu may be an architecture, so lookup tuning by core ID.  */

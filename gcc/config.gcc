@@ -2054,6 +2054,10 @@ csky-*-*)
       tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
       extra_options="${extra_options} csky/${with_cskyabi}_csky.opt csky/${with_cskyabi}_csky_tables.opt"
 
+      if test "x$with_cpu" != x ; then
+        target_cpu_default="TARGET_CPU_$with_cpu"
+      fi
+
       case ${target} in
           csky-*-elf*)
               tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/${with_cskyabi}_csky_elf.h"
@@ -3827,6 +3831,10 @@ case "${target}" in
 			;;
 		esac
 		;;
+
+    csky-*-*)
+        supported_defaults="cpu"
+        ;;
 
 	arm*-*-*)
 		supported_defaults="arch cpu float tune fpu abi mode tls"
