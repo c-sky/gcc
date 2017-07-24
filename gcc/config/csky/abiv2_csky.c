@@ -6111,6 +6111,64 @@ ck802_ck801_rtx_costs (rtx x, int code, int outer_code, int *total,
 }
 
 
+static bool
+ck803s_rtx_costs (rtx x, int code, int outer_code, int *total,
+                       bool speed ATTRIBUTE_UNUSED)
+{
+  switch (code)
+    {
+    case SET:
+      if (MEM_P (XEXP (x, 1)))
+        {
+          struct csky_address op1;
+          bool address_valid;
+
+          address_valid = decompose_csky_address
+                            (XEXP (XEXP (x, 1), 0), &op1);
+          if (op1.index)
+            {
+              *total = COSTS_N_INSNS (3);
+              return true;
+            }
+          else if (address_valid)
+            {
+              *total = COSTS_N_INSNS (1);
+              return true;
+            }
+        }
+      if (REG_P (XEXP (x, 0)) && (GET_CODE (XEXP (x, 1)) == PLUS))
+       {
+         rtx sub_exp = XEXP (x, 1);
+         if (REG_P (XEXP (sub_exp, 0)) && REG_P (XEXP (sub_exp, 1)))
+         {
+           *total = COSTS_N_INSNS (1);
+           return true;
+         }
+       }
+      return false;
+    case MULT:
+      if (REG_P (XEXP (x, 0)) && CONST_INT_P (XEXP (x, 1)))
+        {
+          if (INTVAL (XEXP (x, 1)) % 2 == 0
+              && INTVAL (XEXP (x, 1)) < 0xffffffff
+              && INTVAL (XEXP (x, 1)) > 0)
+            {
+              *total = 4;
+              return true;
+            }
+        }
+      return false;
+
+    case CONST:
+    case LABEL_REF:
+    case SYMBOL_REF:
+      *total = COSTS_N_INSNS (3);
+      return true;
+    default:
+      return false;
+    }
+}
+
 /* Compute a (partial) cost for rtx X.  Return true if the complete
    cost has been computed, and false if subexpressions should be
    scanned.  In either case, *TOTAL contains the cost result.  */
@@ -6123,6 +6181,11 @@ csky_rtx_costs_internal (rtx x, enum rtx_code code, enum rtx_code outer_code,
   if (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801))
     {
       return ck802_ck801_rtx_costs (x, code, outer_code, total, speed);
+    }
+
+  if (CSKY_TARGET_ARCH(CK803S))
+    {
+      return ck803s_rtx_costs (x, code, outer_code, total, speed);
     }
 
   switch (code)
@@ -6425,13 +6488,13 @@ csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
   enum rtx_code code = GET_CODE (x);
 
   if (code == REG)
-    return 1;
+    return COSTS_N_INSNS (1);
   if (code == PLUS
       && REG_P (XEXP (x, 0))
       && CONST_INT_P (XEXP (x, 1)))
-    return 1;
+    return COSTS_N_INSNS (1);
 
-  return 2;
+  return COSTS_N_INSNS (3);
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
