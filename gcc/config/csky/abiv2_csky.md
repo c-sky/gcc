@@ -1262,6 +1262,15 @@
   "sexth  %0, %1"
 )
 
+(define_insn "*cskyv2_sextend_ldhs"
+  [(set (match_operand:SI                 0 "register_operand" "=r")
+        (sign_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "m")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "ld.hs\t%0, %1"
+  [(set_attr "length" "4")
+   (set_attr "type" "load")]
+)
+
 ;; qi -> si
 (define_insn "extendqisi2"
   [(set (match_operand:SI                 0 "register_operand" "=r")
