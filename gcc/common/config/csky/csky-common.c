@@ -30,6 +30,7 @@ static const struct default_options csky_option_optimization_table[] =
     /* Enable section anchors by default at -O1 or higher.  */
     { OPT_LEVELS_1_PLUS, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_1_PLUS, OPT_fomit_frame_pointer, NULL, 1 },
+    { OPT_LEVELS_2_PLUS, OPT_fcse_cc, NULL, 1 },
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 

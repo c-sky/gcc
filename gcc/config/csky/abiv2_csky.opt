@@ -152,3 +152,7 @@ Use Csky TRUST instructions.
 medsp
 Target Report Var(flag_csky_enhance_dsp)
 Use Csky Enhance DSP instructions.
+
+fcse-cc
+Common Report Var(flag_cse_cc) Optimization
+Allow common condition code set expression elimination.

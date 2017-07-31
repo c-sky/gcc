@@ -40,6 +40,9 @@
 #include "builtins.h"
 #include "tm-constrs.h"
 #include "rtl-iter.h"
+#include "pass_manager.h"
+#include "tree-pass.h"
+#include "context.h"
 
 #include "abiv2_csky_internal.h"
 
@@ -433,6 +436,15 @@ static GTY(()) int tls_labelno;
 #define TARGET_MAX_ANCHOR_OFFSET  (((CSKY_ISA_FEATURE(smart)        \
                                      || CSKY_TARGET_ARCH(CK801))    \
                                     && optimize_size) ? 127 : 4095)
+
+
+/******************************************************************
+ *                     Condition Code Status                      *
+ ******************************************************************/
+
+
+#undef  TARGET_FIXED_CONDITION_CODE_REGS
+#define TARGET_FIXED_CONDITION_CODE_REGS csky_fixed_condition_code_regs
 
 
 /******************************************************************
@@ -2060,6 +2072,190 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
 }
 
 
+static unsigned int
+rest_of_handle_cse_cc (void)
+{
+  unsigned int cc_regno_1;
+  unsigned int cc_regno_2;
+  rtx cc_reg_1;
+  rtx cc_reg_2 ATTRIBUTE_UNUSED;
+  basic_block bb;
+
+  if (! targetm.fixed_condition_code_regs (&cc_regno_1, &cc_regno_2))
+    return 0;
+
+  cc_reg_1 = gen_rtx_REG (CCmode, cc_regno_1);
+  if (cc_regno_2 != INVALID_REGNUM)
+    cc_reg_2 = gen_rtx_REG (CCmode, cc_regno_2);
+  else
+    cc_reg_2 = NULL_RTX;
+
+  FOR_EACH_BB_FN (bb, cfun)
+    {
+      rtx_insn *last_insn;
+      rtx_insn *insn;
+      rtx cc_reg;
+
+      if (dump_file)
+        {
+          fprintf (dump_file, "---Scan basic block %d ---\n",
+                   bb->index);
+        }
+      last_insn = BB_END (bb);
+      cc_reg = cc_reg_1;
+
+      rtx_insn *cc_src_insn = NULL;
+      for (insn = PREV_INSN (last_insn);
+           insn && insn != PREV_INSN (BB_HEAD (bb));
+           insn = PREV_INSN (insn))
+        {
+          rtx cc_src;
+          rtx set;
+          rtx_insn *prev_insn = NULL;
+
+          if (dump_file)
+            {
+              fprintf (dump_file, "Scan insn %d\n",
+                       INSN_UID (insn));
+            }
+          if (! INSN_P (insn))
+            continue;
+          set = single_set (insn);
+          if (set
+              && REG_P (SET_DEST (set))
+              && REGNO (SET_DEST (set)) == REGNO (cc_reg))
+            {
+              cc_src_insn = insn;
+              cc_src = SET_SRC (set);
+              if (dump_file)
+                {
+                  fprintf (dump_file,
+                           "Pick insn %d as the second write CC insn.\n",
+                           INSN_UID (insn));
+                }
+            }
+
+          if (! cc_src_insn)
+            continue;
+
+            for (prev_insn = PREV_INSN (cc_src_insn);
+                 prev_insn && prev_insn != PREV_INSN (BB_HEAD (bb));
+                 prev_insn = PREV_INSN (prev_insn))
+              {
+                rtx prev_cc_src = NULL_RTX;
+
+                if (dump_file)
+                  {
+                    fprintf (dump_file,
+                             "\tScan for first CC writing insn, insn %d\n",
+                             INSN_UID (prev_insn));
+                  }
+                if (! INSN_P (prev_insn))
+                  continue;
+                set = single_set (prev_insn);
+                if (set
+                    && REG_P (SET_DEST (set))
+                    && REGNO (SET_DEST (set)) == REGNO (cc_reg))
+                  {
+                    prev_cc_src = SET_SRC (set);
+                    if (dump_file)
+                      {
+                        fprintf
+                          (dump_file,
+                           "\tPick insn %d as the first write CC insn.\n",
+                           INSN_UID (prev_insn));
+                      }
+                  }
+                if (prev_cc_src != NULL_RTX)
+                  {
+                    if (dump_file)
+                      {
+                        fprintf (dump_file,
+                                 "\tCompare the source part between "\
+                                 "insn %d and %d\n",
+                                 INSN_UID (cc_src_insn),
+                                 INSN_UID (prev_insn));
+                      }
+                    if (rtx_equal_p(cc_src, prev_cc_src))
+                      {
+                        delete_insn_and_edges (cc_src_insn);
+                        if (dump_file)
+                          {
+                            fprintf (dump_file,
+                                     "\tSame source, delete insn %d\n",
+                                     INSN_UID (cc_src_insn));
+                          }
+                      }
+                    cc_src_insn = prev_insn;
+                    set = single_set (prev_insn);
+                    cc_src = SET_SRC (set);
+                    if (dump_file)
+                      {
+                        fprintf (dump_file,
+                                 "\tDifferet source, regard insn %d "\
+                                 "as the first write CC insn.\n",
+                                 INSN_UID (cc_src_insn));
+                      }
+                    continue;
+                  }
+                else if (reg_set_p (cc_reg, prev_insn))
+                  {
+                    insn = prev_insn;
+                    cc_src_insn = NULL;
+                    break;
+                  }
+              }
+            if (prev_insn == PREV_INSN (BB_HEAD (bb)))
+              break;
+        }
+    }
+    if (dump_file)
+      {
+        fprintf (dump_file, "-------------------------\n");
+        fprintf (dump_file, "Scan complete!\n");
+      }
+  return 0;
+}
+
+namespace {
+
+const pass_data pass_data_cse_cc =
+{
+    RTL_PASS, /* type */
+    "cse_cc", /* name */
+    OPTGROUP_NONE, /* optinfo_flags */
+    TV_NONE, /* tv_id */
+    0, /* properties_required */
+    0, /* properties_provided */
+    0, /* properties_destroyed */
+    0, /* todo_flags_start */
+    TODO_df_finish, /* todo_flags_finish */
+};
+
+class pass_cse_cc : public rtl_opt_pass
+{
+  public:
+      pass_cse_cc (gcc::context *ctxt)
+            : rtl_opt_pass (pass_data_cse_cc, ctxt)
+                {}
+
+        /* opt_pass methods: */
+     virtual bool gate (function *)
+              { return flag_cse_cc; }
+
+      virtual unsigned int execute (function *)
+      {  return rest_of_handle_cse_cc ();}
+}; // class pass_cse_cc
+
+}
+
+
+rtl_opt_pass *
+make_pass_cse_cc (gcc::context *ctxt)
+{
+  return new pass_cse_cc (ctxt);
+}
+
 /* Convert a static initializer array of feature bits to sbitmap
    representation.  */
 static void
@@ -2285,6 +2481,13 @@ csky_option_override (void)
     dwarf_version = 3;
 
   csky_add_gc_roots ();
+
+  /* Register machine-specific passes. */
+  opt_pass *pass_cse_cc = make_pass_cse_cc (g);
+  struct register_pass_info cse_cc_info
+        = { pass_cse_cc, "cse1",
+            1, PASS_POS_INSERT_AFTER};
+  register_pass (&cse_cc_info);
 }
 
 
@@ -6496,6 +6699,18 @@ csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
 
   return COSTS_N_INSNS (3);
 }
+
+
+/* Return the fixed registers used for condition codes.  */
+
+static bool
+csky_fixed_condition_code_regs (unsigned int *p1, unsigned int *p2)
+{
+  *p1 = CSKY_CC_REGNUM;
+  *p2 = INVALID_REGNUM;
+  return true;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
