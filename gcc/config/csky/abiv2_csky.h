@@ -6,7 +6,7 @@
 #define CSKY_SP_REGNUM                14
 
 #ifndef TARGET_CPU_DEFAULT
-#define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810)
+#define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810f)
 #endif
 
 #define TARGET_DEFAULT      \
