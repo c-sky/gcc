@@ -3442,11 +3442,44 @@
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
 
+;; ------------------------------------------------------------------------
+;; index insns
+;; ------------------------------------------------------------------------
+
+(define_insn "*cskyv2_indexsi_t"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+                          (const_int 4))
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E)"
+  "ixw\t%0, %2, %1"
+)
+
+(define_insn "*cskyv2_indexhi_t"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+                          (const_int 2))
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E)"
+  "ixh\t%0, %2, %1"
+)
+
+;; ------------------------------------------------------------------------
+;; swap insns
+;; ------------------------------------------------------------------------
+
+(define_insn "bswapsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E)"
+  "revb\t%0, %1"
+)
+
 ;;TODO emit decgt.
 ;;TODO emit declt.
 ;;TODO emit decne.
 ;;TODO emit dect.
 ;;TODO emit asrc.
 ;;TODO emit brev.
-;;TODO emit ix.[hwd].
+;;TODO emit ixd.
 ;;TODO emit revb.
