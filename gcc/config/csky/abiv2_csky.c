@@ -4885,9 +4885,6 @@ emit_csky_regs_pop (unsigned long mask)
   /* The reg range for push is:r4-r11,r15-r17,r28.  */
   gcc_assert (num_regs && num_regs <= 12);
 
-           (set (mem:BLK (pre_modify:SI (reg:SI sp)
-                                        (const_int:SI <num>)))
-                (unspec:BLK [(reg:SI r4)] UNSPEC_PUSHPOP_MULT))
   /* The first element is (return),
      the second element is
        (set (reg:SI 'first reg number')

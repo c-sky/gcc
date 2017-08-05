@@ -3451,7 +3451,7 @@
         (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
                           (const_int 4))
                  (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E)"
+  "CSKY_ISA_FEATURE(E2)"
   "ixw\t%0, %2, %1"
 )
 
@@ -3460,7 +3460,7 @@
         (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
                           (const_int 2))
                  (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E)"
+  "CSKY_ISA_FEATURE(E2)"
   "ixh\t%0, %2, %1"
 )
 
@@ -3471,7 +3471,7 @@
 (define_insn "bswapsi2"
   [(set (match_operand:SI 0 "register_operand" "=r")
         (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E)"
+  "CSKY_ISA_FEATURE(E2)"
   "revb\t%0, %1"
 )
 
