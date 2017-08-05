@@ -9,6 +9,7 @@ CSKY_ISA(E1,    "Extended insns for arch ck801  from base")
 CSKY_ISA(E2,    "Extended insns for arch ck802  from base")
 CSKY_ISA(2E3,   "Extended insns for arch ck803  from ck802")
 CSKY_ISA(3E3s,  "Extended insns for arch ck803s from ck803")
+CSKY_ISA(3sE3sn,"Extended insns for arch new ck803s from ck803")
 CSKY_ISA(3sE7,  "Extended insns for arch ck807  from ck803s")
 CSKY_ISA(7E10,  "Extended insns for arch ck810  from ck807")
 
@@ -36,6 +37,7 @@ CSKY_ISA(casesi,   "Switch case optimize")
 #define CSKY_ISA_CK803      CSKY_ISA_CK802, CSKY_ISA_FEATURE_GET(2E3), \
                             CSKY_ISA_FEATURE_GET(div)
 #define CSKY_ISA_CK803S     CSKY_ISA_CK803, CSKY_ISA_FEATURE_GET(3E3s)
+#define CSKY_ISA_CK803SN    CSKY_ISA_CK803S, CSKY_ISA_FEATURE_GET(3sE3sn)
 #define CSKY_ISA_CK807      CSKY_ISA_CK803S, CSKY_ISA_FEATURE_GET(3sE7)
 #define CSKY_ISA_CK810      CSKY_ISA_CK807, CSKY_ISA_FEATURE_GET(7E10)
 

@@ -3398,3 +3398,23 @@
   "CSKY_ISA_FEATURE(dsp)"
   "mulus\t%1, %2"
 )
+
+(define_insn "*mulall_s16_0"
+  [(set (match_operand:SI 0 "register_operand"                   "=r")
+        (plus:SI (match_operand:SI 3 "register_operand"          " r")
+                 (mult:SI (match_operand:SI 1 "register_operand" " r")
+                          (match_operand:SI 2 "register_operand" " r"))))]
+  "CSKY_ISA_FEATURE(3sE3sn)"
+  "mulall.s16\t%0, %1, %2, %3"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "*mulall_s16_1"
+  [(set (match_operand:SI 0 "register_operand"                   "=r")
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
+                          (match_operand:SI 2 "register_operand" " r"))
+                 (match_operand:SI 3 "register_operand"          " 0")))]
+  "CSKY_ISA_FEATURE(3sE3sn)"
+  "mulall.s16\t%0, %1, %2, %3"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
