@@ -4885,7 +4885,19 @@ emit_csky_regs_pop (unsigned long mask)
   /* The reg range for push is:r4-r11,r15-r17,r28.  */
   gcc_assert (num_regs && num_regs <= 12);
 
-  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs));
+           (set (mem:BLK (pre_modify:SI (reg:SI sp)
+                                        (const_int:SI <num>)))
+                (unspec:BLK [(reg:SI r4)] UNSPEC_PUSHPOP_MULT))
+  /* The first element is (return),
+     the second element is
+       (set (reg:SI 'first reg number')
+            (unspec:SI [(mem)] UNSPEC_PUSHPOP_MULT),
+     the rest elements is (use (reg:SI 'rest reg number')),
+     so the length should be number of register to be poped
+     plus one.  */
+  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs + 1));
+
+  XVECEXP (par, 0, 0) = ret_rtx;
 
   for (i = 0; i < CSKY_NGPR_REGS; i++)
     {
@@ -4899,7 +4911,7 @@ emit_csky_regs_pop (unsigned long mask)
                                   plus_constant (Pmode, stack_pointer_rtx,
                                                  4 * num_regs)));
 
-          XVECEXP (par, 0, 0)
+          XVECEXP (par, 0, 1)
             = gen_rtx_SET (reg,
                            gen_rtx_UNSPEC (SImode,
                                            gen_rtvec (1, tmp),
@@ -4909,7 +4921,7 @@ emit_csky_regs_pop (unsigned long mask)
         }
     }
 
-  for (j = 1, i++; j < num_regs; i++)
+  for (j = 2, i++; j < (num_regs + 1); i++)
     {
       if (mask & (1 << i))
         {
@@ -4921,7 +4933,7 @@ emit_csky_regs_pop (unsigned long mask)
         }
     }
 
-  par = emit_insn (par);
+  par = emit_jump_insn (par);
 }
 
 
@@ -5049,9 +5061,16 @@ void csky_expand_epilogue(void)
   int sreg, ereg;
   int offset = 0;
   unsigned long func_type = get_csky_current_func_type();
+  bool return_with_pc = false;
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
-    return;
+    {
+      emit_jump_insn (gen_rtx_UNSPEC_VOLATILE
+                        (VOIDmode,
+                         gen_rtvec (1, ret_rtx),
+                         FLAG_EPILOGUE));
+      return;
+    }
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
@@ -5079,6 +5098,7 @@ void csky_expand_epilogue(void)
            && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     {
       emit_csky_regs_pop (fi.reg_mask);
+      return_with_pc = true;
     }
   /* TODO: stm */
   else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
@@ -5121,6 +5141,11 @@ void csky_expand_epilogue(void)
                            EH_RETURN_STACKADJ_RTX));
     }
   #endif
+   if (!return_with_pc)
+      emit_jump_insn (gen_rtx_UNSPEC_VOLATILE
+                        (VOIDmode,
+                         gen_rtvec (1, ret_rtx),
+                         FLAG_EPILOGUE));
 }
 
 
@@ -5291,7 +5316,7 @@ const char *csky_unexpanded_epilogue(void)
   unsigned long func_type = get_csky_current_func_type();
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
-    return "";
+    return output_csky_return_instruction ();
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
@@ -5350,7 +5375,7 @@ const char *csky_unexpanded_epilogue(void)
                    reg_names[CSKY_EH_STACKADJ_REGNUM]);
     }
 
-  return "";
+  return output_csky_return_instruction ();
 }
 
 
@@ -6497,6 +6522,10 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
   if (REG_NOTE_KIND (link) == REG_DEP_ANTI
       || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
     return 0;
+  /* If the bypass delay is not specified, the default
+     value is 1 cycle.  */
+  else if (!bypass_p (insn))
+    return 1;
 }
 
 static bool

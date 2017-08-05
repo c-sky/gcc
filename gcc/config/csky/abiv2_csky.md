@@ -69,7 +69,7 @@
 (define_attr "far_jump" "yes,no" (const_string "no"))
 
 ; Used for insn schedule
-(define_attr "type" "alu,load,store,cmp,branch"
+(define_attr "type" "alu,load,store,cmp,branch,cbranch,addsub,alu_ix"
     (const_string "alu"))
 
 
@@ -81,7 +81,8 @@
 (include "abiv2_csky_insn_fpu.md")
 ;;FIXME there is a problem when add instruction schedule.
 ;;(include "abiv2_csky_sched_ck802.md")
-;;(include "abiv2_csky_sched_ck810.md")
+(include "abiv2_csky_sched_ck810.md")
+(include "abiv2_csky_sched_ck803s.md")
 
 ;; ------------------------------------------------------------------------
 ;; Mov insns
@@ -144,7 +145,7 @@
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, SImode);"
   [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")
-   (set_attr "type" "alu,alu,alu,alu,alu,store,alu,alu,store,alu,alu,alu,alu,alu")]
+   (set_attr "type" "alu,alu,alu,alu,alu,load,alu,alu,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movsi"
@@ -220,7 +221,7 @@
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, HImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4")
-   (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu")]
+   (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movhi"
@@ -261,7 +262,7 @@
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")
-   (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu,alu")]
+   (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movqi"
@@ -369,7 +370,7 @@
  "CSKY_ISA_FEATURE(E2)"
  "* return output_csky_movedouble (operands, DImode);"
  [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")
-  (set_attr "type" "alu,alu,alu,store,store,alu,alu,alu,alu,alu")]
+  (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movdi"
@@ -484,6 +485,7 @@
         (abs:SI (match_operand:SI 1 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(2E3)"
   "abs\t%0, %1"
+  [(set_attr "type" "alu")]
 )
 
 (define_insn "extv"
@@ -557,6 +559,7 @@
   "@
   asr  %0, %1, %2
   asri %0, %1, %2"
+  [(set_attr "type" "alu,alu")]
 )
 
 (define_insn "*ck801_ashrsi3"
@@ -639,6 +642,7 @@
   ""
 )
 
+;;remove mov insn from here.
 (define_insn "*smart_addsi3"
  [(set (match_operand:SI          0 "register_operand"  "=a,r,a,a,a,a, a, r,r")
        (plus:SI (match_operand:SI 1 "register_operand"  "%a,0,0,a,0,a, a, r,r")
@@ -655,7 +659,8 @@
      mov\t%0, %1
      addi\t%0, %1, %2
      subi\t%0, %1, %M2"
-  [(set_attr "length" "2,2,2,2,2,2,2,4,4")]
+  [(set_attr "length" "2,2,2,2,2,2,2,4,4")
+   (set_attr "type" "addsub")]
 )
 
 (define_insn "*smart_addsi3_sp"
@@ -672,6 +677,7 @@
      addu\t%0, %1, %2
      addu\t%0, %1, %2
      addi\t%0, %1, %2"
+  [(set_attr "type" "addsub")]
 )
 
 (define_insn "*ck801_addsi3"
@@ -701,6 +707,7 @@
     addi\t%0, %1, %2
     subi\t%0, %1, %M2
     addu\t%0, %1, %2"
+  [(set_attr "type" "addsub")]
 )
 
 (define_expand "adddi3"
@@ -718,6 +725,7 @@
 )
 
 ;; TODO calculate the length more precisely
+;; TODO split the insn in rtx.
 (define_insn "*cskyv2_adddi3"
   [(set (match_operand:DI          0 "register_operand" "=&r,&r")
         (plus:DI (match_operand:DI 1 "register_operand" "%0, r")
@@ -749,6 +757,7 @@
 )
 
 ;; special case for "longlong += 1"
+;;TODO split insn in rtx.
 (define_insn "*cskyv2_adddi1_1"
   [(set (match_operand:DI          0 "register_operand" "=&r")
         (plus:DI (match_operand:DI 1 "register_operand" "0")
@@ -775,6 +784,7 @@
   ""
 )
 
+;;remove mov insn here.
 (define_insn "*smart_subsi3"
   [(set (match_operand:SI           0 "register_operand"    "=a,a,a,a,a,a ,a")
         (minus:SI (match_operand:SI 1 "register_operand"    "a, 0,0,a,0,a ,a")
@@ -789,7 +799,8 @@
     addi\t%0, %1, %M2
     addi\t%0, %1, %M2
     mov\t%0, %1"
-  [(set_attr "length" "2,2,2,2,2,2,2")]
+  [(set_attr "length" "2,2,2,2,2,2,2")
+   (set_attr "type" "addsub")]
 )
 
 (define_insn "*smart_subsi3_sp"
@@ -805,7 +816,8 @@
     addi\t%0, %1, %M2
     subu\t%0, %1, %2
     subi\t%0, %1, %2"
-  [(set_attr "length" "2,2,2,2,2,4")]
+  [(set_attr "length" "2,2,2,2,2,4")
+   (set_attr "type" "addsub")]
 )
 
 (define_insn "*ck801_subsi3"
@@ -847,6 +859,7 @@
      subu\t%0, %1, %2
      subi\t%0, %1, %2
      addi\t%0, %1, %M2"
+  [(set_attr "type" "addsub")]
 )
 
 (define_expand "subdi3"
@@ -859,6 +872,7 @@
 )
 
 ;; TODO calculate the length more precisely
+;;TODO split insn in rtx.
 (define_insn "*cskyv2_subdi3"
   [(set (match_operand:DI           0 "register_operand" "=&r,&r,&r")
         (minus:DI (match_operand:DI 1 "register_operand" "0,  r,r")
@@ -888,6 +902,7 @@
 )
 
 ;; special case for "longlong -= 1"
+;;TODO split insn in rtx.
 (define_insn "*cskyv2_adddi1_1"
   [(set (match_operand:DI          0 "register_operand" "=&r")
         (plus:DI (match_operand:DI 1 "register_operand" "0")
@@ -967,6 +982,7 @@
   }"
 )
 
+;; TODO split the insn in rtx.
 (define_insn "cskyv2_addcc"
   [(set (match_operand:SI                           0 "register_operand"          "=r,r")
         (if_then_else:SI (ne (reg:CC 33) (const_int 0))
@@ -994,8 +1010,8 @@
   [(set (attr "length")
         (if_then_else (eq (match_dup 0) (match_dup 1))
                       (const_int 4)
-                      (const_int 8))
-  )]
+                      (const_int 8)))
+   (set_attr "type" "addsub")]
 )
 
 (define_insn "cskyv2_addcc_invert"
@@ -1025,8 +1041,8 @@
   [(set (attr "length")
         (if_then_else (eq (match_dup 0) (match_dup 1))
                       (const_int 4)
-                      (const_int 8))
-  )]
+                      (const_int 8)))
+   (set_attr "type" "addsub")]
 )
 
 /* FIXME this insn is now only used in 801 store, can it use
@@ -1358,6 +1374,7 @@
 )
 
 ;;FIXME describe the length more precisely here.
+;;TODO split insn in rtx.
 (define_insn "*cskyv2_andsi3"
   [(set (match_operand:SI         0 "register_operand"           "=r,r,r")
         (and:SI (match_operand:SI 1 "register_operand"           "%r,r,r")
@@ -1376,7 +1393,8 @@
       default: gcc_unreachable();
       }
   }"
-  [(set_attr "length" "4,4,8")]
+  [(set_attr "length" "4,4,8")
+   (set_attr "type" "alu,alu,alu")]
 )
 
 (define_insn "*ck801_andsi3"
@@ -1407,6 +1425,7 @@
   "@
     andn\t%0, %2, %1
     andni\t%0, %2, %1"
+  [(set_attr "type" "alu,alu")]
 )
 
 (define_insn "ck801_andnsi3"
@@ -1443,6 +1462,7 @@
   }"
 )
 
+;;TODO split insn in rtx.
 (define_insn "*cskyv2_anddi3"
   [(set (match_operand:DI         0 "register_operand" "=&b,&r")
         (and:DI (match_operand:DI 1 "register_operand" "%0,r")
@@ -1505,7 +1525,8 @@
        default: gcc_unreachable ();
        }
   }"
-  [(set_attr "length" "4,2,4,4,8,2,4")]
+  [(set_attr "length" "4,2,4,4,8,2,4")
+   (set_attr "type" "alu,alu,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_iorsi3"
@@ -2448,7 +2469,7 @@
                            (pc)))]
   "CSKY_ISA_FEATURE(E2)"
   "jbt\t%l0"
-  [(set_attr "type" "branch")]
+  [(set_attr "type" "cbranch")]
 )
 
 (define_insn "csky_jbf"
@@ -2457,7 +2478,7 @@
                            (pc)))]
   "CSKY_ISA_FEATURE(E2)"
   "jbf\t%l0"
-  [(set_attr "type" "branch")]
+  [(set_attr "type" "cbranch")]
 )
 
 ;;FIXME the length of bsr is not really 7, it's used to distinguish
@@ -2477,7 +2498,7 @@
       return \"jbt\\t%l0\";
    }
   "
-  [(set_attr "type" "branch")
+  [(set_attr "type" "cbranch")
    (set (attr "far_jump")
         (if_then_else
         (eq_attr "length" "7")
@@ -2510,7 +2531,7 @@
       return \"jbf\\t%l0\";
   }
   "
-  [(set_attr "type" "branch")
+  [(set_attr "type" "cbranch")
    (set (attr "far_jump")
         (if_then_else
         (eq_attr "length" "7")
@@ -2539,6 +2560,7 @@
              (pc)))]
   "CSKY_ISA_FEATURE(2E3)"
   "<inst>\t%0, %l1"
+  [(set_attr "type" "cbranch")]
 )
 
 ;; ------------------------------------------------------------------------
@@ -2855,7 +2877,7 @@
 )
 
 (define_expand "epilogue"
-  [(simple_return)]
+  [(clobber (const_int 0))]
   ""
   "{
     /* Prevent optimaze */
@@ -2863,9 +2885,7 @@
       emit_insn (gen_force_register_use (gen_rtx_REG (Pmode, 2)));
 
     csky_expand_epilogue();
-    emit_jump_insn (gen_rtx_UNSPEC_VOLATILE (VOIDmode,
-                                             gen_rtvec (1, ret_rtx),
-                                             FLAG_EPILOGUE));
+    DONE;
   }"
 )
 
@@ -2884,7 +2904,7 @@
 ;; To avoid the usage of GNU extension, the length attribute is computed
 ;; in a C function arm_attr_length_push_multi.
 (define_insn "*push_multi"
-  [(match_parallel 2 "registers_pushpop"
+  [(match_parallel 2 "registers_push"
     [(set (match_operand:BLK 0 "push_memory_operand" "")
           (unspec:BLK [(match_operand:SI 1 "register_operand" "")]
             UNSPEC_PUSHPOP_MULT))])]
@@ -2916,8 +2936,9 @@
 ;; Pop (as used in epilogue RTL)
 ;;
 (define_insn "*pop_multi"
-  [(match_parallel 2 "registers_pushpop"
-    [(set (match_operand:SI 1 "register_operand" "")
+  [(match_parallel 2 "registers_pop"
+    [(return)
+     (set (match_operand:SI 1 "register_operand" "")
           (unspec:SI [(match_operand:SI 0 "pop_memory_operand" "")]
             UNSPEC_PUSHPOP_MULT))])]
   ""
@@ -2930,7 +2951,7 @@
 
     strcpy (pattern, \"pop\\t%1\");
 
-    for (i = 1; i < num_saves; i++)
+    for (i = 2; i < num_saves; i++)
       {
         strcat (pattern, \", \");
         strcat (pattern,
@@ -3028,6 +3049,7 @@
 ;; TLS related insns
 ;; -------------------------------------------------------------------------
 
+;;TODO split insn in rtx.
 (define_insn "tls_do_add_pc"
   [(set (match_operand:SI             0 "register_operand" "=r")
         (unspec:SI [(match_operand:SI 1 "register_operand" "r")
@@ -3124,7 +3146,8 @@
   [(trap_if (const_int 1) (const_int 0))]
   ""
   "bkpt"
-  [(set (attr "length") (const_int 2))]
+  [(set (attr "length") (const_int 2))
+   (set_attr "type" "alu")]
 )
 
 ;;
@@ -3418,3 +3441,12 @@
   "mulall.s16\t%0, %1, %2, %3"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
+
+;;TODO emit decgt.
+;;TODO emit declt.
+;;TODO emit decne.
+;;TODO emit dect.
+;;TODO emit asrc.
+;;TODO emit brev.
+;;TODO emit ix.[hwd].
+;;TODO emit revb.

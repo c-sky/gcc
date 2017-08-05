@@ -306,12 +306,23 @@
     return 0;
   })
 
-(define_special_predicate "registers_pushpop"
+(define_special_predicate "registers_push"
   (match_code "parallel")
 {
   if ((GET_CODE (XVECEXP (op, 0, 0)) != SET)
       || (GET_CODE (SET_SRC (XVECEXP (op, 0, 0))) != UNSPEC)
       || (XINT (SET_SRC (XVECEXP (op, 0, 0)), 1) != UNSPEC_PUSHPOP_MULT))
+    return false;
+
+  return true;
+})
+
+(define_special_predicate "registers_pop"
+  (match_code "parallel")
+{
+  if ((GET_CODE (XVECEXP (op, 0, 1)) != SET)
+      || (GET_CODE (SET_SRC (XVECEXP (op, 0, 1))) != UNSPEC)
+      || (XINT (SET_SRC (XVECEXP (op, 0, 1)), 1) != UNSPEC_PUSHPOP_MULT))
     return false;
 
   return true;
