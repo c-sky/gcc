@@ -110,3 +110,4 @@
     fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
 }
 #define NO_PROFILE_COUNTERS 1
+#define TARGET_CSKY_LINUX 1

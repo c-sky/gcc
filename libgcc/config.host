@@ -869,7 +869,7 @@ csky-*-*)
             extra_parts="$extra_parts crti.o crtn.o"
             ;;
         csky-*-linux*)
-            tmake_file="t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-linux csky/t-slibgcc-elf-ver-csky csky/${with_cskyabi}_t-csky t-slibgcc-libgcc t-fdpbit"
+            tmake_file="t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-linux csky/t-slibgcc-elf-ver-csky csky/${with_cskyabi}_t-csky t-slibgcc-libgcc t-fdpbit csky/t-linux-csky"
             extra_parts="$extra_parts crti.o crtn.o"
             md_unwind_header=csky/linux-unwind.h
             ;;
