@@ -1,0 +1,12 @@
+tar jtag jtag://172.16.28.48:1025
+reset
+#set *0x10001000=0x68310000
+#set *0x10001000=0x3168
+#set $gcr=0x8
+
+# ck810 le/be MMU
+#set $cr18=0x1
+lo
+run
+i r r0
+quit
