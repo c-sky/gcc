@@ -61,6 +61,8 @@ SECTIONS
             . = ALIGN(4) ;
             *(.data*)
             *(.data.*)
+            *(.tdata)
+            *(.tdata.*)
             /*
              * The Data space will be in SPM
              * 8KBytes
