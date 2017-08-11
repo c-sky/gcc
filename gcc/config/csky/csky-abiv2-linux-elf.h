@@ -110,4 +110,6 @@
     fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
 }
 #define NO_PROFILE_COUNTERS 1
+/* This flag used to enable or disable the sepical
+   features only for linux toolchain.  */
 #define TARGET_CSKY_LINUX 1

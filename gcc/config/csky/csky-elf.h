@@ -49,3 +49,6 @@
 #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
 
 #undef TARGET_POSIX_IO
+/* This flag used to enable or disable the sepical
+   features only for linux toolchain.  */
+#define TARGET_CSKY_LINUX 0
