@@ -70,9 +70,12 @@
 /* For exporting varialbe or functions */
 .export	ckcpu_vsr_table	/* Vector table base address. */
 .export __start				/* The system entry. */
-.export __abort
+.export _exit
+.export exit
+.export __GI_exit
+.export _abort
 .export abort
-
+.export __GI_abort
 
 .text
 /* Vector table space. */
