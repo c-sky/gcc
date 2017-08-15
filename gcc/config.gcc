@@ -2082,15 +2082,17 @@ csky-*-*)
           csky-*-linux*)
               tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
               tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
+
+              if test "x${enable_multilib}" != x ; then
+                tm_file="$tm_file ./sysroot-suffix.h"
+                tmake_file="${tmake_file} csky/t-sysroot-suffix"
+              fi
               case ${with_cskylibc} in
                   glibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
-                      tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-glibc"
+                      tmake_file="$tmake_file csky/${with_cskyabi}_t-csky-glibc"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
                       ;;
                   uclibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
-                      tmake_file="$tmake_file csky/t-sysroot-suffix"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
                       default_use_cxa_atexit=no
                       ;;
