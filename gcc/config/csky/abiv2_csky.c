@@ -2479,6 +2479,11 @@ csky_option_override (void)
     dwarf_strict = 1;
   if (!global_options_set.x_dwarf_version)
     dwarf_version = 3;
+  /* Open optimization pass cse-cc by default when
+     optimization level is greater than 1.  */
+  if (!global_options_set.x_flag_cse_cc
+      && (optimize > 1))
+    flag_cse_cc = 1;
 
   csky_add_gc_roots ();
 
