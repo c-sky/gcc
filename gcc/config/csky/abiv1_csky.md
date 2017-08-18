@@ -798,11 +798,11 @@
 }")
 
 (define_insn "*cskyv1_movdi"
-  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,m,r,y,r,f")
-        (match_operand:DI 1 "general_operand" "r,m,r,y,r,f,r"))]
+  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,r,r,m,r,y,r,f")
+        (match_operand:DI 1 "general_operand"      "i, F,r,m,r,y,r,f,r"))]
   ""
   "* return csky_output_movedouble (operands, DImode);"
-  [(set_attr "length" "4,4,4,4,4,4,4")])
+  [(set_attr "length" "4,4,4,4,4,4,4,4,4")])
 
 ;; Load/store multiple
 
