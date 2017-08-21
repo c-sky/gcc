@@ -69,7 +69,7 @@
 (define_attr "far_jump" "yes,no" (const_string "no"))
 
 ; Used for insn schedule
-(define_attr "type" "alu,load,store,cmp,branch,cbranch,addsub,alu_ix"
+(define_attr "type" "alu,load,store,cmp,branch,cbranch,addsub,alu_ix,branch_jmp,call_jsr,call"
     (const_string "alu"))
 
 
@@ -79,8 +79,7 @@
 (include "abiv2_csky_constraints.md")
 (include "abiv2_csky_predicates.md")
 (include "abiv2_csky_insn_fpu.md")
-;;FIXME there is a problem when add instruction schedule.
-;;(include "abiv2_csky_sched_ck802.md")
+(include "abiv2_csky_sched_ck802.md")
 (include "abiv2_csky_sched_ck810.md")
 (include "abiv2_csky_sched_ck803s.md")
 
@@ -2374,7 +2373,7 @@
    (use (label_ref (match_operand 1 ""                 "")))]
   ""
   "jmp  %0"
-  [(set_attr "type" "branch")]
+  [(set_attr "type" "branch_jmp")]
 )
 
 (define_expand "jump"
@@ -2423,7 +2422,7 @@
     jmp\t%0
     jmp\t%0"
   [(set_attr "length" "2,4")
-   (set_attr "type" "branch")]
+   (set_attr "type" "branch_jmp")]
 )
 
 
@@ -2771,7 +2770,8 @@
     jsr\t%0
     jsr\t%0
     jbsr\t%0"
-  [(set_attr "length" "2,4,4")]
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")]
 )
 
 (define_insn "*call_internal_pic"
@@ -2822,7 +2822,8 @@
     jsr\t%1
     jsr\t%1
     jbsr\t%1"
-  [(set_attr "length" "2,4,4")]
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")]
 )
 
 (define_insn "*call_value_internal_pic"
@@ -2847,7 +2848,8 @@
     jsr\t%1
     jsr\t%1
     jbsr\t%1"
-  [(set_attr "length" "2,4,4")]
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")]
 )
 
 (define_insn "*call_value_struct_pic"

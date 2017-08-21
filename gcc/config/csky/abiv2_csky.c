@@ -6544,6 +6544,34 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
                 return 2;
             }
         }
+      else if (CSKY_TARGET_ARCH(CK802))
+        {
+          if ((insn_type == TYPE_CALL_JSR || insn_type == TYPE_BRANCH_JMP)
+              && get_attr_type (dep) != TYPE_LOAD)
+            return 1;
+
+          if (insn_type == TYPE_LOAD
+              || insn_type == TYPE_STORE)
+            {
+              rtx pattern = PATTERN (insn);
+
+              gcc_assert (GET_CODE (pattern) == SET);
+
+              rtx addr = (insn_type == TYPE_LOAD) ? SET_SRC (pattern)
+                         : SET_DEST(pattern);
+              if (modified_in_p (addr, PATTERN(dep))
+                  && get_attr_type (dep) != TYPE_LOAD)
+                {
+                  return 1;
+                }
+
+              if (insn_type == TYPE_STORE
+                  && reg_referenced_p(SET_SRC(pattern), PATTERN(dep)))
+                {
+                  return 1;
+                }
+            }
+        }
     }
   return cost;
 }
