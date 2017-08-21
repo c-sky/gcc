@@ -8,7 +8,7 @@
 
 (define_insn_reservation "ck803s_3cycle" 1
   (and (match_test "CSKY_TARGET_ARCH(CK803S)")
-       (eq_attr "type" "alu,cmp,branch"))
+       (eq_attr "type" "alu,cmp,branch,branch_jmp,call_jsr,call"))
   "ck803s_ex1+ck803s_exit")
 
 (define_insn_reservation "ck803s_alu1" 1
