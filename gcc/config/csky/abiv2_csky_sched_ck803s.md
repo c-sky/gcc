@@ -31,6 +31,5 @@
        (eq_attr "type" "store"))
   "ck803s_ex1+ck803s_exit")
 
-(define_bypass 0 "ck803s_alu1" "ck803s_cbranch")
+(define_bypass 2 "ck803s_3cycle,ck803s_cbranch,ck803s_load,ck803s_store" "ck803s_cbranch")
 
-(define_bypass 0 "ck803s_store" "ck803s_store,ck803s_load,ck803s_cbranch,ck803s_alu1,ck803s_3cycle")

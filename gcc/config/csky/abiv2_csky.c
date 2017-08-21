@@ -6524,10 +6524,27 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
   if (REG_NOTE_KIND (link) == REG_DEP_ANTI
       || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
     return 0;
-  /* If the bypass delay is not specified, the default
-     value is 1 cycle.  */
-  else if (!bypass_p (insn))
-    return 1;
+  /* The REG_DEP_TURE situation.  */
+  else
+    {
+      enum attr_type insn_type = get_attr_type (insn);
+      if (CSKY_TARGET_ARCH(CK803S))
+        {
+          /* The ld or st's base reg is depending the pre insn,
+             it will delay 1 cycle.  */
+          if (insn_type == TYPE_LOAD
+              || insn_type == TYPE_STORE)
+            {
+              rtx pattern = PATTERN (insn);
+
+              gcc_assert (GET_CODE (pattern) == SET);
+              rtx addr = SET_SRC (pattern);
+              if (modified_in_p (addr, dep))
+                return 2;
+            }
+        }
+    }
+  return cost;
 }
 
 static bool
