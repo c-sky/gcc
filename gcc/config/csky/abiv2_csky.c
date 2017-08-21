@@ -6538,7 +6538,8 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
               rtx pattern = PATTERN (insn);
 
               gcc_assert (GET_CODE (pattern) == SET);
-              rtx addr = SET_SRC (pattern);
+              rtx addr = (insn_type == TYPE_LOAD) ?
+                SET_SRC (pattern) : SET_DEST (pattern);
               if (modified_in_p (addr, dep))
                 return 2;
             }
