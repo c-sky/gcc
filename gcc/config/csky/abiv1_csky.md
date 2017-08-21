@@ -795,14 +795,22 @@
 {
   if (can_create_pseudo_p () && MEM_P (operands[0]))
     operands[1] = force_reg (DImode, operands[1]);
+  else if (CONST_INT_P (operands[1]))
+    {
+      int i;
+      for (i = 0; i < UNITS_PER_WORD * 2; i += UNITS_PER_WORD)
+        emit_move_insn (simplify_gen_subreg (SImode, operands[0], DImode, i),
+            simplify_gen_subreg (SImode, operands[1], DImode, i));
+      DONE;
+    }
 }")
 
 (define_insn "*cskyv1_movdi"
-  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,r,r,m,r,y,r,f")
-        (match_operand:DI 1 "general_operand"      "i, F,r,m,r,y,r,f,r"))]
+  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,m,r,y,r,f")
+        (match_operand:DI 1 "general_operand" "r,m,r,y,r,f,r"))]
   ""
   "* return csky_output_movedouble (operands, DImode);"
-  [(set_attr "length" "4,4,4,4,4,4,4,4,4")])
+  [(set_attr "length" "4,4,4,4,4,4,4")])
 
 ;; Load/store multiple
 
