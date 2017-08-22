@@ -3349,6 +3349,8 @@ csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED)
 static void
 csky_init_libfuncs(void)
 {
+  if (TARGET_CSKY_LINUX)
+    init_sync_libfuncs (UNITS_PER_WORD);
   if (!global_options_set.x_csky_libccrt)
     return;
 
