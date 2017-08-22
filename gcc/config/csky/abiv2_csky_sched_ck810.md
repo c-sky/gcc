@@ -8,5 +8,6 @@
 (define_cpu_unit "pipeline_alu0" "cskyv2_ck810")
 (define_insn_reservation "alu_one_cycle" 1
     (and (eq_attr "cycle" "1")
-     (not (match_test "CSKY_TARGET_ARCH(CK803S)")))
+         (not (and (match_test "CSKY_TARGET_ARCH(CK803S)")
+                   (match_test "CSKY_TARGET_ARCH(CK802)"))))
     "pipeline_alu0")

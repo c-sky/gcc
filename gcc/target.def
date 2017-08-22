@@ -1607,6 +1607,15 @@ This is firstly introduced on ARM/AArch64 targets, please refer to\n\
 the hook implementation for how different fusion types are supported.",
 void, (rtx_insn *insn, int max_pri, int *fusion_pri, int *pri), NULL)
 
+/* Consider the extra resource block situation in addition to
+   cpu function unit block.  */
+DEFHOOK
+(extra_resource_confilict,
+ "This function analysis the extra resource confilict in addition to\n\
+cpu function unit block accord to the @var{insn}. When it do have\n\
+resource block, the @var{insn} will be queued for @var{cost} cycles.",
+ bool, (rtx_insn *insn, int *cost, rtx_insn *last_sched_insn), NULL)
+
 HOOK_VECTOR_END (sched)
 
 /* Functions relating to OpenMP and Cilk Plus SIMD clones.  */

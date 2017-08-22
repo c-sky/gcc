@@ -6429,6 +6429,17 @@ prune_ready_list (state_t temp_state, bool first_cycle_insn_p,
 	      if (i + 1 < n)
 		break;
 	    }
+          /* Detect the extra resource confilict.  */
+          if ((ready.n_ready > 0)
+              && (!first_cycle_insn_p || (ready.n_ready != 1))
+              && targetm.sched.extra_resource_confilict
+                   (insn, &cost, last_nondebug_scheduled_insn))
+            {
+              reason = "extra resource confilict";
+              ready_remove (&ready, i);
+              queue_insn (insn, cost, reason);
+              break;
+            }
 	}
       if (i == n)
 	pass++;

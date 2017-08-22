@@ -458,6 +458,10 @@ static GTY(()) int tls_labelno;
 #undef  TARGET_SCHED_ADJUST_COST
 #define  TARGET_SCHED_ADJUST_COST csky_sched_adjust_cost
 
+#undef  TARGET_SCHED_EXTRA_RESOURCE_CONFILICT
+#define  TARGET_SCHED_EXTRA_RESOURCE_CONFILICT \
+  csky_sched_extra_resource_confilict
+
 
 /* The declaration of functions.  */
 static void get_csky_frame_layout (csky_stack_frame *);
@@ -6789,6 +6793,111 @@ csky_fixed_condition_code_regs (unsigned int *p1, unsigned int *p2)
   *p1 = CSKY_CC_REGNUM;
   *p2 = INVALID_REGNUM;
   return true;
+}
+
+
+/* Bus status used to detect bus confilict when scheduling,
+   lrw will set the bus status to TEXT, ld/st will set the
+   bus status to DATA.  */
+enum bus_status
+{
+    NONE,
+    TEXT,
+    DATA
+};
+
+
+/* According to CURR_STATUS and INSN, change the CURR_STATUS and
+   return true if the INSN will cause the bus confilict.  */
+
+static bool
+check_csky_bus (rtx_insn *insn, enum bus_status *curr_status)
+{
+  gcc_assert (insn && INSN_P (insn));
+
+  if (DEBUG_INSN_P (insn))
+    return false;
+
+  if (GET_CODE (PATTERN (insn)) == SET)
+  {
+    /* Find the lrw and set the bus status to TEXT.  */
+    if (GET_CODE (XEXP(PATTERN(insn), 0)) == REG
+        && GET_CODE (XEXP(PATTERN(insn), 1)) == SYMBOL_REF)
+    {
+      switch (*curr_status)
+        {
+        case NONE:
+          *curr_status = TEXT;
+          break;
+        case DATA:
+          return true;
+        case TEXT:
+          return false;
+        }
+    }
+    /* Find the ld/st and set the bus status to DATA.  */
+    else if ((GET_CODE (XEXP(PATTERN(insn), 0)) == REG
+                && GET_CODE (XEXP(PATTERN(insn), 1)) == MEM)
+            || (GET_CODE (XEXP(PATTERN(insn), 0)) == MEM
+                && GET_CODE (XEXP(PATTERN(insn), 1)) == REG))
+    {
+      switch (*curr_status)
+        {
+        case NONE:
+          *curr_status = DATA;
+          break;
+        case DATA:
+          return false;
+        case TEXT:
+          return true;
+        }
+    }
+    /* Other insn set bus status to NONE.  */
+    else
+    {
+      *curr_status = NONE;
+    }
+    return false;
+  }
+  else
+  {
+    *curr_status = NONE;
+    return false;
+  }
+}
+
+
+/* To check extra resource confilict before issue insns in
+   schedule ready list, if the INSN will cause resource
+   confilict, return true so that the insn will be queued
+   for COST cycles.*/
+
+static bool
+csky_sched_extra_resource_confilict (rtx_insn *insn,
+                                     int *cost,
+                                     rtx_insn *last_sched_insn)
+{
+  enum bus_status current_bus_status = NONE;
+
+  if (!reload_completed)
+    return false;
+
+  if (CSKY_TARGET_ARCH(CK801)
+      || CSKY_TARGET_ARCH(CK802)
+      || CSKY_TARGET_ARCH(CK803S))
+    {
+      if ((last_sched_insn != NULL) && INSN_P(last_sched_insn))
+        check_csky_bus (last_sched_insn, &current_bus_status);
+      if (check_csky_bus (insn, &current_bus_status))
+        {
+          *cost = 1;
+          return true;
+        }
+      else
+        return false;
+    }
+
+  return false;
 }
 
 
