@@ -6525,7 +6525,8 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
       || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
     return 0;
   /* The REG_DEP_TURE situation.  */
-  else
+  else if (recog_memoized (insn) >= 0
+           && recog_memoized (dep) >= 0)
     {
       enum attr_type insn_type = get_attr_type (insn);
       if (CSKY_TARGET_ARCH(CK803S))
