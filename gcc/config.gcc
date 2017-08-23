@@ -1983,6 +1983,16 @@ mcore-*-elf)
 	inhibit_libc=true
 	;;
 csky-*-*)
+    if test x${with_endian} != x; then
+        case ${with_endian} in
+        big|little)		;;
+        *)	echo "with_endian=${with_endian} not supported."; exit 1 ;;
+        esac
+        case ${with_endian} in
+        big*)  tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=1"
+        esac
+    fi
+
 	case "$with_cskyabi" in
 	  abiv1)
       tm_file="csky/${with_cskyabi}_csky.h"
@@ -3835,7 +3845,7 @@ case "${target}" in
 		;;
 
     csky-*-*)
-        supported_defaults="cpu"
+        supported_defaults="cpu endian"
         ;;
 
 	arm*-*-*)
@@ -4663,7 +4673,7 @@ case ${target} in
 esac
 
 t=
-all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu nan fp_32 odd_spreg_32 divide llsc mips-plt synci tls"
+all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu nan fp_32 odd_spreg_32 divide llsc mips-plt synci tls endian"
 for option in $all_defaults
 do
 	eval "val=\$with_"`echo $option | sed s/-/_/g`

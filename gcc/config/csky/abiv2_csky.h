@@ -871,7 +871,8 @@ while (0)
     by --with-arch. */
 #define OPTION_DEFAULT_SPECS \
   {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
-  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" },
+  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
+  {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" },
 
 
 /******************************************************************
