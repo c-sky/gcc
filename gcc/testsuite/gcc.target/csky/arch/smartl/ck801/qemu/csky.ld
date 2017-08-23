@@ -12,7 +12,7 @@ MEMORY
 }
 
 PROVIDE (__stack =  0x01000000 - 0x8);
-PROVIDE (__heap_start = 0x00000000);
+PROVIDE (__heap_start = 0x00000100);
 PROVIDE (__heap_end = 0x00900000);
 
 
