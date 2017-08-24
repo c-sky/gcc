@@ -34,11 +34,7 @@ static const struct default_options csky_option_optimization_table[] =
   };
 
 #undef  TARGET_DEFAULT_TARGET_FLAGS
-#ifdef  TARGET_BIG_ENDIAN_DEFAULT
-#define TARGET_DEFAULT_TARGET_FLAGS (TARGET_DEFAULT | MASK_BIG_ENDIAN)
-#else
 #define TARGET_DEFAULT_TARGET_FLAGS TARGET_DEFAULT
-#endif
 
 #undef  TARGET_OPTION_OPTIMIZATION_TABLE
 #define TARGET_OPTION_OPTIMIZATION_TABLE csky_option_optimization_table

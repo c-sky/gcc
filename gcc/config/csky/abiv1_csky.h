@@ -67,6 +67,16 @@ extern unsigned long csky_flags;
 #define MULTILIB_DEFAULTS \
   {"mlittle-endian", "mcpu=ck610", "mstm", "msoft-float"}
 
+/* Support for a compile-time default CPU, et cetera.  The rules are:
+   --with-arch is ignored if -march or -mcpu are specified.
+   --with-cpu is ignored if -march or -mcpu are specified, and is overridden
+    by --with-arch. */
+#define OPTION_DEFAULT_SPECS \
+  {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
+  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
+  {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" }, \
+  {"float", "%{!msoft-float:%{!mhard-float:-m%(VALUE)-float}}" },
+
 /* debugging info */
 #undef  DWARF2_DEBUGGING_INFO
 #define DWARF2_DEBUGGING_INFO 1

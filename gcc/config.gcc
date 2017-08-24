@@ -1988,9 +1988,6 @@ csky-*-*)
         big|little)		;;
         *)	echo "with_endian=${with_endian} not supported."; exit 1 ;;
         esac
-        case ${with_endian} in
-        big*)  tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=1"
-        esac
     fi
     if test x${with_float} != x; then
         case ${with_float} in
@@ -2071,10 +2068,6 @@ csky-*-*)
       out_file="csky/${with_cskyabi}_csky.c"
       tm_p_file="${tm_p_file} csky/${with_cskyabi}_csky-protos.h"
       extra_options="${extra_options} csky/${with_cskyabi}_csky.opt csky/${with_cskyabi}_csky_tables.opt"
-
-      if test "x$with_cpu" != x ; then
-        target_cpu_default="TARGET_CPU_$with_cpu"
-      fi
 
       case ${target} in
           csky-*-elf*)
