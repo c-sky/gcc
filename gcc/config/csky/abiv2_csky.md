@@ -3429,7 +3429,7 @@
         (plus:SI (match_operand:SI 3 "register_operand"          " 0")
                  (mult:SI (match_operand:SI 1 "register_operand" " r")
                           (match_operand:SI 2 "register_operand" " r"))))]
-  "CSKY_ISA_FEATURE(3sE3sn)"
+  "0"
   "mula.32.l\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
@@ -3439,7 +3439,7 @@
         (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
                           (match_operand:SI 2 "register_operand" " r"))
                  (match_operand:SI 3 "register_operand"          " 0")))]
-  "CSKY_ISA_FEATURE(3sE3sn)"
+  "0"
   "mula.32.l\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
