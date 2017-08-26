@@ -5914,16 +5914,19 @@ gen_csky_compare_float (enum rtx_code code, rtx op0, rtx op1)
     case NE:
       break;
     case LE:
+    case UNLE:
       if (is_csky_const_float_0 (op1, GET_MODE (op1)))
         op1 = force_reg (GET_MODE (op1), op1);
       break;
     case GT:
+    case UNGT:
       if (is_csky_const_float_0 (op1, GET_MODE (op1)))
         {
           op1 = force_reg (GET_MODE (op1), op1);
         }
       break;
     case GE:
+    case UNGE:
       break;
     case LT:
       if ((is_csky_const_float_0 (op1, GET_MODE (op1))))
@@ -5932,12 +5935,29 @@ gen_csky_compare_float (enum rtx_code code, rtx op0, rtx op1)
           invert = true;
         }
       break;
+    case UNLT:
+      if ((is_csky_const_float_0 (op1, GET_MODE (op1))))
+        {
+          code = UNGE;
+          invert = true;
+        }
+      break;
 
     default:
       break;
     }
 
-  emit_insn (gen_rtx_SET (cc_reg, gen_rtx_fmt_ee (code, CCmode, op0, op1)));
+  if (code == UNGE || code == UNGT || code == UNLE || code == UNLT)
+    {
+      rtx cmp_insn = gen_rtx_SET (cc_reg,
+                                  gen_rtx_fmt_ee (code, CCmode, op0, op1));
+      rtx clobber_insn = gen_rtx_CLOBBER (VOIDmode,
+                                          gen_rtx_SCRATCH (SImode));
+      emit_insn (gen_rtx_PARALLEL (VOIDmode,
+                                   gen_rtvec (2, cmp_insn, clobber_insn)));
+    }
+  else
+    emit_insn (gen_rtx_SET (cc_reg, gen_rtx_fmt_ee (code, CCmode, op0, op1)));
 
   return invert;
 }

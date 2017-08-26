@@ -279,7 +279,7 @@
 ;; -------------------------------------------------------------------------
 
 (define_expand "cbranchsf4"
-  [(set (pc) (if_then_else (match_operator 0 "ordered_comparison_operator"
+  [(set (pc) (if_then_else (match_operator 0 "csky_float_comparison_operator"
                              [(match_operand:SF 1 "register_operand")
                               (match_operand:SF 2 "csky_compare_operand_float")])
                            (label_ref (match_operand 3 ""))
@@ -311,11 +311,25 @@
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "fcmplts\t%1, %0")
 
+(define_insn "*fpuv2_ungt"
+  [(set (reg:CC 33) (ungt:CC (match_operand:SF 0 "register_operand" "v")
+                             (match_operand:SF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmplts\t%1, %0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_ge"
   [(set (reg:CC 33) (ge:CC (match_operand:SF 0 "register_operand" "v")
                            (match_operand:SF 1 "register_operand" "v")))]
  "CSKY_ISA_FEATURE(fpv2_sf)"
  "fcmphss\t%0, %1")
+
+(define_insn "*fpuv2_unge"
+  [(set (reg:CC 33) (unge:CC (match_operand:SF 0 "register_operand" "v")
+                             (match_operand:SF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+ "CSKY_ISA_FEATURE(fpv2_sf)"
+ "fcmphss\t%0, %1;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
 
 (define_insn "*fpuv2_lt"
   [(set (reg:CC 33) (lt:CC (match_operand:SF 0 "register_operand" "v")
@@ -323,17 +337,38 @@
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "fcmplts\t%0, %1")
 
+(define_insn "*fpuv2_unlt"
+  [(set (reg:CC 33) (unlt:CC (match_operand:SF 0 "register_operand" "v")
+                             (match_operand:SF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmplts\t%0, %1;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_le"
   [(set (reg:CC 33) (le:CC (match_operand:SF 0 "register_operand" "v")
                            (match_operand:SF 1 "register_operand" "v")))]
  "CSKY_ISA_FEATURE(fpv2_sf)"
  "fcmphss\t%1, %0")
 
+(define_insn "*fpuv2_unle"
+  [(set (reg:CC 33) (unle:CC (match_operand:SF 0 "register_operand" "v")
+                             (match_operand:SF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+ "CSKY_ISA_FEATURE(fpv2_sf)"
+ "fcmphss\t%1, %0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_gez"
   [(set (reg:CC 33) (ge:CC (match_operand:SF 0 "register_operand"          "v")
                            (match_operand:SF 1 "csky_const_float0_operand" "i")))]
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "fcmpzhss\t%0")
+
+(define_insn "*fpuv2_ungez"
+  [(set (reg:CC 33) (unge:CC (match_operand:SF 0 "register_operand"          "v")
+                             (match_operand:SF 1 "csky_const_float0_operand" "i")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmpzhss\t%0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
 
 (define_insn "*fpuv2_nez"
   [(set (reg:CC 33) (ne:CC (match_operand:SF 0 "register_operand"          "v")
@@ -343,7 +378,7 @@
 
 
 (define_expand "cbranchdf4"
-  [(set (pc) (if_then_else (match_operator 0 "ordered_comparison_operator"
+  [(set (pc) (if_then_else (match_operator 0 "csky_float_comparison_operator"
                              [(match_operand:DF 1 "register_operand")
                               (match_operand:DF 2 "csky_compare_operand_float")])
                            (label_ref (match_operand 3 ""))
@@ -375,11 +410,25 @@
   "CSKY_ISA_FEATURE(fpv2_df)"
   "fcmpltd\t%1, %0")
 
+(define_insn "*fpuv2_dungt"
+  [(set (reg:CC 33) (ungt:CC (match_operand:DF 0 "register_operand" "v")
+                             (match_operand:DF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmpltd\t%1, %0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_dge"
   [(set (reg:CC 33) (ge:CC (match_operand:DF 0 "register_operand" "v")
                            (match_operand:DF 1 "register_operand" "v")))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "fcmphsd\t%0, %1")
+
+(define_insn "*fpuv2_dunge"
+  [(set (reg:CC 33) (unge:CC (match_operand:DF 0 "register_operand" "v")
+                             (match_operand:DF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmphsd\t%0, %1;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
 
 (define_insn "*fpuv2_dlt"
   [(set (reg:CC 33) (lt:CC (match_operand:DF 0 "register_operand" "v")
@@ -387,17 +436,38 @@
  "CSKY_ISA_FEATURE(fpv2_df)"
  "fcmpltd\t%0, %1")
 
+(define_insn "*fpuv2_dunlt"
+  [(set (reg:CC 33) (unlt:CC (match_operand:DF 0 "register_operand" "v")
+                             (match_operand:DF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+ "CSKY_ISA_FEATURE(fpv2_df)"
+ "fcmpltd\t%0, %1;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_dle"
   [(set (reg:CC 33) (le:CC (match_operand:DF 0 "register_operand" "v")
                            (match_operand:DF 1 "register_operand" "v")))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "fcmphsd\t%1, %0")
 
+(define_insn "*fpuv2_dunle"
+  [(set (reg:CC 33) (unle:CC (match_operand:DF 0 "register_operand" "v")
+                             (match_operand:DF 1 "register_operand" "v")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmphsd\t%1, %0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
+
 (define_insn "*fpuv2_dgez"
   [(set (reg:CC 33) (ge:CC (match_operand:DF 0 "register_operand"          "v")
                            (match_operand:DF 1 "csky_const_float0_operand" "i")))]
  "CSKY_ISA_FEATURE(fpv2_df)"
  "fcmpzhsd\t%0")
+
+(define_insn "*fpuv2_dungez"
+  [(set (reg:CC 33) (unge:CC (match_operand:DF 0 "register_operand"          "v")
+                             (match_operand:DF 1 "csky_const_float0_operand" "i")))
+   (clobber (match_scratch:SI 2 "=&r"))]
+ "CSKY_ISA_FEATURE(fpv2_df)"
+ "fcmpzhsd\t%0;mfcr\t%2, cr<2, 2>;andi\t%2, 1;addc\t%2, %2;cmpnei\t%2, 0")
 
 (define_insn "*fpuv2_dnez"
   [(set (reg:CC 33) (ne:CC (match_operand:DF 0 "register_operand"          "v")

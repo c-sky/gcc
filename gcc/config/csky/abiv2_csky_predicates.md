@@ -359,3 +359,7 @@
     return false;
   return CONST_INT_P (XEXP (x, 1));
 })
+
+(define_special_predicate "csky_float_comparison_operator"
+  (match_code "eq,ne,le,lt,ge,gt,geu,gtu,leu,ltu,
+               unge,ungt,unle,unlt"))
