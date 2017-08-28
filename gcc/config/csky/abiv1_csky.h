@@ -65,7 +65,7 @@ extern unsigned long csky_flags;
 
 /*  TARGET SEPC   */
 #define MULTILIB_DEFAULTS \
-  {"mlittle-endian", "mcpu=ck610", "mstm", "msoft-float"}
+  {"mlittle-endian", "mcpu=ck610", "mno-stm", "msoft-float"}
 
 /* Support for a compile-time default CPU, et cetera.  The rules are:
    --with-arch is ignored if -march or -mcpu are specified.
