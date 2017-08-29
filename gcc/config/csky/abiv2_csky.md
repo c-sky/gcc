@@ -80,8 +80,8 @@
 (include "abiv2_csky_predicates.md")
 (include "abiv2_csky_insn_fpu.md")
 (include "abiv2_csky_sched_ck802.md")
-(include "abiv2_csky_sched_ck810.md")
 (include "abiv2_csky_sched_ck803s.md")
+(include "abiv2_csky_sched_ck810.md")
 
 ;; ------------------------------------------------------------------------
 ;; Mov insns
