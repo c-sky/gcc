@@ -6565,7 +6565,19 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
               gcc_assert (GET_CODE (pattern) == SET);
               rtx addr = (insn_type == TYPE_LOAD) ?
                 SET_SRC (pattern) : SET_DEST (pattern);
-              if (modified_in_p (addr, dep))
+
+              rtx base =  XEXP (addr, 0);
+              rtx reg = NULL_RTX;
+              if (REG_P(base))
+                {
+                  reg = base;
+                }
+              if (GET_CODE (base) == PLUS
+                  && GET_CODE (XEXP (base, 0)) == REG)
+                {
+                  rtx reg = XEXP (base, 0);
+                }
+              if ((reg != NULL_RTX) && reg_set_p(reg, PATTERN(dep)))
                 return 2;
             }
         }
