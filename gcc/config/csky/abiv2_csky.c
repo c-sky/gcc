@@ -6566,6 +6566,14 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
               rtx addr = (insn_type == TYPE_LOAD) ?
                 SET_SRC (pattern) : SET_DEST (pattern);
 
+              enum rtx_code code = GET_CODE (addr);
+              if (code == ZERO_EXTEND
+                  || code == SIGN_EXTEND)
+                {
+                  addr = XEXP (addr, 0);
+                }
+              gcc_assert (GET_CODE (addr) == MEM);
+
               rtx base =  XEXP (addr, 0);
               rtx reg = NULL_RTX;
               if (REG_P(base))
@@ -6575,7 +6583,7 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
               if (GET_CODE (base) == PLUS
                   && GET_CODE (XEXP (base, 0)) == REG)
                 {
-                  rtx reg = XEXP (base, 0);
+                  reg = XEXP (base, 0);
                 }
               if ((reg != NULL_RTX) && reg_set_p(reg, PATTERN(dep)))
                 return 2;
