@@ -225,7 +225,7 @@ machine_function;
 #define ARG_POINTER_REGNUM    32
 
 /* TODO  */
-#define STATIC_CHAIN_REGNUM   (CSKY_TARGET_ARCH(CK801) ? 7 : 12)
+#define STATIC_CHAIN_REGNUM   (CSKY_TARGET_ARCH(CK801) ? 13 : 12)
 
 
 /* Eliminating Frame Pointer and Arg Pointer  */

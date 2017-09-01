@@ -5780,23 +5780,32 @@ csky_asm_trampoline_template (FILE *f)
     }
   else
     {
-      fprintf (f, "\tpush\tr4, lr\n");
-      fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
-      fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
-               reg_names[STATIC_CHAIN_REGNUM]);
-      fprintf (f, "\tjsr\tr4\n");
-      fprintf (f, "\tpop\tr4, lr\n");
-
       if (CSKY_TARGET_ARCH(CK801))
         {
-          /* To align 32bits for lrw.  */
-          fprintf (f, "\tnop\n");
+          fprintf (f, "\tpush\tr4, lr\n");
+          fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
+          fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+                   reg_names[STATIC_CHAIN_REGNUM]);
+          fprintf (f, "\tjsr\tr4\n");
+          fprintf (f, "\tpop\tr4, lr\n");
+          warning
+            (0, "ck801 does't support nested function trampolines well.");
         }
+      else
+        {
+          fprintf (f, "\tlrw\tt1, [.Lfunc_address]\n");
+          fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+                   reg_names[STATIC_CHAIN_REGNUM]);
+          fprintf (f, "\tjmp\tt1\n");
+        }
+
+      /* To align 32bits for lrw.  */
+      fprintf (f, "\t.align 2\n");
     }
-    fprintf (f, ".Lstatic_chain:\n");
-    fprintf (f, "\t.long 0\n");
-    fprintf (f, ".Lfunc_address:\n");
-    fprintf (f, "\t.long 0\n");
+  fprintf (f, ".Lstatic_chain:\n");
+  fprintf (f, "\t.long 0\n");
+  fprintf (f, ".Lfunc_address:\n");
+  fprintf (f, "\t.long 0\n");
 }
 
 /* Worker function for TARGET_TRAMPOLINE_INIT.  */
