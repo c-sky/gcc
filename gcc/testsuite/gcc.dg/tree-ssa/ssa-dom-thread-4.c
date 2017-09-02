@@ -1,5 +1,6 @@
-/* { dg-do compile } */ 
+/* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-dom2-details -std=gnu89" } */
+/* { dg-additional-options "-mbranch-cost=2" { target csky*-*-* } } */
 struct bitmap_head_def;
 typedef struct bitmap_head_def *bitmap;
 typedef const struct bitmap_head_def *const_bitmap;
