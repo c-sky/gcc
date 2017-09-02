@@ -142,8 +142,8 @@ Target Report RejectNegative Mask(BACKTRACE) Undocumented
 Generate target can be backtraced.
 
 mccrt
-Target RejectNegative Report Var(csky_libccrt)
-Use CSKY compiler runtime instead of libgcc.
+Target Report Mask(LIBCCRT)
+Use CSKY compiler runtime instead of libgcc, -mccrt is default.
 
 mtrust
 Target Report Var(flag_csky_trust)
