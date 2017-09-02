@@ -10,10 +10,11 @@
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 
 #undef CC1_SPEC
-#define CC1_SPEC       \
-  "%{EB:-EB}           \
-   %{EL:-EL}           \
-   %{fpic|fPIC:-DPIC}  \
+#define CC1_SPEC                 \
+  "%{EB:-EB}                     \
+   %{EL:-EL}                     \
+   %{fpic|fPIC:-DPIC}            \
+   %{march=ck803s:-march=ck803}  \
   "
 
 #undef ASM_SPEC

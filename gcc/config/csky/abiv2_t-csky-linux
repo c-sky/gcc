@@ -13,17 +13,16 @@ MULTILIB_DIRNAMES    += ck810 ck807
 # For ck807
 MULTILIB_MATCHES     += mcpu?ck807f=march?ck807
 MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807
-MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807e
-MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807ef
 
 # For arch ck810
 MULTILIB_MATCHES     += mcpu?ck810f=march?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810v
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810t
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810e
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810et
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ef
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810eft
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vt
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vf
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ft
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vft
 
 
 # For option -msoft-float/-mhard-float

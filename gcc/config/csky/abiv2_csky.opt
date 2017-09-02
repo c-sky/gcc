@@ -2,6 +2,10 @@
 HeaderInclude
 config/csky/abiv2_csky_opts.h
 
+march=ck803s
+Target Report Var(flag_arch_ck803s) Undocumented
+Use to transform to march=ck803 by CC1_SPEC.
+
 march=
 Target RejectNegative ToLower Joined Enum(csky_arch) Var(csky_arch_option) Save
 Specify the name of the target architecture.
