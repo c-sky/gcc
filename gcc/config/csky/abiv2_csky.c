@@ -6725,7 +6725,7 @@ csky_init_libfuncs(void)
 {
   if (TARGET_CSKY_LINUX)
     init_sync_libfuncs (UNITS_PER_WORD);
-  if (!global_options_set.x_csky_libccrt)
+  if (!TARGET_LIBCCRT)
     return;
 
   #define CSKY_GCC_SYM(sym) "__csky_ccrt_" # sym
