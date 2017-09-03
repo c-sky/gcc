@@ -877,7 +877,8 @@
         (minus:DI (match_operand:DI 1 "register_operand" "0,  r,r")
                   (match_operand:DI 2 "register_operand" "r,  0,r")))
   (clobber (reg:CC 33))]
-  "CSKY_ISA_FEATURE(E2)"
+  "CSKY_ISA_FEATURE(E2)
+   && !(CSKY_TARGET_ARCH(CK802) && TARGET_BIG_ENDIAN)"
   "*{
     if (TARGET_BIG_ENDIAN)
       return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
@@ -891,7 +892,8 @@
         (minus:DI (match_operand:DI 1 "register_operand" "0")
                   (match_operand:DI 2 "register_operand" "r")))
    (clobber (reg:CC 33))]
-  "CSKY_ISA_FEATURE(E1)"
+  "CSKY_ISA_FEATURE(E1)
+   || (CSKY_TARGET_ARCH(CK802) && TARGET_BIG_ENDIAN)"
   "*{
     if (TARGET_BIG_ENDIAN)
       return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
