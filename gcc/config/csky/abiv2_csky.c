@@ -5780,6 +5780,7 @@ csky_asm_trampoline_template (FILE *f)
     }
   else
     {
+      /* Ck801 does't support nested function trampolines well.*/
       if (CSKY_TARGET_ARCH(CK801))
         {
           fprintf (f, "\tpush\tr4, lr\n");
@@ -5788,8 +5789,6 @@ csky_asm_trampoline_template (FILE *f)
                    reg_names[STATIC_CHAIN_REGNUM]);
           fprintf (f, "\tjsr\tr4\n");
           fprintf (f, "\tpop\tr4, lr\n");
-          warning
-            (0, "ck801 does't support nested function trampolines well.");
         }
       else
         {

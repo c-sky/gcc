@@ -103,5 +103,4 @@ MULTILIB_DIRNAMES    += soft-fp hard-fp
 
 MULTILIB_EXCEPTIONS  += *mcpu=ck801/*mhard-float*
 MULTILIB_EXCEPTIONS  += *mcpu=ck802/*mhard-float*
-MULTILIB_EXCEPTIONS  += *mcpu=ck803/*mhard-float*
 
