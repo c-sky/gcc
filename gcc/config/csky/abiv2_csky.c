@@ -5944,11 +5944,6 @@ gen_csky_compare_float (enum rtx_code code, rtx op0, rtx op1)
         }
       break;
     case UNLT:
-      if ((is_csky_const_float_0 (op1, GET_MODE (op1))))
-        {
-          code = UNGE;
-          invert = true;
-        }
       break;
 
     default:
