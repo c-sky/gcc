@@ -113,12 +113,3 @@
 /* This flag used to enable or disable the sepical
    features only for linux toolchain.  */
 #define TARGET_CSKY_LINUX 1
-
-#define TARGET_DEFAULT      \
-  (  MASK_HIGH_REGISTERS    \
-   | MASK_PUSHPOP           \
-   | MASK_STRICT_ALIGNMENT  \
-   | MASK_CONSTANT_POOL     \
-   | MASK_DOUBLE_FLOAT      \
-   | MASK_LIBCCRT           \
-   | MASK_FDIVDU )

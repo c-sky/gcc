@@ -9,6 +9,14 @@
 #define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810f)
 #endif
 
+#define TARGET_DEFAULT      \
+  (  MASK_HIGH_REGISTERS    \
+   | MASK_PUSHPOP           \
+   | MASK_STRICT_ALIGNMENT  \
+   | MASK_CONSTANT_POOL     \
+   | MASK_DOUBLE_FLOAT      \
+   | MASK_FDIVDU )
+
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
 #define CSKY_STACK_UNITS_MAXSTEP 4096
