@@ -177,24 +177,6 @@ extern int const csky_dbg_register_map[];
     }                                               \
   while (0)
 
-/* implementation of TARGET_DEFAULT_TARGET_FLAGS */
-#if !TARGET_CSKY_LINUX
-#define TARGET_DEFAULT      \
-    ( MASK_HARDLIT          \
-    | MASK_DIV              \
-    | MASK_HIGH_REGISTERS   \
-    | MASK_LITTLE_ENDIAN    \
-    | MASK_LIBCCRT          \
-    /*| MASK_LRA*/ )
-#else
-#define TARGET_DEFAULT      \
-    ( MASK_HARDLIT          \
-    | MASK_DIV              \
-    | MASK_HIGH_REGISTERS   \
-    | MASK_LITTLE_ENDIAN    \
-    /*| MASK_LRA*/ )
-#endif
-
 /* Target machine storage Layout.  */
 
 /* Define this if most significant bit is lowest numbered

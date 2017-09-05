@@ -114,3 +114,10 @@
 /* This flag used to enable or disable the sepical
    features only for linux toolchain.  */
 #define TARGET_CSKY_LINUX 1
+
+#define TARGET_DEFAULT      \
+    ( MASK_HARDLIT          \
+    | MASK_DIV              \
+    | MASK_HIGH_REGISTERS   \
+    | MASK_LITTLE_ENDIAN    \
+    /*| MASK_LRA*/ )
