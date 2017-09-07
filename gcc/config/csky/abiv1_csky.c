@@ -126,6 +126,8 @@ static const int csky_num_arch =
 
 int flag_stack_protect_cskyv1 = 0;
 
+#define TARGET_PRELOAD_PROTECT ((optimize == 0) ||  flag_preload_protect)
+
 
 static void output_stack_adjust (int, int);
 static int calc_live_r0_r31_regs (int *);
@@ -1664,7 +1666,9 @@ layout_csky_frame (struct csky_frame *infp)
   /* Frame of <= 32 bytes and using stm would get <= 2 registers.
      use stw's with offsets and buy the frame in one shot.  */
   if (localregarg <= ADDI_REACH
-      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000))
+      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000)
+      && (!TARGET_PRELOAD_PROTECT
+          || (TARGET_PRELOAD_PROTECT && (infp->reg_size > 16))))
     {
       /* Make sure we'll be aligned.  */
       if (localregarg % STACK_BYTES)
@@ -1698,7 +1702,9 @@ layout_csky_frame (struct csky_frame *infp)
      single instructions.  */
   if (localregarg <= STORE_REACH
       && (infp->local_size > ADDI_REACH)
-      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000))
+      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000)
+      && (!TARGET_PRELOAD_PROTECT
+          || (TARGET_PRELOAD_PROTECT && (infp->reg_size > 16))))
     {
       int all;
 
@@ -2136,6 +2142,19 @@ csky_expand_epilog (void)
 
   offs = fi.reg_offset;
 
+  if (TARGET_PRELOAD_PROTECT && (fi.reg_size <= 16))
+    {
+      /* Add ld r6, sp+offset+16 to prevent hardware from enabling
+         preload function.  */
+      emit_insn (gen_movsi
+                 (gen_rtx_REG (SImode, 6),
+                  gen_rtx_MEM (SImode,
+                               plus_constant (Pmode,
+                                              stack_pointer_rtx,
+                                              offs + 16))));
+      emit_insn (gen_prologue_use(gen_rtx_REG (SImode, 6)));
+    }
+
   for (i = 15; i >= 0; i--)
     {
       if (offs == 0 && i == 15 && ((fi.reg_mask & 0xc000) == 0xc000))
@@ -2156,25 +2175,46 @@ csky_expand_epilog (void)
                                             gen_rtx_MEM (SImode,
                                                          stack_pointer_rtx),
                                             GEN_INT (16 - first_reg)));
+              if (TARGET_PRELOAD_PROTECT)
+                offs += (16 - first_reg) * 4;
             }
           else
             {
-              int invert = offs + (16 - first_reg) * 4 - 4;
-              int j;
-
-              for (j = 15; j >= first_reg; j--)
+              if (TARGET_PRELOAD_PROTECT)
                 {
-                  emit_insn (gen_movsi (gen_rtx_REG (SImode, j),
-                                        gen_rtx_MEM (SImode,
-                                                     plus_constant (Pmode,
-                                                                    stack_pointer_rtx,
-                                                                    invert))));
-                  invert -= 4;
+                  int j = first_reg;
+                  for (; j <= 15; j++)
+                    {
+                      insn = emit_insn (gen_movsi (
+                                          gen_rtx_REG (SImode, j),
+                                          gen_rtx_MEM (SImode,
+                                            plus_constant (Pmode,
+                                                           stack_pointer_rtx,
+                                                           offs))));
+                      offs += 4;
+                    }
+                }
+              else
+                {
+                  int invert = offs + (16 - first_reg) * 4 - 4;
+                  int j;
+
+                  for (j = 15; j >= first_reg; j--)
+                  {
+                    insn = emit_insn (gen_movsi (
+                                gen_rtx_REG (SImode, j),
+                                gen_rtx_MEM (SImode,
+                                  plus_constant (Pmode,
+                                                 stack_pointer_rtx,
+                                                 invert))));
+                    //RTX_FRAME_RELATED_P (insn) = 1;
+                    invert -= 4;
+                   }
                 }
             }
-
           i -= (15 - first_reg);
-          offs += (16 - first_reg) * 4;
+          if (!TARGET_PRELOAD_PROTECT)
+            offs += (16 - first_reg) * 4;
         }
       else if (fi.reg_mask & (1 << i))
         {

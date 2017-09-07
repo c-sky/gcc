@@ -111,3 +111,7 @@ Use CSKY compiler runtime instead of libgcc, -mccrt is default.
 mlra
 Target Report Mask(LRA)
 Use lra to do register allocation instead of reload.
+
+mpp
+Target Report Var(flag_preload_protect) Undocumented
+Open preload protect.
