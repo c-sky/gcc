@@ -3318,7 +3318,7 @@
    (match_operand:SI 2 "const_int_operand" "")  ; total range        (max - min)
    (match_operand:SI 3 "" "")                   ; table label
    (match_operand:SI 4 "" "")]                  ; Out of range label (default:)
-  "CSKY_ISA_FEATURE(casesi)"
+  "optimize_size && CSKY_ISA_FEATURE(casesi)"
   "{
     enum insn_code code;
     if (operands[1] != const0_rtx)
