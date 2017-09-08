@@ -362,4 +362,4 @@
 
 (define_special_predicate "csky_float_comparison_operator"
   (match_code "eq,ne,le,lt,ge,gt,geu,gtu,leu,ltu,
-               unge,ungt,unle,unlt"))
+               unordered,ordered"))
