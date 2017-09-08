@@ -305,6 +305,12 @@
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "fcmpuos\t%0, %1")
 
+(define_insn "*fpuv2_unordered_zero"
+  [(set (reg:CC 33) (unordered:CC (match_operand:SF 0 "register_operand" "v")
+                                  (match_operand:SF 1 "csky_const_float0_operand" "i")))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmpuos\t%0, %0")
+
 (define_insn "*fpuv2_ne"
   [(set (reg:CC 33) (ne:CC (match_operand:SF 0 "register_operand" "v")
                            (match_operand:SF 1 "register_operand" "v")))]
@@ -374,6 +380,12 @@
                                   (match_operand:DF 1 "register_operand" "v")))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "fcmpuod\t%0, %1")
+
+(define_insn "*fpuv2_dunordered_zero"
+  [(set (reg:CC 33) (unordered:CC (match_operand:DF 0 "register_operand" "v")
+                                  (match_operand:DF 1 "csky_const_float0_operand" "i")))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmpuod\t%0, %0")
 
 (define_insn "*fpuv2_dne"
   [(set (reg:CC 33) (ne:CC (match_operand:DF 0 "register_operand" "v")
