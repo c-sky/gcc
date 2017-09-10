@@ -17,7 +17,7 @@
 # GCC testsuite that uses the `dg.exp' driver.
 
 # Exit immediately if this isn't a csky target.
-if { [istarget csky*-*-*]} then {
+if { ![istarget csky*-*-*]} then {
   return
 }
 

@@ -17,6 +17,9 @@
 # GCC testsuite that uses the `dg.exp' driver.
 
 # Exit immediately if this isn't an m68k target.
+if 0 then {
+  return
+}
 if { ![istarget csky*-*-*]} then {
   return
 }
