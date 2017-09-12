@@ -43,7 +43,7 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
-  "%{pthread:-lpthread} -lc %{!mno-ccrt:-lcc-rt}"
+  "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
