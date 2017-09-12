@@ -9,20 +9,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+static int __need_init_uart = 1;
+
 _UART  whichuart = UART0;
 
 U32    MCLK = UART_FREQ;
-
-extern void main();
-
-//int firstc ()
-//{
-//        main();
-//
-//    return 0;
-//}
-
-static int i = 1;
 
 static void delay ( int sec )
 {
@@ -153,6 +144,10 @@ int UartWrite ( U8 *pucData, U32 ulNumBytes, U32 *pulBytesWritten )
  */
 int  kbhit ( void )
 {
+    if(__need_init_uart == 1){
+        uart_init(19200);
+        __need_init_uart = 0;
+    }
     _UART  pUart = whichuart;
 
     return (pUart[UART_LSR] & LSR_DATA_READY);    
@@ -163,12 +158,11 @@ int  kbhit ( void )
  */
 int  getkey ( void )
 {
-    _UART  pUart = whichuart;
-
-	if(i = 1){
+   if(__need_init_uart == 1){
         uart_init(19200);
-        i = 0;
+        __need_init_uart = 0;
     }
+    _UART  pUart = whichuart;
 
     return  (int)pUart[UART_RBR];
 }
@@ -178,21 +172,18 @@ int  getkey ( void )
  */
 int  getchar1 ( void )
 {
-    _UART  pUart = whichuart;
-
-	if(i = 1){
+    if(__need_init_uart == 1){
         uart_init(19200);
-        i = 0;
+        __need_init_uart = 0;
     }
+    _UART  pUart = whichuart;
 
     while (!(pUart[UART_LSR] & LSR_DATA_READY));
 
     return  (int)pUart[UART_RBR];
 }
-int  fgetc(FILE *strean)
-{
-     return getchar1();
-}
+
+
 /*
  *  output char "ch" to UART selected.
  */
@@ -201,17 +192,29 @@ int fputc(int ch, FILE *stream)
 {
     _UART  pUart = whichuart;
 
-	if(i = 1){
-		uart_init(19200);
-		i = 0;
-	}
-
+    if(__need_init_uart == 1){
+    	uart_init(19200);
+    	__need_init_uart = 0;
+    }
+//    delay(10);
     while (!(pUart[UART_LSR] & LSR_TRANS_EMPTY));
+//    delay(10);
     if (ch == '\n')
     {
         pUart[UART_THR] = '\r';
         delay(10);
     }
     pUart[UART_THR] = ch;
+    
 }
 
+int  fgetc(FILE *stream)
+{
+     if(__need_init_uart == 1){
+        uart_init(19200);
+        __need_init_uart = 0;
+    }
+      int ch = getchar1();
+      fputc(ch, stream);
+      return ch;
+}

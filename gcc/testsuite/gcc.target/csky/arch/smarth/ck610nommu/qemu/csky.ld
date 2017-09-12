@@ -9,12 +9,9 @@ MEMORY
 {
 	flatmem : ORIGIN = 0x8000000, LENGTH = 0x800000
 }
-PROVIDE (__mem_start = 0x8000000);
 PROVIDE (__heap_start = 0x8200000);
 PROVIDE (__heap_end = 0x8400000);
-PROVIDE (__FIQ_sp = 0x8600000);
-PROVIDE (__initial_sp = 0x8800000 - 8);
-ENTRY(__start)
+PROVIDE (__stack = 0x87ffff8);
 
 SECTIONS {
 	.text : {
