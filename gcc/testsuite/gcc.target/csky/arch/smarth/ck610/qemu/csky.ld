@@ -9,9 +9,12 @@ MEMORY
 {
 	flatmem : ORIGIN = 0x8000000, LENGTH = 0x800000
 }
+PROVIDE (__mem_start = 0x8000000);
 PROVIDE (__heap_start = 0x8200000);
 PROVIDE (__heap_end = 0x8400000);
-PROVIDE (__stack = 0x87ffff8);
+PROVIDE (__FIQ_sp = 0x8600000);
+PROVIDE (__initial_sp = 0x8800000 - 8);
+ENTRY(__start)
 
 SECTIONS {
 	.text : {
@@ -61,6 +64,24 @@ SECTIONS {
 		. = ALIGN(0x10) ;
 		__erodata = .;
 	} > flatmem
+        . = ALIGN(4); 
+        .ctors :
+        {
+            KEEP (*crtbegin.o(.ctors))
+            KEEP (*crtbegin?.o(.ctors))
+            KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
+            KEEP (*(SORT(.ctors.*)))
+            KEEP (*(.ctors))
+        } > flatmem
+        .dtors :
+        {
+            KEEP (*crtbegin.o(.dtors))
+            KEEP (*crtbegin?.o(.dtors))
+            KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
+            KEEP (*(SORT(.dtors.*)))
+            KEEP (*(.dtors))
+        } > flatmem
+        _end_read = .;
 	.data : {
 		. = ALIGN(0x4) ;
 		__sdata = . ;
