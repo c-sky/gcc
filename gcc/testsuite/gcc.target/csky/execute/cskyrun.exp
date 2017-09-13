@@ -22,6 +22,9 @@
 # These tests come from Torbjorn Granlund (tege@cygnus.com)
 # C torture test suite.
 #
+if 1 {
+  return
+}
 
 if $tracelevel then {
     strace $tracelevel
