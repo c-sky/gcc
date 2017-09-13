@@ -1997,12 +1997,32 @@ csky_expand_prolog (void)
 
               if (TARGET_MULTIPLE_STLD)
                 {
+                  rtx dwarf, reg, tmp;
+                  int dwarf_par_index = 0;
+                  int num_regs = 16 - first_reg;
+
                   insn = emit_insn (gen_store_multiple
                                     (gen_rtx_MEM
                                      (SImode, stack_pointer_rtx),
                                      gen_rtx_REG (SImode, first_reg),
-                                     GEN_INT (16 - first_reg)));
+                                     GEN_INT (num_regs)));
+
+                  dwarf = gen_rtx_SEQUENCE (VOIDmode, rtvec_alloc (num_regs));
+                  for (;dwarf_par_index < num_regs;dwarf_par_index++)
+                    {
+                      reg = gen_rtx_REG (SImode, first_reg + dwarf_par_index);
+                      tmp = gen_rtx_SET
+                              (gen_frame_mem
+                                (SImode,
+                                 plus_constant (Pmode, stack_pointer_rtx,
+                                                4 * dwarf_par_index)),
+                                 reg);
+                      RTX_FRAME_RELATED_P (tmp) = 1;
+                      XVECEXP (dwarf, 0, dwarf_par_index) = tmp;
+                    }
+                  add_reg_note (insn, REG_FRAME_RELATED_EXPR, dwarf);
                   RTX_FRAME_RELATED_P (insn) = 1;
+
                   i -= (15 - first_reg);
                   offs += (16 - first_reg) * 4;
                   offset_lr = (15 - first_reg) * 4;
