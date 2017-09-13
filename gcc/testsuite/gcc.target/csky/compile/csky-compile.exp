@@ -17,6 +17,9 @@
 
 # These tests come from Torbjorn Granlund's (tege@cygnus.com)
 # C torture test suite, and other contributors.
+if 1 {
+  return
+}
 
 if { ![istarget csky*-*-*]} then {
   return
