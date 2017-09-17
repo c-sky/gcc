@@ -2546,7 +2546,8 @@ csky_function_arg_boundary (machine_mode mode,
                             const_tree type ATTRIBUTE_UNUSED)
 {
   /* Doubles must be aligned to an 8 byte boundary.  */
-  return ((mode != BLKmode && GET_MODE_SIZE (mode) > 4)
+  return ((mode != BLKmode && mode != CSImode
+           && GET_MODE_SIZE (mode) > 4)
           ? BIGGEST_ALIGNMENT : PARM_BOUNDARY);
 }
 
