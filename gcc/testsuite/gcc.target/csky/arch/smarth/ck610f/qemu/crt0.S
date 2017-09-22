@@ -19,24 +19,24 @@
 /*
  * For importing variable or functions from linking script file "csky.ld".
  */
-.import __mem_start	// The start of memory(SDRAM ...) 
-.import __heap_start	// The start of heap (for malloc)
-.import __heap_end	// The start of heap 
-.import __FIQ_sp	// The fast interrupt stack pointer 
-.import __initial_sp	// The stack pointer 
-.import	__bss_start	// The start of bss 
-.import __bss_end	// The end of bss 
+.import __mem_start	/* The start of memory(SDRAM ...) */ 
+.import __heap_start	/* The start of heap (for malloc) */ 
+.import __heap_end	/* The start of heap  */ 
+.import __FIQ_sp	/* The fast interrupt stack pointer  */ 
+.import __initial_sp	/* The stack pointer  */ 
+.import	__bss_start	/* The start of bss  */ 
+.import __bss_end	/* The end of bss  */ 
 
 /*
  * For importing variable or functions from other c or assemble files.
  */
-.import main            // The c codes entry 
-.import minilibc_init   // Initial csky Minilibc
+.import main            /* The c codes entry  */ 
+.import minilibc_init   /* Initial csky Minilibc */ 
 .import _fini 
 .import _init
 /* For exporting varialbe or functions */
-.export	csky_vsr_table	// Vector table base address. 
-.export __start		// The system entry.
+.export	csky_vsr_table	/* Vector table base address.  */ 
+.export __start		/* The system entry. */ 
 .export _exit
 .export exit
 .export __GI_exit
@@ -55,32 +55,32 @@
 .endm
 
 .macro INIT_MMU_MGU
-//# ifdef CONFIG_HAVE_MMU
-	lrw     r8, __mem_start //get physical address of start RAM
-	bmaski  r2, 12          // We use page size is 16M
+/* # ifdef CONFIG_HAVE_MMU */
+	lrw     r8, __mem_start /*get physical address of start RAM */ 
+	bmaski  r2, 12          /* We use page size is 16M */ 
 	lsli    r2, 13
 	
-	movi    r5, 0x0000001e  //C = 011, D = 1, V = 1, G = 0, pfn = 0x0
+	movi    r5, 0x0000001e  /*C = 011, D = 1, V = 1, G = 0, pfn = 0x0 */ 
 	bgeni   r6, 18 
-	or      r6, r5          //C = 011, D = 1, V = 1, G = 0, pfn = 0x40000
-	movi    r7, 0x00000000  //VPN2 = 0x0, ASID = 0
+	or      r6, r5          /*C = 011, D = 1, V = 1, G = 0, pfn = 0x40000 */ 
+	movi    r7, 0x00000000  /*VPN2 = 0x0, ASID = 0 */ 
 	
-	or      r7, r8          // VPN2 is bit 31-12 of phy addr
-	lsri    r8, 6           // get bit 31-12 of phy addr
-	or      r5, r8          //pfn
-	or      r6, r8          //pfn
+	or      r7, r8          /* VPN2 is bit 31-12 of phy addr */ 
+	lsri    r8, 6           /* get bit 31-12 of phy addr */ 
+	or      r5, r8          /*pfn */ 
+	or      r6, r8          /*pfn */ 
 
         bgeni   r1, 27
-#if __CSKY__==1                // for ck610's MMU
+#if __CSKY__==1                /* for ck610's MMU */ 
 	cpseti   cp15 
-        cpwcr    r1, cpcr8     //invalid mmu jtlb(ASID)
-	cpwcr    r2, cpcr6     // Set Page Mask Register
+        cpwcr    r1, cpcr8     /*invalid mmu jtlb(ASID) */ 
+	cpwcr    r2, cpcr6     /* Set Page Mask Register */ 
 #else            
-        mtcr     r1, cr<8, 15> //invalid mmu jtlb(ASID)
-	mtcr     r2, cr<6, 15> // Set Page Mask Register
+        mtcr     r1, cr<8, 15> /*invalid mmu jtlb(ASID) */ 
+	mtcr     r2, cr<6, 15> /* Set Page Mask Register */ 
 #endif
         /* Initial TLB */   
-	bgeni    r2, 28        // TLBWR
+	bgeni    r2, 28        /* TLBWR */ 
 #if __CSKY__==1
 	cpwcr    r5, cpcr2
 	cpwcr    r6, cpcr3
@@ -100,7 +100,7 @@
 	jsri    __to_real_vaddr   /* P2V, jump from physic address to virtual
                                          address */
 __to_real_vaddr:
-//#endif
+/* #endif */
 .endm
 
 
@@ -157,13 +157,17 @@ __start:
 	INIT_MMU_MGU
 
 /*if FPU supported, initial the FPU*/
-//#ifdef CONFIG_CSKY_FPU
+/*
+#ifdef CONFIG_CSKY_FPU
+*/
         cpseti 1
         movi   r7, 0x7
         mtcr   r7, cr15
         movi   r7, 0  /*FPC control register initial value,not care all fpu exception*/ 
         cpwcr  r7, cpcr1
-//#endif
+/*
+#endif
+*/
 
 
 	/*
@@ -189,11 +193,13 @@ __clear_bss:
 	 * C codes start here!
 	 */
 __goto_c:
-        //jbsr    _init 
-        //jbsr	minilibc_init
-        //jbsr	main
-        //jbsr    _fini	
-	//jbsr	firstc
+/*
+        jbsr    _init 
+        jbsr	minilibc_init
+        jbsr	main
+        jbsr    _fini	
+	jbsr	firstc
+*/
         jsri main
 	/* Should never get here. */
 exit:
@@ -210,8 +216,10 @@ _abort:
     lrw     r4, 0x10002000
     movi    r5, 0x1
     stw     r5, (r4, 0)
-//    movi  r2, 1
-//    rsubi r2, 0
+/*
+    movi  r2, 1
+    rsubi r2, 0
+*/
     bkpt
     br _abort
 

@@ -97,84 +97,12 @@ __start:
 	/* Initialize the stack pointer from the linker definition. */
 	lrw	r7, __stack
 	mov	sp, r7 
-
-	/*
-	 * Disable MMU & Cache.
-	 */
-//	mfcr	r7, cr<18, 0>
-//	bclri	r7, 0
-//	bclri	r7, 1
-//	bclri	r7, 2
-//	bclri	r7, 3
-//	bclri	r7, 6
-//	mtcr	r7, cr<18, 0>
-
-//    /* Enable MMU */
-//    //invalid mmu jtlb
-//    movi    r1, 0
-//    bseti   r1, 26
-//    mtcr    r1, cr<8, 15>
-// 
-//    //creat a mapping between VPN:0 and PFN:0
-//    lrw     r1, 0x1e
-//    mtcr    r1, cr<2, 15>           //MELO
-//    lrw     r1, 0x101e
-//    mtcr    r1, cr<3, 15>           //MEL1
-//    lrw     r1, 0
-//    mtcr    r1, cr<4, 15>           //MEH
-//    mtcr    r1, cr<6, 15>           //MPR
-//    bseti   r1, 28
-//    mtcr    r1, cr<8, 15>           //MCIR	
-//
-//	/* Enable MGU */
-//	mfcr	r7, cr<18, 0>
-//	bseti	r7, 0
-//	bclri	r7, 1
-//	mtcr	r7, cr<18, 0>
-//	jmpi	MMU_OK
-//MMU_OK:
-//	/* Enable jumping predict. */
-//	mfcr	r7, cr<18, 0>
-//	bseti	r7, 6
-//	bseti	r7, 5
-//	bseti	r7, 4
-//	mtcr	r7, cr<18, 0>
-//
-//	/*
-//	 * Set CPU internal cache.
-//	 */
-//	/* Invalid Instruction/Data cache content */
-//	mfcr	r7, cr<17, 0>
-//	bseti	r7, 0
-//	bseti	r7, 1
-//	bclri	r7, 2
-//	bseti	r7, 4
-//	bseti	r7, 16
-//	bseti	r7, 17
-//	mtcr	r7, cr<17, 0>
-//	/* Enable instruction cache */
-//	mfcr	r7, cr<18, 0>
-//	bseti	r7, 2
-//	mtcr	r7, cr<18, 0>
-//
-//	/* 
-//	 * Set Data cache 
-//	 */
-//	/* Enable Data cache */
-//	mtcr	r7, cr<17, 0>
-//	mfcr	r7, cr<18, 0>
-//	bseti	r7, 3
-//	mtcr	r7, cr<18, 0>
+/*
 #ifdef CONFIG_CSKY_FPU
         movi   r7, 0
         mtcr   r7, cr<1, 2>
-//        cpseti 1
-//        movi   r7, 0x7
-//        mtcr   r7, cr15
-//        movi   r7, 0  /*FPC control register initial value,not care all fpu exception*/
-//        cpwcr  r7, cpcr1
 #endif
-
+*/
 
 	/*
 	 * Zero out the bss region.
@@ -226,24 +154,3 @@ __default_exception_handler:
     stw     r5, (r4, 0)
     br __default_exception_handler
     rte
-
-//__exit:
-//#if CONFIG_SYS_SPARK
-//	lrw	r4, 0x8007c50
-//	lrw	r5, 0x2002
-//	stw	r5, (r4, 0)
-//	stw	r5, (r4, 0)
-//#else
-//    bkpt
-//#endif
-//	br	__exit
-//
-//__default_exception_handler:
-//    bmaski r0, 32
-//    bkpt
-//	br	__default_exception_handler
-//	rte
-//abort:
-//__abort:
-//   bkpt
-//   br __abort

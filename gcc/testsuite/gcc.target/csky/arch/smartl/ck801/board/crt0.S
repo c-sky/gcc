@@ -65,7 +65,9 @@
 /*
  * For importing variable or functions from entry.S.
  */
-//.import default_exception_handler /* default exception service routine */
+/*
+.import default_exception_handler
+*/
 
 /* For exporting varialbe or functions */
 .export	ckcpu_vsr_table	/* Vector table base address. */
@@ -131,131 +133,6 @@ __start:
 	 */
 	movi	r7, 0
 	mtcr	r7, cr18
-//
-//	/*
-//	 * Initial CKCPU MGU & Cache
-//	 * Step 2: priority setting, ff -- read and write
-//	 */
-//	lrw		r6, 0xff00
-//	mtcr	r6, cr19
-//
-//	/*
-//	 * Initial CKCPU MGU & Cache
-//	 * Step 3: set MGU block
-//	 */
-//
-//   	/* The first block */
-//	movi	r5, 0
-//	mtcr	r5, cr21
-//#ifdef CONFIG_CKCPU_MGU_REGION1
-//	lrw		r7, CONFIG_CKCPU_MGU_REGION1
-//	mtcr	r7, cr20
-//#else
-//	mtcr	r5, cr20
-//	
-//#endif
-//	/* The second block */
-//	movi	r4, 1
-//	mtcr	r4, cr21
-//#ifdef 	CONFIG_CKCPU_MGU_REGION2
-//	lrw		r7, CONFIG_CKCPU_MGU_REGION2
-//	mtcr	r7, cr20
-//#else
-//	mtcr	r5, cr20
-//#endif
-//	/* The third block */
-//	movi	r4, 2
-//	mtcr	r4, cr21
-//#ifdef CONFIG_CKCPU_MGU_REGION3
-//	lrw		r7, CONFIG_CKCPU_MGU_REGION3
-//	mtcr	r7, cr20
-//#else
-//	mtcr	r5, cr20
-//#endif
-//	/* The forth block */
-//	movi	r4, 3
-//	mtcr	r4, cr21
-//#ifdef CONFIG_CKCPU_MGU_REGION4
-//	lrw		r7, CONFIG_CKCPU_MGU_REGION4
-//	mtcr	r7, cr20
-//#else
-//	mtcr	r5, cr20
-//#endif
-//
-//	/*
-//	 * Initial CKCPU MGU & Cache
-//	 * Step 4: enable instruction & data cache
-//	 */
-//#if CONFIG_CKCPU_ICACHE
-//	/* Invalid Instruction cache content */
-//	movi    r7, 0x11
-//	mtcr	r7, cr17
-//
-//	/* Enable instruction cache */
-//	mfcr	r6, cr18
-//	bseti	r6, 2
-//	mtcr	r6, cr18
-//#endif /* #ifdef CONFIG_CKCPU_ICACHE */
-//
-//#if CONFIG_CKCPU_DCACHE
-//	/* Invalid Data cache content */
-//	movi	r7, 0x12
-//	mtcr	r7, cr17
-//
-//	/* Enable Data cache */
-//	mfcr	r7, cr18
-//	bseti	r7, 3
-//	mtcr	r7, cr18
-//#endif /* #ifdef CONFIG_CKCPU_DCACHE */
-//
-//	/*
-//	 * Initial CKCPU MGU & Cache
-//	 * Step 5: enable MGU
-//	 */
-//	mfcr	r7, cr18
-//	/* cr18[1~0]: enable MGU */
-//	bseti	r7, 0
-//	bclri	r7, 1
-//	/* cr18[4]: enable write back, ck610 only */
-//	bseti	r7, 4
-//	/* cr18[5]: enable return stack, ck610 only */
-//	bseti	r7, 5
-//	/* cr18[6]: enable branch predictor */
-//	bseti	r7, 6
-//	mtcr	r7, cr18
-//
-//	/*
-//	 *  Initial CKCPU SPM.
-//	 */
-//#if CONFIG_CKCPU_SPM
-//	/* Step 1: disable data & instruction spm */
-//	movi    r2, 0
-//	jsri    spm_enable_instruction
-//	movi    r2, 0
-//	jsri    spm_enable_data
-//#if CONFIG_CKCPU_SPM_ENABLE
-//	/* Step 2: config instrunction and data spm */
-//	lrw		r2, CONFIG_CKCPU_ISPM_MODE
-//	lrw		r3, CONFIG_CKCPU_DSPM_MODE
-//	lrw		r4, CONFIG_CKCPU_ISPM_ADDRESS
-//	lrw		r5, CONFIG_CKCPU_DSPM_ADDRESS
-//	/* Instruction SPM must be transfered? */
-//	lrw		r6, CONFIG_CKCPU_ISPM_TRANSFER
-//	/* Data SPM must be transfered */
-//	lrw		r7, CONFIG_CKCPU_DSPM_TRANSFER
-//	jsri	spm_init
-//	cmpnei	r2, 0  /* Error?  when transfer to spm. */
-//	bt	1f
-//
-//	/* Step 3:  enable instruction and data spm */
-//	movi	r2, 1
-//	jsri	spm_enable_instruction
-//	movi	r2, 1
-//	jsri	spm_enable_data
-//1:
-//#endif  /* CONFIG_CKCPU_SPM_ENABLE */
-//#endif  /* CONFIG_CKCPU_SPM */
-//
 	/*
 	 * Zero out the bss region.
 	 * NOTE: __sbss must align 4
@@ -275,13 +152,6 @@ __start:
 	bt		2b			/* Repeat for all bss */
 
 	/*
-         * Disable PWRM
-         */
-//	lrw	r1, 0xe000ef90
-//	movi	r2, 0x0
-//	st.w	r2, (r1, 0x0)
-
-	/*
 	 * Assember start up done, C codes start here.
 	 */
 __goto_c:
@@ -291,17 +161,11 @@ __goto_c:
 	
 	/* Should never get here. */
 __exit:
-//	/*qemu test*/
-//	lrw     r4, 0x10002000
-//	lrw     r5, 0x2002
-//	stw     r5, (r4, 0)
-//	stw     r5, (r4, 0)
     	bkpt
 	br	__exit
 
 __default_exception_handler:
 	mfcr  r2, psr
-//    	bmaski r0, 32
     	bkpt
     	br  __default_exception_handler
     	rte
