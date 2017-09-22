@@ -196,7 +196,6 @@ int  fgetc(FILE *strean)
 /*
  *  output char "ch" to UART selected.
  */
-//void  putchar ( char ch )
 int fputc(int ch, FILE *stream)
 {
     _UART  pUart = whichuart;
