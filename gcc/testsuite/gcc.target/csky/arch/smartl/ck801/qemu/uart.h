@@ -23,7 +23,6 @@
  */
 #define  CONFIG_TERMINAL_UART UART0
 
-//////////////////////////////////////////////////////////////////////////////////////////
 typedef enum{ 
   B4800=4800,
   B9600=9600,
@@ -71,7 +70,6 @@ typedef enum{
 CK_INT32 CK_Uart_DriverInit();
 
 
-/////////////////////////////////////////////////////////////////
 /* open the uart : 
  * set the callback function --- handler(void);
  * intilize the serial port,sending and receiving buffer;

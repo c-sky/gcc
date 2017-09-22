@@ -15,12 +15,12 @@ U32    MCLK = UART_FREQ;
 
 extern void main();
 
-//int firstc ()
-//{
-//        main();
-//
-//    return 0;
-//}
+int firstc ()
+{
+        main();
+
+    return 0;
+}
 
 static int i = 1;
 

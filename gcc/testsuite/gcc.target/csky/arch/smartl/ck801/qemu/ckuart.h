@@ -15,8 +15,10 @@
 #include "ckconfig.h"
 #include "datatype.h"
 #include "uart.h"
-//#include "circlebuffer.h"
-//#include "intc.h"
+/*
+#include "circlebuffer.h"
+#include "intc.h"
+*/
 
 /* UART registers addr definition */
 #define CK_UART_RBR       0x00    /* Receive Buffer Register (32 bits, R) */
@@ -91,9 +93,11 @@ typedef struct CK_UART_Info_t {
   BOOL brxquery; 
   CK_UINT8 txbuffer[CK_UART_TXBUFFERSIZE];
   CK_UINT8 rxbuffer[CK_UART_RXBUFFERSIZE];
-//  CKStruct_CircleBuffer txcirclebuffer; 
-//  CKStruct_CircleBuffer rxcirclebuffer;
-//  CKStruct_IRQHandler irqhandler;
+/*
+  CKStruct_CircleBuffer txcirclebuffer; 
+  CKStruct_CircleBuffer rxcirclebuffer;
+  CKStruct_IRQHandler irqhandler;
+*/
 } CKStruct_UartInfo, *PCKStruct_UartInfo;
 
 #endif

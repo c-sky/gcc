@@ -13,26 +13,30 @@
 #include "uart.h"
 #endif
 
-//extern void main();
-//extern int firstc();
-//
-//int firstc ()
-//{
-//#if !(CONFIG_SYS_SPARK)
-//    uart_init (BAUDRATE);
-//#endif
-//
-//        main();
-//
-//    return 0;
-//}
+/*
+extern void main();
+extern int firstc();
+
+int firstc ()
+{
+#if !(CONFIG_SYS_SPARK)
+    uart_init (BAUDRATE);
+#endif
+
+        main();
+
+    return 0;
+}
+*/
 
 static int __need_init_uart = 1;
 
 _UART  whichuart = UART0;
 
 U32    MCLK = UART_FREQ;
-//int printf ( const char *fmt, ... );
+/*
+int printf ( const char *fmt, ... );
+*/
 static void delay ( int sec )
 {
     int i;
@@ -204,7 +208,6 @@ int  getchar1 ( void )
 /*
  *  output char "ch" to UART selected.
  */
-//void  putchar ( char ch )
 int fputc(int ch, FILE *stream)
 {
     if(__need_init_uart == 1){
@@ -235,144 +238,149 @@ int  fgetc(FILE *stream)
 /*
  *  Output string "str" to UART selected.
  */
-//void  puts ( const char * str )
-//{
-//    char * temp = (char *)str;
-//
-//    while (*temp)
-//    {
-//        putchar(*(temp ++));
-//    }
-//}
-//
-///*
-// *
-// */
-//void * memset( void * s, int c, U32 count )
-//{
-//    char *xs = (char *)s;
-//
-//    while (count --)
-//    	*xs ++ = c;
-//
-//    return s;
-//}
-//
-///* 
-// *  uq -> string.
-// */
-//static char *numtostring (unsigned int uq, int base, char *buf )
-//{				
-//    register char *p, *p0;
-//    int n = 0, i;
-//
-//    p = buf;
-//    *buf = 0;
-//    do 
-//    {
-//    	*buf ++ = "0123456789abcdef"[uq % base];
-//    	n++;
-//    } while (uq /= base);
-//    p[n] = '\0';
-//	
-//    p0 = ++buf;
-//    if (base == 16 && n < 8)  //If Hex, the length is fixxed with 8 digitals
-//    {
-//        for (i = 0; i < 8 - n; i++)
-//        {
-//            p0[i] = '0';
-//        }
-//        for (; i < 8; i++)
-//        {
-//    	    p0[i] = p[8 - i - 1];
-//        }
-//        p0[8] = '\0';
-//    }
-//    else
-//    {
-//        for (i = 0; i < n; i++)
-//        {
-//    	    p0[i] = p[n - i - 1];
-//        }
-//        p0[n] = '\0';
-//    }
-//
-//    return (p0);
-//}
-//
-//
-///*
-// *  printf: output the string to uart with format, Same to prinrf in libc.
-// */
-//int printf ( const char *fmt, ... )
-//{
-//    const char *s;
-//    int        value;
-//    U32        ptr;
-//    char       ch, buf[64], *pbuf;
-//    va_list    ap;
-//#if CONFIG_SYS_SPARK
-//    return 0;
-//#endif
-//    va_start(ap, fmt);
-//    while (*fmt) 
-//    {
-//        if (*fmt != '%')
-//    	{
-//	    putchar(*fmt++);
-//            continue;
-//        }
-//
-//    	switch (*++fmt)
-//    	{
-//      	    case 's':
-//            	s = va_arg(ap, const char *);
-//                puts(s);
-//               	break;
-//            case 'd':
-//                value = va_arg(ap, int);
-//                if (value < 0)
-//                {
-//                    putchar('-');
-//                    value = 0 - value;
-//                }
-//		pbuf = numtostring((unsigned int)value, 10, buf);
-//                puts(pbuf);
-//                break;
-//            case 'x':
-//                value = va_arg(ap,int);
-//                pbuf = numtostring((unsigned int)value, 16, buf);
-//                puts(pbuf);
-//                break;
-//            case 'c':
-//                ch = (U8)va_arg(ap, int);
-//                pbuf = &ch;	
-//                putchar(*pbuf);				
-//                break;
-//#if 0
-//            case 'f':
-//            {
-//                float    f;
-//
-//                f = va_arg(ap, float);
-//                sprintf(buf, "%f\0", f);
-//                puts(buf);
-//                break;
-//            }
-//#endif
-//            case 'p':
-//                ptr = (U32) va_arg(ap, void *);	
-//                pbuf = numtostring(ptr, 16, buf);
-//                puts(pbuf);
-//		break;	
-//            default:  
-//                putchar(*fmt);
-//                break;
-//        }
-//        fmt ++;
-//    }
-//    va_end(ap);
-//
-//    return 0x01;   
-//}
-//
+/*
+void  puts ( const char * str )
+{
+    char * temp = (char *)str;
+
+    while (*temp)
+    {
+        putchar(*(temp ++));
+    }
+}
+ */
+
+/*
+void * memset( void * s, int c, U32 count )
+{
+    char *xs = (char *)s;
+
+    while (count --)
+    	*xs ++ = c;
+
+    return s;
+}
+ */
+
+/* 
+ *  uq -> string.
+ */
+/* 
+static char *numtostring (unsigned int uq, int base, char *buf )
+{				
+    register char *p, *p0;
+    int n = 0, i;
+
+    p = buf;
+    *buf = 0;
+    do 
+    {
+    	*buf ++ = "0123456789abcdef"[uq % base];
+    	n++;
+    } while (uq /= base);
+    p[n] = '\0';
+	
+    p0 = ++buf;
+    if (base == 16 && n < 8)  //If Hex, the length is fixxed with 8 digitals
+    {
+        for (i = 0; i < 8 - n; i++)
+        {
+            p0[i] = '0';
+        }
+        for (; i < 8; i++)
+        {
+    	    p0[i] = p[8 - i - 1];
+        }
+        p0[8] = '\0';
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+        {
+    	    p0[i] = p[n - i - 1];
+        }
+        p0[n] = '\0';
+    }
+
+    return (p0);
+}
+ */
+
+
+/*
+ *  printf: output the string to uart with format, Same to prinrf in libc.
+ */
+/*
+int printf ( const char *fmt, ... )
+{
+    const char *s;
+    int        value;
+    U32        ptr;
+    char       ch, buf[64], *pbuf;
+    va_list    ap;
+#if CONFIG_SYS_SPARK
+    return 0;
+#endif
+    va_start(ap, fmt);
+    while (*fmt) 
+    {
+        if (*fmt != '%')
+    	{
+	    putchar(*fmt++);
+            continue;
+        }
+
+    	switch (*++fmt)
+    	{
+      	    case 's':
+            	s = va_arg(ap, const char *);
+                puts(s);
+               	break;
+            case 'd':
+                value = va_arg(ap, int);
+                if (value < 0)
+                {
+                    putchar('-');
+                    value = 0 - value;
+                }
+		pbuf = numtostring((unsigned int)value, 10, buf);
+                puts(pbuf);
+                break;
+            case 'x':
+                value = va_arg(ap,int);
+                pbuf = numtostring((unsigned int)value, 16, buf);
+                puts(pbuf);
+                break;
+            case 'c':
+                ch = (U8)va_arg(ap, int);
+                pbuf = &ch;	
+                putchar(*pbuf);				
+                break;
+#if 0
+            case 'f':
+            {
+                float    f;
+
+                f = va_arg(ap, float);
+                sprintf(buf, "%f\0", f);
+                puts(buf);
+                break;
+            }
+#endif
+            case 'p':
+                ptr = (U32) va_arg(ap, void *);	
+                pbuf = numtostring(ptr, 16, buf);
+                puts(pbuf);
+		break;	
+            default:  
+                putchar(*fmt);
+                break;
+        }
+        fmt ++;
+    }
+    va_end(ap);
+
+    return 0x01;   
+}
+
+*/

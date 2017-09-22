@@ -11,9 +11,6 @@
 #ifndef	__DATATYPE_H__
 #define	__DATATYPE_H__
 
-////////////////////////////////////////////////////////////////////////////////////////
-//
-//
 #ifndef NULL
 #define	NULL  0x00
 #endif
@@ -62,8 +59,9 @@ typedef unsigned short	    WORD;
 #define CK_REG  CK_UINT32
 #define CK_SREG CK_UINT16
 #define CK_CREG CK_UINT8
-
-// FIXME:
+/*
+ FIXME:
+*/
 typedef struct
 {
 	CK_UINT16 year;
@@ -86,6 +84,4 @@ typedef struct
 #define  OUT
 #define INOUT
 
-///////////////////////////////////////////////////////////////////////////////////////
-#endif  // __DATATYPE_H__
-///////////////////////////////////////////////////////////////////////////////////////
+#endif  /* __DATATYPE_H__ */

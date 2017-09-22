@@ -10,13 +10,15 @@
 #include "ckconfig.h"
 
 #include <stdio.h>
-//#include "circlebuffer.h"
+/* #include "circlebuffer.h" */
 #include "uart.h"
 #include "ckuart.h"
-//#include "intc.h"
-//#include "misc.h"
+/*
+#include "intc.h"
+#include "misc.h"
 
-//CK_Uart_Device consoleuart = CONFIG_TERMINAL_UART;
+CK_Uart_Device consoleuart = CONFIG_TERMINAL_UART;
+*/
 #define UARTID_MAX   sizeof(CK_Uart_Table) / sizeof(CKStruct_UartInfo) 
 static void CK_Uart_Interrupt(CK_UINT32 irqid); 
 
@@ -34,8 +36,10 @@ static void delay ( int sec )
 static CKStruct_UartInfo CK_Uart_Table[] = 
 {
   {0,CK_UART_ADDRBASE0,CK_UART0_IRQID,FALSE,NULL},
-//  {1,CK_UART_ADDRBASE1,CK_UART1_IRQID,FALSE,NULL},
-//  {2,CK_UART_ADDRBASE2,CK_UART2_IRQID,FALSE,NULL},
+/*
+  {1,CK_UART_ADDRBASE1,CK_UART1_IRQID,FALSE,NULL},
+  {2,CK_UART_ADDRBASE2,CK_UART2_IRQID,FALSE,NULL},
+*/
 };
 
 /*
@@ -89,7 +93,9 @@ CK_INT32 CK_Uart_Init( CK_Uart_Device uartid)
 CK_INT32 CK_Uart_Open(CK_Uart_Device uartid,void (*handler)(CK_INT8 error))
 {
   CKStruct_UartInfo *info;
-//  PCKStruct_IRQHandler irqhander; 
+/*
+  PCKStruct_IRQHandler irqhander; 
+*/
   info = &(CK_Uart_Table[uartid]);
   if ((uartid < 0) || (uartid >= UARTID_MAX))
   {
@@ -104,10 +110,12 @@ CK_INT32 CK_Uart_Open(CK_Uart_Device uartid,void (*handler)(CK_INT8 error))
   
   
   /* intilize the sending and receiving buffers */
-//  CK_CircleBuffer_Init(
-//    &(info->txcirclebuffer), info->txbuffer, CK_UART_TXBUFFERSIZE);
-//  CK_CircleBuffer_Init(
-//    &(info->rxcirclebuffer), info->rxbuffer, CK_UART_RXBUFFERSIZE);
+/*
+  CK_CircleBuffer_Init(
+    &(info->txcirclebuffer), info->txbuffer, CK_UART_TXBUFFERSIZE);
+  CK_CircleBuffer_Init(
+    &(info->rxcirclebuffer), info->rxbuffer, CK_UART_RXBUFFERSIZE);
+*/
   info->handler = handler;
   
   /* intilize irqhandler */
@@ -120,7 +128,7 @@ CK_INT32 CK_Uart_Open(CK_Uart_Device uartid,void (*handler)(CK_INT8 error))
   irqhander->next = NULL; 
   */
   /* register uart isr */
-//  CK_INTC_RequestIrq(&(info->irqhandler));	              
+/*  CK_INTC_RequestIrq(&(info->irqhandler));	              */
   info->bopened = TRUE;
   return SUCCESS;
 }
@@ -141,7 +149,9 @@ CK_INT32 CK_Uart_Open(CK_Uart_Device uartid,void (*handler)(CK_INT8 error))
     /* Clear TX & RX circle buffer. */
     info->addr[CK_UART_IER] &= ~IER_RDA_INT_ENABLE;
     info->handler = NULL;
-//    CK_INTC_FreeIrq(&(info->irqhandler));
+/*
+    CK_INTC_FreeIrq(&(info->irqhandler));
+*/
     info->bopened = 0;
     return SUCCESS;
   }
@@ -535,9 +545,12 @@ CK_INT32 CK_Uart_GetChar(IN CK_Uart_Device uartid, OUT CK_UINT8 *ch)
   return SUCCESS;	
   }
   else
-  { //irq mode
- //   if(TRUE == CK_CircleBuffer_Read(&(info->rxcirclebuffer), ch))
- //   return SUCCESS;
+  { 
+/*
+    irq mode
+    if(TRUE == CK_CircleBuffer_Read(&(info->rxcirclebuffer), ch))
+    return SUCCESS;
+*/
   }
   return FAILURE;
 }
@@ -574,8 +587,10 @@ CK_INT32 CK_Uart_GetCharUnBlock(IN CK_Uart_Device uartid, OUT CK_UINT8 *ch)
   }
   else
   { /*irq mode*/
-//    if(TRUE == CK_CircleBuffer_Read(&(info->rxcirclebuffer), ch))
-//    return SUCCESS;
+/*
+    if(TRUE == CK_CircleBuffer_Read(&(info->rxcirclebuffer), ch))
+    return SUCCESS;
+*/
   }
   return FAILURE;
 }

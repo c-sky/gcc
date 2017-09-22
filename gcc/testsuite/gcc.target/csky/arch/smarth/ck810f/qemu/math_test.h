@@ -1,35 +1,41 @@
 #include <math.h>
-//#include <math_private.h>
+/*
+#include <math_private.h>
+*/
 
 #define minus_zero		-0
 #define plus_infty		HUGE_VAL
 #define minus_infty		-HUGE_VAL
 
-/////#if (__BYTE_ORDER == __BIG_ENDIAN)
-///#if defined(__cskyBE__)
-///typedef union
-///{
-///    double value;
-///    struct
-///    {
-///        unsigned int msw;
-///        unsigned int lsw;
-///    }parts;
-///}ieee_double_shape_type;
-///
-///#else
-///
-///typedef union
-///{
-///    double value;
-///    struct
-///    {
-///        unsigned int lsw;
-///        unsigned int msw;
-///    }parts;
-///}ieee_double_shape_type;
-///
-///#endif
+/*
+ #if (__BYTE_ORDER == __BIG_ENDIAN)
+*/
+/*
+#if defined(__cskyBE__)
+typedef union
+{
+    double value;
+    struct
+    {
+        unsigned int msw;
+        unsigned int lsw;
+    }parts;
+}ieee_double_shape_type;
+
+#else
+
+typedef union
+{
+    double value;
+    struct
+    {
+        unsigned int lsw;
+        unsigned int msw;
+    }parts;
+}ieee_double_shape_type;
+
+#endif
+*/
 
 static ieee_double_shape_type __Nanf;
 static double _set_nan(void){
