@@ -5813,7 +5813,7 @@ static void
 csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
 {
   rtx fnaddr = XEXP (DECL_RTL (fndecl), 0);
-  rtx mem;
+  rtx mem, a_tramp;
 
   emit_block_move (m_tramp, assemble_trampoline_template (),
                    GEN_INT (TRAMPOLINE_SIZE), BLOCK_OP_NORMAL);
@@ -5825,7 +5825,10 @@ csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
                         CSKY_ISA_FEATURE(2E3) ? 12 : 16);
   emit_move_insn (mem, fnaddr);
 
-  /* TODO Add code about clear insn cache.  */
+  a_tramp = XEXP (m_tramp, 0);
+  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "__clear_cache"),
+                     LCT_NORMAL, VOIDmode, 2, a_tramp, Pmode,
+                     plus_constant (Pmode, a_tramp, TRAMPOLINE_SIZE), Pmode);
 }
 
 

@@ -113,3 +113,8 @@
 /* This flag used to enable or disable the sepical
    features only for linux toolchain.  */
 #define TARGET_CSKY_LINUX 1
+
+/* Clear the instruction cache from `BEG' to `END'.  This makes a
+   call to the ARM_SYNC_ICACHE architecture specific syscall.  */
+#define CLEAR_INSN_CACHE(BEG, END)                      \
+  cacheflush (BEG, END-BEG, 1)
