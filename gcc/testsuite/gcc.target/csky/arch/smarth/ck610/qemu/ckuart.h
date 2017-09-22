@@ -1,20 +1,21 @@
 
-////////////////////////////////////////////////////////////////////////////
 #ifndef __CKUART_H__
 #define __CKUART_H__
 
 #include "ckconfig.h"
 
 #define _UART           volatile U32 *
-//#if defined(CONFIG_HAVE_MMU)
+/* #if defined(CONFIG_HAVE_MMU) */
 #define UART0           (volatile U32 *)(0xb0015000)
-//#else
-//#define UART0           (volatile U32 *)(0x10015000)
-////#define UART0           (volatile U32 *)(0x1001a000)
-//#define UART1           (volatile U32 *)(0x1001b000)
-//#define UART2           (volatile U32 *)(0x1001c000)
-//#define UART3           (volatile U32 *)(0x1001d000)
-//#endif
+/*
+#else
+#define UART0           (volatile U32 *)(0x10015000)
+  #define UART0           (volatile U32 *)(0x1001a000)
+#define UART1           (volatile U32 *)(0x1001b000)
+#define UART2           (volatile U32 *)(0x1001c000)
+#define UART3           (volatile U32 *)(0x1001d000)
+#endif
+*/
 /* UART frequence definition */
 #define UART_FREQ	APB_FREQ
 
@@ -32,9 +33,7 @@
 #define UART_MSR        0x06
 #define UART_USR        0x1f
 
-//////////////////////////////////////////////////////////
 #define UART_DIV                0x4
-//////////////////////////////////////////////////////////
 /* UART register bit definitions */
 /* CK520 */
 #define LCR_SEL_DLR	        0x80
@@ -143,7 +142,6 @@
 
 #define IDLE_COUNT	0x10000
 
-//////////////////////////////////////////////////////////////////////////////
-#endif   // ending __CKUART_H__
+#endif   /* ending __CKUART_H__ */
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
