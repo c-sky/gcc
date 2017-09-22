@@ -28,7 +28,9 @@
  * Config CPU cache
  *********************************************/
 /* 0 - rw; 1 - rwc; 2 - rwc; 3 - rw */
-//#define CONFIG_CKCPU_MGU_BLOCKS         0xff02
+/*
+#define CONFIG_CKCPU_MGU_BLOCKS         0xff02
+*/
 #define CONFIG_CKCPU_MGU_BLOCKS         0xff06
 
 /* 0 - baseaddr: 0x0; size: 4G */
@@ -43,8 +45,10 @@
 /*******************************
  * Config CPU cache
  ******************************/
-//#define CONFIG_CKCPU_ICACHE             1
-//#define CONFIG_CKCPU_DCACHE             1
+/*
+#define CONFIG_CKCPU_ICACHE             1
+#define CONFIG_CKCPU_DCACHE             1
+*/
 #define CONFIG_CKCPU_ICACHE             0
 #define CONFIG_CKCPU_DCACHE             0
 
@@ -61,17 +65,23 @@
 #define MMC_SCONR				(0x10001000)
 
 /***** Intc ******/
-//#ifdef VIC
+/*
+#ifdef VIC
+*/
 #define CK_INTC_BASEADDRESS		(0xe000e100)
-//#else
-//#define CK_INTC_BASEADDRESS		(0x40016100)
-//#endif
+/*
+#else
+#define CK_INTC_BASEADDRESS		(0x40016100)
+#endif
 
-//#ifdef CTIM
+#ifdef CTIM
+*/
 #define CORETIM_BASE          0xe000e010
-//#else
-//#define CORETIM_BASE          0x40017010
-//#endif
+/*
+#else
+#define CORETIM_BASE          0x40017010
+#endif
+*/
 
 /*
  * define irq number of perpheral modules
@@ -195,8 +205,8 @@
 #define FLASH_START			0x00000000
 #define FLASH_END			0x00800000
 
-#define FLASH_SECTOR_SIZE	0X2000   // 8kb
-#define FLASH_BLOCK_SIZE	0X20000  // 128Kb
+#define FLASH_SECTOR_SIZE	0X2000   /* 8kb */
+#define FLASH_BLOCK_SIZE	0X20000  /* 128Kb */
 
 
 #endif /* __INCLUDE_CK5A6_H */
