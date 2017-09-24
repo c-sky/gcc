@@ -128,6 +128,63 @@ proc gcc_target_compile { source dest type options } {
     global TEST_ALWAYS_FLAGS
     global flags_to_postpone
     global board_info
+    global srcdir
+
+    # set csky elf
+    set CPU [board_info target CPU]
+    set SOC [board_info target SOC]
+    if { [board_info target exists GDB] } {
+        set PLAT board
+    } else {
+        set PLAT qemu
+    }
+    if { [ istarget csky*elf* ] } {
+       if ![ file exists .gdbinit ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/gdbinit ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/gdbinit .gdbinit
+             }
+       }
+       if ![ file exists csky.ld ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/csky.ld ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/csky.ld csky.ld
+             }
+        }
+       if ![ file exists uart.c ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/uart.c ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/uart.c uart.c
+             }
+       }
+       if ![ file exists crt0.o ] {
+                 if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/crt0.S ] {
+		set comp_output [ target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/crt0.S" "crt0.o" object  $options ]
+             }
+       }
+#       if ![ file exists crt0.S ] {
+#                 if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/crt0.S ] {
+#                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/crt0.S crt0.S
+#             }
+#       }
+       if ![ file exists ckconfig.h ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/ckconfig.h ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/ckconfig.h ckconfig.h
+             }
+       }
+       if ![ file exists ckuart.h ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/ckuart.h ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/ckuart.h ckuart.h
+             }
+       }
+       if ![ file exists uart.h ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/uart.h ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/uart.h uart.h
+             }
+       }
+       if ![ file exists datatype.h ] {
+             if [ file exists $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/datatype.h ] {
+                 file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/$PLAT/datatype.h datatype.h
+             }
+       }
+    }
 
     if {[target_info needs_status_wrapper] != "" && \
 	    [target_info needs_status_wrapper] != "0" && \

@@ -20,12 +20,13 @@
 CK_Uart_Device consoleuart = CONFIG_TERMINAL_UART;
 */
 #define UARTID_MAX   sizeof(CK_Uart_Table) / sizeof(CKStruct_UartInfo) 
+/*
 static void CK_Uart_Interrupt(CK_UINT32 irqid); 
-
+*/
 static void delay ( int sec )
 {
     int i;
-    volatile int j;
+    volatile int j __attribute__((unused));
 
     for (i = 0x00; i < sec * 100; i ++)
         j = i;
@@ -35,6 +36,9 @@ static void delay ( int sec )
 /* the table of the uart serial ports */
 static CKStruct_UartInfo CK_Uart_Table[] = 
 {
+/*
+  {.id = 0, .addr = CK_UART_ADDRBASE0, .irq = CK_UART0_IRQID, .bopened = FALSE, .handler = NULL},
+*/
   {0,CK_UART_ADDRBASE0,CK_UART0_IRQID,FALSE,NULL},
 /*
   {1,CK_UART_ADDRBASE1,CK_UART1_IRQID,FALSE,NULL},
@@ -50,9 +54,10 @@ static CKStruct_UartInfo CK_Uart_Table[] =
 void CK_Deactive_UartModule()
 {
    int i;
+   int j=UARTID_MAX;
    CKStruct_UartInfo *info;
    
-   for( i = 0; i < UARTID_MAX; i++)
+   for( i = 0; i < j; i++)
    {	   
        info = &(CK_Uart_Table[i]);
 	   info->addr[CK_UART_LCR] = 0x83;
@@ -75,7 +80,7 @@ CK_INT32 CK_Uart_Init( CK_Uart_Device uartid)
 {
   CK_Uart_ChangeBaudrate(uartid,B19200);
   CK_Uart_SetParity(uartid,NONE);
-  CK_Uart_SetWordSize(uartid,LCR_WORD_SIZE_8);
+  CK_Uart_SetWordSize(uartid,WORD_SIZE_8);
   CK_Uart_SetStopBit(uartid,LCR_STOP_BIT_1);
   CK_Uart_SetRXMode(uartid,TRUE);
   CK_Uart_SetTXMode(uartid,TRUE);
@@ -231,9 +236,9 @@ CK_INT32 CK_Uart_SetParity(
 )
 {
   CKStruct_UartInfo *info;
+  CK_INT32 timecount;
 	
   info = &(CK_Uart_Table[uartid]);	
-  CK_INT32 timecount;
   timecount = 0;
   /* PEN bit(LCR[3]) is writeable when the UART is not busy(USR[0]=0).*/
   while((info->addr[CK_UART_USR] & USR_UART_BUSY) &&
@@ -292,9 +297,9 @@ CK_INT32 CK_Uart_SetStopBit(
 )
 {
   CKStruct_UartInfo *info;
+  CK_INT32 timecount;
 	
   info = &(CK_Uart_Table[uartid]);	
-  CK_INT32 timecount;
   timecount = 0;
   /* PEN bit(LCR[3]) is writeable when the UART is not busy(USR[0]=0).*/
   while((info->addr[CK_UART_USR] & USR_UART_BUSY) && 
@@ -415,9 +420,9 @@ CK_INT32 CK_Uart_SetWordSize(
 CK_INT32 CK_Uart_SetTXMode(CK_Uart_Device uartid, BOOL bQuery)
 {
   CKStruct_UartInfo *info;
+  CK_INT32 timecount;
 	
   info = &(CK_Uart_Table[uartid]);	
-  CK_INT32 timecount;
   timecount = 0;
   while((info->addr[CK_UART_USR] & USR_UART_BUSY) && 
         (timecount < UART_BUSY_TIMEOUT))
@@ -466,9 +471,9 @@ CK_INT32 CK_Uart_SetTXMode(CK_Uart_Device uartid, BOOL bQuery)
 CK_INT32 CK_Uart_SetRXMode(CK_Uart_Device uartid, BOOL  bQuery)
 {
   CKStruct_UartInfo *info;
+  CK_INT32 timecount;
 	
   info = &(CK_Uart_Table[uartid]);	
-  CK_INT32 timecount;
   timecount = 0;
   /* PEN bit(LCR[3]) is writeable when the UART is not busy(USR[0]=0).*/
   while((info->addr[CK_UART_USR] & USR_UART_BUSY) && 
@@ -605,7 +610,7 @@ CK_INT32 CK_Uart_GetCharUnBlock(IN CK_Uart_Device uartid, OUT CK_UINT8 *ch)
 CK_INT32 CK_Uart_PutChar(CK_Uart_Device uartid, CK_UINT8 ch)
 {
   CKStruct_UartInfo *info;
-  CK_UINT8 temp;
+/*  CK_UINT8 temp; */
 
   if ((uartid < 0) || (uartid >= UARTID_MAX))
   {
@@ -665,7 +670,7 @@ static void CK_Console_CallBack(signed char error)
 
 int getchar1(void)
 {
-	char ch;
+	unsigned char ch=0;
 	if(i == 1){
         CK_Uart_Open(UART0,CK_Console_CallBack);
         i = 0;
@@ -677,12 +682,15 @@ int getchar1(void)
 
 int fputc(int ch, FILE *stream)
 {
+        if (stream) {}
 	if(i == 1){
 		CK_Uart_Open(UART0,CK_Console_CallBack);
 		i = 0;
 	}	
 
 	CK_Uart_PutChar(UART0, ch);
+
+    return 0;
 }
 int  fgetc(FILE *stream)
 {
@@ -697,9 +705,10 @@ int  fgetc(FILE *stream)
  *            irqid - Interrupt number of uart.
  * Return: NULL.
  */
+/*
 static void CK_Uart_Interrupt(CK_UINT32 irqid)
 {
- /* CKStruct_UartInfo *info;
+  CKStruct_UartInfo *info;
   CK_INT8 int_state;
   CK_UINT8 txrxdata;
   CKEnum_Uart_Error error;
@@ -735,11 +744,14 @@ static void CK_Uart_Interrupt(CK_UINT32 irqid)
       error = CK_Uart_CTRL_C;
       info->handler(error);
     }
-  }*/
+  }
 }
+*/
 
 void CK_UART_ClearRxBuffer(CK_Uart_Device uartid)
-{/*
+{
+  if (uartid) {}
+/*
   CKStruct_UartInfo *info;
   info = &(CK_Uart_Table[uartid]);
   CK_CircleBuffer_Clear(&(info->rxcirclebuffer));*/
