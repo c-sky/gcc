@@ -27,16 +27,20 @@ static int i = 1;
 static void delay ( int sec )
 {
     int i;
+/*
     volatile int j;
-   
-    for (i = 0x00; i < sec * 100; i ++)
-        j = i;
+*/
+    for (i = 0; i < sec * 100; i ++)
+    {
+ /*       j = i; */
+    }
 }
-
+/*
 static _UART GetUart ( void )
 {
     return whichuart;
 }
+*/
 
 void SetUart ( _UART pUart )
 {
@@ -86,6 +90,7 @@ int change_uart_baudrate(unsigned int baudrate)
     {
         printf("\r\nBaudrate inputted is not support!");
     } 
+    return 0;
 }
 
 
@@ -165,7 +170,8 @@ int  getkey ( void )
 {
     _UART  pUart = whichuart;
 
-	if(i = 1){
+    if (i==1)
+    {
         uart_init(19200);
         i = 0;
     }
@@ -180,7 +186,7 @@ int  getchar1 ( void )
 {
     _UART  pUart = whichuart;
 
-	if(i = 1){
+    if(i == 1){
         uart_init(19200);
         i = 0;
     }
@@ -189,22 +195,26 @@ int  getchar1 ( void )
 
     return  (int)pUart[UART_RBR];
 }
-int  fgetc(FILE *strean)
-{
-     return getchar1();
+int  fgetc(FILE *stream)
+{ 
+     if(stream == stdin)
+     {
+          return getchar1();
+     }
+     return 0;
 }
 /*
  *  output char "ch" to UART selected.
  */
-/* void  putchar ( char ch ) */
 int fputc(int ch, FILE *stream)
 {
     _UART  pUart = whichuart;
-
-	if(i = 1){
-		uart_init(19200);
-		i = 0;
-	}
+    if(stream == stdout)
+    { 
+    if(i == 1){
+	uart_init(19200);
+	i = 0;
+    }
 
     while (!(pUart[UART_LSR] & LSR_TRANS_EMPTY));
     if (ch == '\n')
@@ -213,5 +223,7 @@ int fputc(int ch, FILE *stream)
         delay(10);
     }
     pUart[UART_THR] = ch;
+    return pUart[UART_THR];
+   }
+   return -1;
 }
-

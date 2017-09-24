@@ -40,16 +40,17 @@ int printf ( const char *fmt, ... );
 static void delay ( int sec )
 {
     int i;
-    volatile int j;
+    volatile int j __attribute__((unused));
    
     for (i = 0x00; i < sec * 100; i ++)
         j = i;
 }
-
+/*
 static _UART GetUart ( void )
 {
     return whichuart;
 }
+*/
 
 void SetUart ( _UART pUart )
 {
@@ -99,6 +100,7 @@ int change_uart_baudrate(unsigned int baudrate)
     {
         printf("\r\nBaudrate inputted is not support!");
     } 
+    return 0;
 }
 
 
@@ -166,11 +168,11 @@ int UartWrite ( U8 *pucData, U32 ulNumBytes, U32 *pulBytesWritten )
  */
 int  kbhit ( void )
 {
+    _UART  pUart = whichuart;
     if(__need_init_uart == 1){
         uart_init(19200);
         __need_init_uart = 0;
     }
-    _UART  pUart = whichuart;
 
     return (pUart[UART_LSR] & LSR_DATA_READY);    
 }
@@ -180,11 +182,12 @@ int  kbhit ( void )
  */
 int  getkey ( void )
 {
+    _UART  pUart = whichuart;
+
     if(__need_init_uart == 1){
         uart_init(19200);
         __need_init_uart = 0;
     }
-    _UART  pUart = whichuart;
 
     return  (int)pUart[UART_RBR];
 }
@@ -194,11 +197,11 @@ int  getkey ( void )
  */
 int  getchar1 ( void )
 {
+    _UART  pUart = whichuart;
     if(__need_init_uart == 1){
         uart_init(19200);
         __need_init_uart = 0;
     }
-    _UART  pUart = whichuart;
 
     while ((pUart[UART_LSR] & LSR_DATA_READY));
 
@@ -210,11 +213,12 @@ int  getchar1 ( void )
  */
 int fputc(int ch, FILE *stream)
 {
+    _UART  pUart = whichuart;
+    if (stream) {}
     if(__need_init_uart == 1){
         uart_init(19200);
         __need_init_uart = 0;
     }
-    _UART  pUart = whichuart;
 
     while (!(pUart[UART_LSR] & LSR_TRANS_EMPTY));
     if (ch == '\n')
@@ -223,14 +227,15 @@ int fputc(int ch, FILE *stream)
         delay(10);
     }
     pUart[UART_THR] = ch;
+    return 0;
 }
 int  fgetc(FILE *stream)
 {
+      int ch = getchar1();
      if(__need_init_uart == 1){
         uart_init(19200);
         __need_init_uart = 0;
     }
-      int ch = getchar1();
       fputc(ch, stream);
       return ch;
 }
