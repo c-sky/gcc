@@ -2032,7 +2032,7 @@ csky_class_max_nregs (reg_class_t rclass, machine_mode mode)
 reg_class_t
 csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
                        reg_class_t rclass,
-                       enum machine_mode mode ATTRIBUTE_UNUSED,
+                       enum machine_mode mode,
                        secondary_reload_info * sri ATTRIBUTE_UNUSED)
 {
   int regno = -1;
@@ -2071,7 +2071,7 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
 
   if (rclass == V_REGS && !CSKY_GENERAL_REGNO_P (regno))
     {
-      if (MEM_P (x))
+      if (MEM_P (x) && (mode == SFmode || mode == DFmode))
         return NO_REGS;
       else
         return GENERAL_REGS;
