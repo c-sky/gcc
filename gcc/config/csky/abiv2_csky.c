@@ -2070,7 +2070,12 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
     return GENERAL_REGS;
 
   if (rclass == V_REGS && !CSKY_GENERAL_REGNO_P (regno))
-    return GENERAL_REGS;
+    {
+      if (MEM_P (x))
+        return NO_REGS;
+      else
+        return GENERAL_REGS;
+    }
 
   return NO_REGS;
 }
