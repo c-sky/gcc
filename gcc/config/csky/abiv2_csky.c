@@ -2493,6 +2493,10 @@ csky_option_override (void)
   if (!global_options_set.x_flag_cse_cc
       && (optimize > 1))
     flag_cse_cc = 1;
+  /* Don't run the scheduler before reload by defualt,
+     since it tends to increase register pressure.  */
+  if (!global_options_set.x_flag_schedule_insns)
+    flag_schedule_insns = 0;
 
   csky_add_gc_roots ();
 
