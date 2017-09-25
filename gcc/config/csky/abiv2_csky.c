@@ -1999,6 +1999,13 @@ csky_class_likely_spilled_p (reg_class_t rclass)
 static reg_class_t
 csky_preferred_reload_class (rtx x ATTRIBUTE_UNUSED, reg_class_t rclass)
 {
+  if (TARGET_HARD_FLOAT)
+    {
+      if (CONST_DOUBLE_P (x)
+          && (GET_MODE (x) == DFmode || GET_MODE (x) == SFmode)
+          && rclass == NO_REGS)
+        return GENERAL_REGS;
+    }
   return rclass;
 }
 
