@@ -160,3 +160,8 @@ Use Csky Enhance DSP instructions.
 fcse-cc
 Common Report Var(flag_cse_cc) Optimization
 Allow common condition code set expression elimination.
+
+fsched-prolog
+Common Report Var(flag_sched_prolog) Undocumented
+Permit scheduling of a function's prologue sequence.
+

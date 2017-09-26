@@ -5081,6 +5081,9 @@ void csky_expand_prologue(void)
                             + fi.pad_local + fi.pad_reg;
       current_function_static_stack_size = space_allocated;
     }
+
+  if (!flag_sched_prolog)
+    emit_insn (gen_blockage ());
 }
 
 
@@ -5090,6 +5093,9 @@ void csky_expand_epilogue(void)
   int offset = 0;
   unsigned long func_type = get_csky_current_func_type();
   bool return_with_pc = false;
+
+  if (!flag_sched_prolog)
+    emit_insn (gen_blockage ());
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
     {
