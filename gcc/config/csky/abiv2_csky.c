@@ -2882,6 +2882,12 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
 {
   enum rtx_code code = GET_CODE (index);
 
+  if (TARGET_HARD_FLOAT
+      && (mode == SFmode || mode == DFmode))
+    return (code == CONST_INT && INTVAL (index) < 1024
+            && INTVAL (index) >= 0
+            && (INTVAL (index) & 3) == 0);
+
   if (code == CONST_INT)
     {
       /* When the mode size is larger than 4, we may use two ld instruction
