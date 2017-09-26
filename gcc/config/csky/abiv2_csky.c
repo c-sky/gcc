@@ -2039,7 +2039,7 @@ csky_class_max_nregs (reg_class_t rclass, machine_mode mode)
 reg_class_t
 csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
                        reg_class_t rclass,
-                       enum machine_mode mode,
+                       enum machine_mode mode ATTRIBUTE_UNUSED,
                        secondary_reload_info * sri ATTRIBUTE_UNUSED)
 {
   int regno = -1;
@@ -6141,7 +6141,7 @@ csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
    and another.  */
 
 int
-csky_register_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
+csky_register_move_cost (machine_mode mode,
                          reg_class_t from, reg_class_t to)
 {
 #define GR_REG_CLASS_P(CLASS) \
@@ -6153,11 +6153,15 @@ csky_register_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
 #define V_REG_CLASS_P(CLASS) \
   ((CLASS) == V_REGS)
 
-  if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
-      || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
-      || (V_REG_CLASS_P (from) && V_REG_CLASS_P (to))
-      || (V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+  if (V_REG_CLASS_P (from) && V_REG_CLASS_P (to))
+    return 2;
+
+  if ((V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
       || (GR_REG_CLASS_P (from) && V_REG_CLASS_P (to)))
+    return (2 * (GET_MODE_SIZE (mode) / 4));
+
+  if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+      || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)))
     return 16;
 
   if (HILO_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
@@ -6177,7 +6181,10 @@ int
 csky_memory_move_cost (machine_mode mode, reg_class_t rclass,
                        bool in ATTRIBUTE_UNUSED)
 {
-  return (4 + memory_move_secondary_cost(mode, rclass, in));
+  if (rclass == V_REGS && mode == DFmode)
+    return (8 + memory_move_secondary_cost(mode, rclass, in));
+  else
+    return (4 + memory_move_secondary_cost(mode, rclass, in));
 }
 
 
