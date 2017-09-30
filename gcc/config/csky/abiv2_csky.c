@@ -2883,8 +2883,9 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   enum rtx_code code = GET_CODE (index);
 
   if (TARGET_HARD_FLOAT
-      && (mode == SFmode || mode == DFmode))
-    return (code == CONST_INT && INTVAL (index) < 1024
+      && (mode == SFmode || mode == DFmode)
+      && code == CONST_INT)
+    return (INTVAL (index) < 1024
             && INTVAL (index) >= 0
             && (INTVAL (index) & 3) == 0);
 
@@ -6193,7 +6194,16 @@ int
 csky_memory_move_cost (machine_mode mode, reg_class_t rclass,
                        bool in ATTRIBUTE_UNUSED)
 {
-  return (4 + memory_move_secondary_cost(mode, rclass, in));
+  int cost = 4;
+
+  if (TARGET_HARD_FLOAT)
+    {
+      if (mode == DFmode || mode == SFmode)
+        {
+          cost += 4;
+        }
+    }
+  return (cost + memory_move_secondary_cost(mode, rclass, in));
 }
 
 
