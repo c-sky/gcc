@@ -723,6 +723,15 @@ forward_propagate_addr_expr_1 (tree name, tree def_rhs,
       if (TREE_CODE (new_def_rhs) == MEM_REF
 	  && !is_gimple_mem_ref_addr (TREE_OPERAND (new_def_rhs, 0)))
 	return false;
+			/* If the target donot support negative index in operand addresses,
+			   donot forward propagate the address here.  */
+			if (TARGET_UNSUPPORT_NEGATIVE_INDEX && TREE_CODE (new_def_rhs) == MEM_REF)
+				{
+					offset_int off = mem_ref_offset (new_def_rhs);
+					if (off.to_shwi() < 0)
+						return false;
+				}
+
       new_def_rhs = build_fold_addr_expr_with_type (new_def_rhs,
 						    TREE_TYPE (rhs));
 
@@ -863,6 +872,10 @@ forward_propagate_addr_expr_1 (tree name, tree def_rhs,
 	    }
 	  else
 	    new_ptr = build_fold_addr_expr (def_rhs_base);
+		/* If the target donot support negative index in operand addresses,
+		   donot forward propagate the address here.  */
+		if (TARGET_UNSUPPORT_NEGATIVE_INDEX && (off.to_shwi() < 0))
+			return false;
 	  TREE_OPERAND (rhs, 0) = new_ptr;
 	  TREE_OPERAND (rhs, 1)
 	    = wide_int_to_tree (TREE_TYPE (TREE_OPERAND (rhs, 1)), off);

@@ -27,6 +27,19 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #define SYM(x) CONCAT1 (__, x)
 
+#ifndef __CSKYBE__
+#define xl r0
+#define xh r1
+#define yl r2
+#define yh r3
+#else
+#define xh r0
+#define xl r1
+#define yh r2
+#define yl r3
+#endif
+
+
 #ifdef __ELF__
 #define TYPE(x) .type SYM (x),@function
 #define SIZE(x) .size SYM (x), . - SYM (x)
@@ -320,6 +333,177 @@ FUNC_START modsi3
     pop     l0
 FUNC_END rem32
 FUNC_END modsi3
+#endif
+
+#ifdef L_unordsf2
+FUNC_START unordsf2
+#if defined(__CK801__)
+     subi     sp, 4
+     st.w     r4, (sp, 0x0)
+     lsli     r2, r0, 1
+     lsli     r3, r1, 1
+     asri     r4, r2, 24
+     not      r4
+     cmpnei   r4, 0
+     bt       1f
+     lsli     r4, r0, 9
+     cmpnei   r4, 0
+     bt       3f
+1:
+     asri     r4, r3, 24
+     not      r4
+     cmpnei   r4, 0
+     bt       2f
+     lsli     r4, r1, 9
+     cmpnei   r4, 0
+     bt       3f
+2:
+     ld.w     r4, (sp, 0x0)
+     addi     sp, 4
+     movi     r0, 0
+     rts
+3:
+     ld.w     r4, (sp, 0x0)
+     addi     sp, 4
+     movi     r0, 1
+     rts
+#elif defined(__CK802__)
+     lsli     r2, r0, 1
+     lsli     r3, r1, 1
+     asri     r2, r2, 24
+     not      r13, r2
+     cmpnei   r13, 0
+     bt       1f
+     lsli     r13, r0, 9
+     cmpnei   r13, 0
+     bt       3f
+1:
+     asri     r3, r3, 24
+     not      r13, r3
+     cmpnei   r13, 0
+     bt       2f
+     lsli     r13, r1, 9
+     cmpnei   r13, 0
+     bt       3f
+2:
+     movi     r0, 0
+     rts
+3:
+     movi     r0, 1
+     rts
+#else
+     lsli     r2, r0, 1
+     lsli     r3, r1, 1
+     asri     r2, r2, 24
+     not      r13, r2
+     bnez     r13, 1f
+     lsli     r13, r0, 9
+     bnez     r13, 3f
+1:
+     asri     r3, r3, 24
+     not      r13, r3
+     bnez     r13, 2f
+     lsli     r13, r1, 9
+     bnez     r13, 3f
+2:
+     movi     r0, 0
+     rts
+3:
+     movi     r0, 1
+     rts
+#endif
+FUNC_END unordsf2
+#endif
+
+#ifdef L_unorddf2
+FUNC_START unorddf2
+#if defined(__CK801__)
+     subi     sp, 8
+     st.w     r4, (sp, 0x0)
+     st.w     r5, (sp, 0x4)
+     lsli     r4, xh, 1
+     asri     r4, r4, 21
+     not      r4
+     cmpnei   r4, 0
+     bt       1f
+     mov      r4, xl
+     lsli     r5, xh, 12
+     or       r4, r5
+     cmpnei   r4, 0
+     bt       3f
+1:
+     lsli     r4, yh, 1
+     asri     r4, r4, 21
+     not      r4
+     cmpnei   r4, 0
+     bt       2f
+     mov      r4,yl
+     lsli     r5, yh, 12
+     or       r4, r5
+     cmpnei   r4, 0
+     bt       3f
+2:
+     ld.w     r4, (sp, 0x0)
+     ld.w     r5, (sp, 0x4)
+     addi     sp, 8
+     movi     r0, 0
+     rts
+3:
+     ld.w     r4, (sp, 0x0)
+     ld.w     r5, (sp, 0x4)
+     addi     sp, 8
+     movi     r0, 1
+     rts
+#elif defined(__CK802__)
+     lsli     r13, xh, 1
+     asri     r13, r13, 21
+     not      r13
+     cmpnei   r13, 0
+     bt       1f
+     lsli     xh, xh, 12
+     or       r13, xl, xh
+     cmpnei   r13, 0
+     bt       3f
+1:
+     lsli     r13, yh, 1
+     asri     r13, r13, 21
+     not      r13
+     cmpnei   r13, 0
+     bt       2f
+     lsli     yh, yh, 12
+     or       r13, yl, yh
+     cmpnei   r13, 0
+     bt       3f
+2:
+     movi     r0, 0
+     rts
+3:
+     movi     r0, 1
+     rts
+#else
+     lsli     r13, xh, 1
+     asri     r13, r13, 21
+     not      r13
+     bnez     r13, 1f
+     lsli     xh, xh, 12
+     or       r13, xl, xh
+     bnez     r13, 3f
+1:
+     lsli     r13, yh, 1
+     asri     r13, r13, 21
+     not      r13
+     bnez     r13, 2f
+     lsli     yh, yh, 12
+     or       r13, yl, yh
+     bnez     r13, 3f
+2:
+     movi     r0, 0
+     rts
+3:
+     movi     r0, 1
+     rts
+#endif
+FUNC_END unorddf2
 #endif
 
 #ifdef L_csky_case_sqi

@@ -1983,6 +1983,21 @@ mcore-*-elf)
 	inhibit_libc=true
 	;;
 csky-*-*)
+    if test x${with_endian} != x; then
+        case ${with_endian} in
+        big|little)		;;
+        *)	echo "with_endian=${with_endian} not supported."; exit 1 ;;
+        esac
+    fi
+    if test x${with_float} != x; then
+        case ${with_float} in
+        soft | hard) ;;
+        *)  echo "Unknown floating point type used in --with-float=$with_float" 1>&2
+            exit 1
+            ;;
+        esac
+    fi
+
 	case "$with_cskyabi" in
 	  abiv1)
       tm_file="csky/${with_cskyabi}_csky.h"
@@ -2022,15 +2037,19 @@ csky-*-*)
               ;;
           csky-*-linux*)
             tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
-            tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-linux"
+            tmake_file="$tmake_file csky/${with_cskyabi}_t-csky-linux"
             extra_options="${extra_options} linux.opt"
+
+            if test "x${enable_multilib}" = xyes ; then
+              tm_file="$tm_file ./sysroot-suffix.h"
+              tmake_file="${tmake_file} csky/t-sysroot-suffix"
+            fi
+
               case ${with_cskylibc} in
                   glibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
                       ;;
                   uclibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
                       default_use_cxa_atexit=no
                       ;;
@@ -2078,15 +2097,18 @@ csky-*-*)
           csky-*-linux*)
               tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${with_cskyabi}-linux-elf.h"
               tmake_file="${tmake_file} csky/${with_cskyabi}_t-csky csky/${with_cskyabi}_t-csky-linux"
+
+              if test "x${enable_multilib}" = xyes ; then
+                tm_file="$tm_file ./sysroot-suffix.h"
+                tmake_file="${tmake_file} csky/t-sysroot-suffix"
+              fi
+
               case ${with_cskylibc} in
                   glibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
-                      tmake_file="$tmake_file csky/t-sysroot-suffix csky/${with_cskyabi}_t-csky-glibc"
+                      tmake_file="$tmake_file csky/${with_cskyabi}_t-csky-glibc"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_GLIBC"
                       ;;
                   uclibc)
-                      tm_file="$tm_file ./sysroot-suffix.h"
-                      tmake_file="$tmake_file csky/t-sysroot-suffix"
                       tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC"
                       default_use_cxa_atexit=no
                       ;;
@@ -3828,6 +3850,10 @@ case "${target}" in
 		esac
 		;;
 
+    csky-*-*)
+        supported_defaults="cpu endian float"
+        ;;
+
 	arm*-*-*)
 		supported_defaults="arch cpu float tune fpu abi mode tls"
 		for which in cpu tune; do
@@ -4653,7 +4679,7 @@ case ${target} in
 esac
 
 t=
-all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu nan fp_32 odd_spreg_32 divide llsc mips-plt synci tls"
+all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu nan fp_32 odd_spreg_32 divide llsc mips-plt synci tls endian"
 for option in $all_defaults
 do
 	eval "val=\$with_"`echo $option | sed s/-/_/g`

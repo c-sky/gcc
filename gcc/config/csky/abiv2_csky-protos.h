@@ -246,4 +246,7 @@ extern int csky_arch_isa_features[];
 
 #define TARGET_SOFT_FPU     (csky_fpu_index == TARGET_FPU_fpv2_sf)
 
+#include "abiv2_csky_internal.h"
+extern const struct tune_params *current_tune;
+
 #endif /* GCC_CSKY_PROTOS_H */

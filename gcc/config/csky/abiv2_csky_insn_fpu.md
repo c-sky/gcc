@@ -279,7 +279,7 @@
 ;; -------------------------------------------------------------------------
 
 (define_expand "cbranchsf4"
-  [(set (pc) (if_then_else (match_operator 0 "ordered_comparison_operator"
+  [(set (pc) (if_then_else (match_operator 0 "csky_float_comparison_operator"
                              [(match_operand:SF 1 "register_operand")
                               (match_operand:SF 2 "csky_compare_operand_float")])
                            (label_ref (match_operand 3 ""))
@@ -297,7 +297,19 @@
       emit_jump_insn (gen_csky_jbt (operands[3]));
 
     DONE;
-  }") 
+  }")
+
+(define_insn "*fpuv2_unordered"
+  [(set (reg:CC 33) (unordered:CC (match_operand:SF 0 "register_operand" "v")
+                                  (match_operand:SF 1 "register_operand" "v")))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmpuos\t%0, %1")
+
+(define_insn "*fpuv2_unordered_zero"
+  [(set (reg:CC 33) (unordered:CC (match_operand:SF 0 "register_operand" "v")
+                                  (match_operand:SF 1 "csky_const_float0_operand" "i")))]
+  "CSKY_ISA_FEATURE(fpv2_sf)"
+  "fcmpuos\t%0, %0")
 
 (define_insn "*fpuv2_ne"
   [(set (reg:CC 33) (ne:CC (match_operand:SF 0 "register_operand" "v")
@@ -343,7 +355,7 @@
 
 
 (define_expand "cbranchdf4"
-  [(set (pc) (if_then_else (match_operator 0 "ordered_comparison_operator"
+  [(set (pc) (if_then_else (match_operator 0 "csky_float_comparison_operator"
                              [(match_operand:DF 1 "register_operand")
                               (match_operand:DF 2 "csky_compare_operand_float")])
                            (label_ref (match_operand 3 ""))
@@ -362,6 +374,18 @@
 
     DONE;
 }")
+
+(define_insn "*fpuv2_dunordered"
+  [(set (reg:CC 33) (unordered:CC (match_operand:DF 0 "register_operand" "v")
+                                  (match_operand:DF 1 "register_operand" "v")))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmpuod\t%0, %1")
+
+(define_insn "*fpuv2_dunordered_zero"
+  [(set (reg:CC 33) (unordered:CC (match_operand:DF 0 "register_operand" "v")
+                                  (match_operand:DF 1 "csky_const_float0_operand" "i")))]
+  "CSKY_ISA_FEATURE(fpv2_df)"
+  "fcmpuod\t%0, %0")
 
 (define_insn "*fpuv2_dne"
   [(set (reg:CC 33) (ne:CC (match_operand:DF 0 "register_operand" "v")
@@ -499,8 +523,8 @@
 ")
 
 (define_insn "*fpuv2_movsf"
-  [(set (match_operand:SF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v")
-        (match_operand:SF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v"))]
+  [(set (match_operand:SF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v,v")
+        (match_operand:SF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v,m"))]
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "* return output_csky_move(insn, operands, SFmode);"
 )
@@ -519,8 +543,8 @@
 ")
 
 (define_insn "*fpuv2_movdf"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v")
-        (match_operand:DF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v,v")
+        (match_operand:DF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v,m"))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "* return output_csky_movedouble(operands, DFmode);"
 )

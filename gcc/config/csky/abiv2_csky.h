@@ -5,9 +5,8 @@
 
 #define CSKY_SP_REGNUM                14
 
-
-#ifndef TARGET_ARCH_DEFAULT
-#define TARGET_ARCH_DEFAULT CSKY_TARGET_ARCH_GET(CK810)
+#ifndef TARGET_CPU_DEFAULT
+#define TARGET_CPU_DEFAULT CSKY_TARGET_CORE_GET(ck810f)
 #endif
 
 #define TARGET_DEFAULT      \
@@ -226,7 +225,7 @@ machine_function;
 #define ARG_POINTER_REGNUM    32
 
 /* TODO  */
-#define STATIC_CHAIN_REGNUM   (CSKY_TARGET_ARCH(CK801) ? 7 : 12)
+#define STATIC_CHAIN_REGNUM   (CSKY_TARGET_ARCH(CK801) ? 13 : 12)
 
 
 /* Eliminating Frame Pointer and Arg Pointer  */
@@ -493,7 +492,7 @@ machine_function;
 
    On the CSKY core regs are UNITS_PER_WORD bits wide.  */
 #define HARD_REGNO_NREGS(REGNO, MODE)                            \
-  ((REGNO >= CSKY_FIRST_VFP_REGNUM && !CSKY_TARGET_ARCH(CK803S)) \
+  ((REGNO >= CSKY_FIRST_VFP_REGNUM && !CSKY_TARGET_ARCH(CK803))  \
    ? 1 : CSKY_NUM_REGS (MODE))
 
 /* Retrun true if REGNO is suitable for holding a quantity of type MODE.  */
@@ -636,6 +635,9 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    Shifts in addresses can't be by a register.  */
 #define MAX_REGS_PER_ADDRESS 2
 
+/* Nonzero if target donot support negative index in operand
+   addresses.  */
+#define TARGET_UNSUPPORT_NEGATIVE_INDEX 1
 
 /******************************************************************
  *                        Run-time Target                         *
@@ -849,10 +851,6 @@ while (0)
     }                                             \
   while (0)
 
-/* The prefix to add to user-visible assembler symbols.  */
-#undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX "_"
-
 
 /******************************************************************
  *              Controlling the Compilation Driver                *
@@ -866,6 +864,16 @@ while (0)
 #undef MULTILIB_DEFAULTS
 #define MULTILIB_DEFAULTS    \
     {"mlittle-endian", "mcpu=ck810f", " msoft-float"}
+
+/* Support for a compile-time default CPU, et cetera.  The rules are:
+   --with-arch is ignored if -march or -mcpu are specified.
+   --with-cpu is ignored if -march or -mcpu are specified, and is overridden
+    by --with-arch. */
+#define OPTION_DEFAULT_SPECS \
+  {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
+  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
+  {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" }, \
+  {"float", "%{!msoft-float:%{!mhard-float:-m%(VALUE)-float}}" },
 
 
 /******************************************************************
@@ -1062,6 +1070,16 @@ extern const int csky_dbx_regno[];
    function address than to call an address kept in a register.  */
 /* On the CSKY, jbsr calling through registers is better than jbsri.  */
 #define NO_FUNCTION_CSE 1
+
+/* Try to generate sequences that don't involve branches, we can then use
+   conditional instructions.  */
+#define BRANCH_COST(speed_p, predictable_p) \
+  (global_options_set.x_csky_branch_cost ? csky_branch_cost \
+   : current_tune->branch_cost (speed_p, predictable_p))
+
+/* False if short circuit operation is preferred.  */
+#define LOGICAL_OP_NON_SHORT_CIRCUIT \
+  (current_tune->logical_op_non_short_circuit ())
 
 
 /******************************************************************

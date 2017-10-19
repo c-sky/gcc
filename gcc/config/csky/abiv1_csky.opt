@@ -11,6 +11,9 @@ mcpu=
 Target RejectNegative Joined Report Var(csky_cpu_string)
 Specify the name of the target CPU.
 
+mbranch-cost=
+Target Report Joined RejectNegative UInteger Var(csky_branch_cost) Undocumented
+Set the branch costs for conditional branch instructions.  Reasonable values are small, non-negative integers.
 
 mdsp
 Target RejectNegative Report Mask(DSP)
@@ -102,9 +105,13 @@ Target Report RejectNegative Mask(BACKTRACE) Undocumented
 Generate target can be backtraced.
 
 mccrt
-Target RejectNegative Report Var(csky_libccrt)
-Use csky compiler runtime instead of libgcc.
+Target Report Mask(LIBCCRT)
+Use CSKY compiler runtime instead of libgcc, -mccrt is default.
 
 mlra
 Target Report Mask(LRA)
 Use lra to do register allocation instead of reload.
+
+mpp
+Target Report Var(flag_preload_protect) Undocumented
+Open preload protect.

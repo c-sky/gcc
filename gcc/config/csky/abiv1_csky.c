@@ -24,6 +24,7 @@
 #include "target.h"
 #include "rtl.h"
 #include "tree.h"
+#include "cfghooks.h"
 #include "df.h"
 #include "tm_p.h"
 #include "optabs.h"
@@ -125,6 +126,8 @@ static const int csky_num_arch =
 
 int flag_stack_protect_cskyv1 = 0;
 
+#define TARGET_PRELOAD_PROTECT ((optimize == 0) ||  flag_preload_protect)
+
 
 static void output_stack_adjust (int, int);
 static int calc_live_r0_r31_regs (int *);
@@ -171,6 +174,7 @@ static bool csky_cannot_copy_insn_p (rtx_insn *);
 static bool csky_cannot_modify_jumps_p (void);
 static bool csky_cannot_force_const_mem (machine_mode, rtx);
 static bool csky_lra_p (void);
+static void csky_init_libfuncs(void);
 
 
 /* CSKY specific attributes.  */
@@ -290,8 +294,24 @@ static const struct attribute_spec csky_attribute_table[] = {
 #undef  TARGET_MAX_ANCHOR_OFFSET
 #define TARGET_MAX_ANCHOR_OFFSET 15
 
+#undef TARGET_INIT_LIBFUNCS
+#define TARGET_INIT_LIBFUNCS csky_init_libfuncs
+
 struct gcc_target targetm = TARGET_INITIALIZER;
 
+
+int
+csky_default_branch_cost (bool speed_p, bool predictable_p)
+{
+  return 1;
+}
+
+bool
+csky_default_logical_op_non_short_circuit(void)
+{
+  return BRANCH_COST (optimize_function_for_speed_p (cfun), false) >= 2;
+}
+
 /* Adjust the stack and return the number of bytes taken to do it.  */
 static int
 output_stack_adjust_for_nested (int direction, int size)
@@ -1646,7 +1666,9 @@ layout_csky_frame (struct csky_frame *infp)
   /* Frame of <= 32 bytes and using stm would get <= 2 registers.
      use stw's with offsets and buy the frame in one shot.  */
   if (localregarg <= ADDI_REACH
-      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000))
+      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000)
+      && (!TARGET_PRELOAD_PROTECT
+          || (TARGET_PRELOAD_PROTECT && (infp->reg_size > 16))))
     {
       /* Make sure we'll be aligned.  */
       if (localregarg % STACK_BYTES)
@@ -1680,7 +1702,9 @@ layout_csky_frame (struct csky_frame *infp)
      single instructions.  */
   if (localregarg <= STORE_REACH
       && (infp->local_size > ADDI_REACH)
-      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000))
+      && (infp->reg_size <= 8 || (infp->reg_mask & 0xc000) != 0xc000)
+      && (!TARGET_PRELOAD_PROTECT
+          || (TARGET_PRELOAD_PROTECT && (infp->reg_size > 16))))
     {
       int all;
 
@@ -1973,12 +1997,32 @@ csky_expand_prolog (void)
 
               if (TARGET_MULTIPLE_STLD)
                 {
+                  rtx dwarf, reg, tmp;
+                  int dwarf_par_index = 0;
+                  int num_regs = 16 - first_reg;
+
                   insn = emit_insn (gen_store_multiple
                                     (gen_rtx_MEM
                                      (SImode, stack_pointer_rtx),
                                      gen_rtx_REG (SImode, first_reg),
-                                     GEN_INT (16 - first_reg)));
+                                     GEN_INT (num_regs)));
+
+                  dwarf = gen_rtx_SEQUENCE (VOIDmode, rtvec_alloc (num_regs));
+                  for (;dwarf_par_index < num_regs;dwarf_par_index++)
+                    {
+                      reg = gen_rtx_REG (SImode, first_reg + dwarf_par_index);
+                      tmp = gen_rtx_SET
+                              (gen_frame_mem
+                                (SImode,
+                                 plus_constant (Pmode, stack_pointer_rtx,
+                                                4 * dwarf_par_index)),
+                                 reg);
+                      RTX_FRAME_RELATED_P (tmp) = 1;
+                      XVECEXP (dwarf, 0, dwarf_par_index) = tmp;
+                    }
+                  add_reg_note (insn, REG_FRAME_RELATED_EXPR, dwarf);
                   RTX_FRAME_RELATED_P (insn) = 1;
+
                   i -= (15 - first_reg);
                   offs += (16 - first_reg) * 4;
                   offset_lr = (15 - first_reg) * 4;
@@ -2118,6 +2162,19 @@ csky_expand_epilog (void)
 
   offs = fi.reg_offset;
 
+  if (TARGET_PRELOAD_PROTECT && (fi.reg_size <= 16))
+    {
+      /* Add ld r6, sp+offset+16 to prevent hardware from enabling
+         preload function.  */
+      emit_insn (gen_movsi
+                 (gen_rtx_REG (SImode, 6),
+                  gen_rtx_MEM (SImode,
+                               plus_constant (Pmode,
+                                              stack_pointer_rtx,
+                                              offs + 16))));
+      emit_insn (gen_prologue_use(gen_rtx_REG (SImode, 6)));
+    }
+
   for (i = 15; i >= 0; i--)
     {
       if (offs == 0 && i == 15 && ((fi.reg_mask & 0xc000) == 0xc000))
@@ -2138,25 +2195,46 @@ csky_expand_epilog (void)
                                             gen_rtx_MEM (SImode,
                                                          stack_pointer_rtx),
                                             GEN_INT (16 - first_reg)));
+              if (TARGET_PRELOAD_PROTECT)
+                offs += (16 - first_reg) * 4;
             }
           else
             {
-              int invert = offs + (16 - first_reg) * 4 - 4;
-              int j;
-
-              for (j = 15; j >= first_reg; j--)
+              if (TARGET_PRELOAD_PROTECT)
                 {
-                  emit_insn (gen_movsi (gen_rtx_REG (SImode, j),
-                                        gen_rtx_MEM (SImode,
-                                                     plus_constant (Pmode,
-                                                                    stack_pointer_rtx,
-                                                                    invert))));
-                  invert -= 4;
+                  int j = first_reg;
+                  for (; j <= 15; j++)
+                    {
+                      insn = emit_insn (gen_movsi (
+                                          gen_rtx_REG (SImode, j),
+                                          gen_rtx_MEM (SImode,
+                                            plus_constant (Pmode,
+                                                           stack_pointer_rtx,
+                                                           offs))));
+                      offs += 4;
+                    }
+                }
+              else
+                {
+                  int invert = offs + (16 - first_reg) * 4 - 4;
+                  int j;
+
+                  for (j = 15; j >= first_reg; j--)
+                  {
+                    insn = emit_insn (gen_movsi (
+                                gen_rtx_REG (SImode, j),
+                                gen_rtx_MEM (SImode,
+                                  plus_constant (Pmode,
+                                                 stack_pointer_rtx,
+                                                 invert))));
+                    //RTX_FRAME_RELATED_P (insn) = 1;
+                    invert -= 4;
+                   }
                 }
             }
-
           i -= (15 - first_reg);
-          offs += (16 - first_reg) * 4;
+          if (!TARGET_PRELOAD_PROTECT)
+            offs += (16 - first_reg) * 4;
         }
       else if (fi.reg_mask & (1 << i))
         {
@@ -2468,7 +2546,8 @@ csky_function_arg_boundary (machine_mode mode,
                             const_tree type ATTRIBUTE_UNUSED)
 {
   /* Doubles must be aligned to an 8 byte boundary.  */
-  return ((mode != BLKmode && GET_MODE_SIZE (mode) > 4)
+  return ((mode != BLKmode && mode != CSImode
+           && GET_MODE_SIZE (mode) > 4)
           ? BIGGEST_ALIGNMENT : PARM_BOUNDARY);
 }
 
@@ -3324,6 +3403,118 @@ csky_return_addr (int count, rtx frame ATTRIBUTE_UNUSED)
     return NULL_RTX;
 
   return get_hard_reg_initial_val (Pmode, LK_REGNUM);
+}
+
+/* Set up library functions unique to CSKY.  */
+
+static void
+csky_init_libfuncs(void)
+{
+  if (TARGET_CSKY_LINUX)
+    init_sync_libfuncs (UNITS_PER_WORD);
+  if (!TARGET_LIBCCRT)
+    return;
+
+  #define CSKY_GCC_SYM(sym) "__csky_ccrt_" # sym
+
+  /* int */
+
+  /* Arithmetic functions */
+  set_optab_libfunc (ashl_optab,    DImode, CSKY_GCC_SYM(ashldi3));
+  set_optab_libfunc (ashr_optab,    DImode, CSKY_GCC_SYM(ashrdi3));
+  set_optab_libfunc (sdiv_optab,    SImode, CSKY_GCC_SYM(divsi3));
+  set_optab_libfunc (sdiv_optab,    DImode, CSKY_GCC_SYM(divdi3));
+  set_optab_libfunc (lshr_optab,    DImode, CSKY_GCC_SYM(lshrdi3));
+  set_optab_libfunc (smod_optab,    SImode, CSKY_GCC_SYM(modsi3));
+  set_optab_libfunc (smod_optab,    DImode, CSKY_GCC_SYM(moddi3));
+  set_optab_libfunc (smul_optab,    DImode, CSKY_GCC_SYM(muldi3));
+  set_optab_libfunc (neg_optab,     DImode, CSKY_GCC_SYM(negdi2));
+  set_optab_libfunc (udiv_optab,    SImode, CSKY_GCC_SYM(udivsi3));
+  set_optab_libfunc (udiv_optab,    DImode, CSKY_GCC_SYM(udivdi3));
+  set_optab_libfunc (udivmod_optab, DImode, CSKY_GCC_SYM(udivmoddi4));
+  set_optab_libfunc (umod_optab,    SImode, CSKY_GCC_SYM(umodsi3));
+  set_optab_libfunc (umod_optab,    DImode, CSKY_GCC_SYM(umoddi3));
+
+  /* Comparison functions */
+  set_optab_libfunc (cmp_optab,     DImode, CSKY_GCC_SYM(cmpdi2));
+  set_optab_libfunc (ucmp_optab,    DImode, CSKY_GCC_SYM(ucmpdi2));
+
+  /* Trapping arithmetic functions */
+  set_optab_libfunc (absv_optab,    SImode, CSKY_GCC_SYM(absvsi2));
+  set_optab_libfunc (absv_optab,    DImode, CSKY_GCC_SYM(absvdi2));
+  set_optab_libfunc (addv_optab,    SImode, CSKY_GCC_SYM(addvsi3));
+  set_optab_libfunc (addv_optab,    DImode, CSKY_GCC_SYM(addvdi3));
+  set_optab_libfunc (smulv_optab,   SImode, CSKY_GCC_SYM(mulvsi3));
+  set_optab_libfunc (smulv_optab,   DImode, CSKY_GCC_SYM(mulvdi3));
+  set_optab_libfunc (negv_optab,    SImode, CSKY_GCC_SYM(negvsi2));
+  set_optab_libfunc (negv_optab,    DImode, CSKY_GCC_SYM(negvdi2));
+  set_optab_libfunc (subv_optab,    SImode, CSKY_GCC_SYM(subvsi3));
+  set_optab_libfunc (subv_optab,    DImode, CSKY_GCC_SYM(subvdi3));
+
+  /* Bit operations */
+  set_optab_libfunc (clz_optab,     SImode, CSKY_GCC_SYM(clzsi2));
+  set_optab_libfunc (clz_optab,     DImode, CSKY_GCC_SYM(clzdi2));
+  set_optab_libfunc (ctz_optab,     SImode, CSKY_GCC_SYM(ctzsi2));
+  set_optab_libfunc (ctz_optab,     DImode, CSKY_GCC_SYM(ctzdi2));
+  set_optab_libfunc (ffs_optab,     DImode, CSKY_GCC_SYM(ffsdi2));
+  set_optab_libfunc (parity_optab,  SImode, CSKY_GCC_SYM(paritysi2));
+  set_optab_libfunc (parity_optab,  DImode, CSKY_GCC_SYM(paritydi2));
+  set_optab_libfunc (popcount_optab,SImode, CSKY_GCC_SYM(popcountsi2));
+  set_optab_libfunc (popcount_optab,DImode, CSKY_GCC_SYM(popcountdi2));
+  set_optab_libfunc (bswap_optab,   SImode, CSKY_GCC_SYM(bswapsi2));
+  set_optab_libfunc (bswap_optab,   DImode, CSKY_GCC_SYM(bswapdi2));
+
+  /* float */
+
+  /* Arithmetic functions */
+  set_optab_libfunc (add_optab,     SFmode, CSKY_GCC_SYM(addsf3));
+  set_optab_libfunc (add_optab,     DFmode, CSKY_GCC_SYM(adddf3));
+  set_optab_libfunc (sub_optab,     SFmode, CSKY_GCC_SYM(subsf3));
+  set_optab_libfunc (sub_optab,     DFmode, CSKY_GCC_SYM(subdf3));
+  set_optab_libfunc (smul_optab,    SFmode, CSKY_GCC_SYM(mulsf3));
+  set_optab_libfunc (smul_optab,    DFmode, CSKY_GCC_SYM(muldf3));
+  set_optab_libfunc (sdiv_optab,    SFmode, CSKY_GCC_SYM(divsf3));
+  set_optab_libfunc (sdiv_optab,    DFmode, CSKY_GCC_SYM(divdf3));
+  set_optab_libfunc (neg_optab,     SFmode, CSKY_GCC_SYM(negsf2));
+  set_optab_libfunc (neg_optab,     DFmode, CSKY_GCC_SYM(negdf2));
+
+  /* Conversion functions */
+  set_conv_libfunc (sext_optab,    DFmode, SFmode, CSKY_GCC_SYM(extendsfdf2));
+  set_conv_libfunc (trunc_optab,   SFmode, DFmode, CSKY_GCC_SYM(truncdfsf2));
+  set_conv_libfunc (sfix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixsfsi));
+  set_conv_libfunc (sfix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixdfsi));
+  set_conv_libfunc (sfix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixsfdi));
+  set_conv_libfunc (sfix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixdfdi));
+  set_conv_libfunc (ufix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixunssfsi));
+  set_conv_libfunc (ufix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixunsdfsi));
+  set_conv_libfunc (ufix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixunssfdi));
+  set_conv_libfunc (ufix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixunsdfdi));
+  set_conv_libfunc (sfloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatsisf));
+  set_conv_libfunc (sfloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatsidf));
+  set_conv_libfunc (sfloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatdisf));
+  set_conv_libfunc (sfloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatdidf));
+  set_conv_libfunc (ufloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatunsisf));
+  set_conv_libfunc (ufloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatunsidf));
+  set_conv_libfunc (ufloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatundisf));
+  set_conv_libfunc (ufloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatundidf));
+
+  /* Comparison functions */
+  set_optab_libfunc (cmp_optab,    SFmode, CSKY_GCC_SYM(cmpsf2));
+  set_optab_libfunc (cmp_optab,    DFmode, CSKY_GCC_SYM(cmpdf2));
+  set_optab_libfunc (unord_optab,  SFmode, CSKY_GCC_SYM(unordsf2));
+  set_optab_libfunc (unord_optab,  DFmode, CSKY_GCC_SYM(unorddf2));
+  set_optab_libfunc (eq_optab,     SFmode, CSKY_GCC_SYM(eqsf2));
+  set_optab_libfunc (eq_optab,     DFmode, CSKY_GCC_SYM(eqdf2));
+  set_optab_libfunc (ne_optab,     SFmode, CSKY_GCC_SYM(nesf2));
+  set_optab_libfunc (ne_optab,     DFmode, CSKY_GCC_SYM(nedf2));
+  set_optab_libfunc (ge_optab,     SFmode, CSKY_GCC_SYM(gesf2));
+  set_optab_libfunc (ge_optab,     DFmode, CSKY_GCC_SYM(gedf2));
+  set_optab_libfunc (lt_optab,     SFmode, CSKY_GCC_SYM(ltsf2));
+  set_optab_libfunc (lt_optab,     DFmode, CSKY_GCC_SYM(ltdf2));
+  set_optab_libfunc (le_optab,     SFmode, CSKY_GCC_SYM(lesf2));
+  set_optab_libfunc (le_optab,     DFmode, CSKY_GCC_SYM(ledf2));
+  set_optab_libfunc (gt_optab,     SFmode, CSKY_GCC_SYM(gtsf2));
+  set_optab_libfunc (gt_optab,     DFmode, CSKY_GCC_SYM(gtdf2));
 }
 
 #include "gt-abiv1-csky.h"

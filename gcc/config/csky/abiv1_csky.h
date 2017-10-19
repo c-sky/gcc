@@ -65,7 +65,17 @@ extern unsigned long csky_flags;
 
 /*  TARGET SEPC   */
 #define MULTILIB_DEFAULTS \
-  {"mlittle-endian", "mcpu=ck610", "mstm", "msoft-float"}
+  {"mlittle-endian", "mcpu=ck610", "mno-stm", "msoft-float"}
+
+/* Support for a compile-time default CPU, et cetera.  The rules are:
+   --with-arch is ignored if -march or -mcpu are specified.
+   --with-cpu is ignored if -march or -mcpu are specified, and is overridden
+    by --with-arch. */
+#define OPTION_DEFAULT_SPECS \
+  {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
+  {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
+  {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" }, \
+  {"float", "%{!msoft-float:%{!mhard-float:-m%(VALUE)-float}}" },
 
 /* debugging info */
 #undef  DWARF2_DEBUGGING_INFO
@@ -826,6 +836,16 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    but a CALL with constant address is cheap.  */
 /* Calling from registers is a massive pain. */
 #define NO_FUNCTION_CSE 1
+
+/* Try to generate sequences that don't involve branches, we can then use
+   conditional instructions.  */
+#define BRANCH_COST(speed_p, predictable_p) \
+  (global_options_set.x_csky_branch_cost ? csky_branch_cost \
+   : csky_default_branch_cost (speed_p, predictable_p))
+
+/* False if short circuit operation is preferred.  */
+#define LOGICAL_OP_NON_SHORT_CIRCUIT \
+  (csky_default_logical_op_non_short_circuit ())
 
 /* The machine modes of pointers and functions.  */
 #define Pmode          SImode

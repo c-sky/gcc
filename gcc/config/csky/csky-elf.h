@@ -17,24 +17,6 @@
 	"
 
 #undef ASM_SPEC
-#ifdef __CSKYABIV2__
-#define ASM_SPEC 	\
-	"%{mbig-endian:-mbig-endian}	\
-	%{EB:-EB}	\
-	%{EL:-EL}	\
-	%{fpic|fPIC:-pic}	\
-	%{mcpu=*:-mcpu=%*}		\
-	%{march=*:-march=%*}	\
-	%{mhard-float:-mhard-float}	\
-	%{mdsp:-mdsp}	\
-	%{mmac:-mmac}	\
-	%{manchor:-manchor}	\
-	%{melrw:-melrw}	\
-	%{mistack:-mistack}	\
-    %{mbranch-stub:-mbranch-stub} \
-    %{mno-branch-stub:-mno-branch-stub} \
-	"
-#else /* ABIV2 */
 #define ASM_SPEC 	\
 	"%{mbig-endian:-mbig-endian}	\
 	%{EB:-EB}	\
@@ -47,7 +29,6 @@
 	%{mmac:-mmac}	\
 	%{manchor:-manchor}	\
 	"
-#endif
 
 #undef	LINK_SPEC
 #define LINK_SPEC		\
@@ -60,12 +41,14 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
-  "%{pthread:-lpthread} -lc"
+  "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
-#define LIBGCC_SPEC "%{mccrt:-lcc-rt;!mccrt:-lgcc}"
 
 #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
 
 #undef TARGET_POSIX_IO
+/* This flag used to enable or disable the sepical
+   features only for linux toolchain.  */
+#define TARGET_CSKY_LINUX 0

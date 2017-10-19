@@ -40,6 +40,9 @@
 #include "builtins.h"
 #include "tm-constrs.h"
 #include "rtl-iter.h"
+#include "pass_manager.h"
+#include "tree-pass.h"
+#include "context.h"
 
 #include "abiv2_csky_internal.h"
 
@@ -191,6 +194,15 @@ static const struct attribute_spec csky_attribute_table[] =
 
 
 /******************************************************************
+ *               Implicit Calls to Library Routines               *
+ ******************************************************************/
+
+
+#undef TARGET_INIT_LIBFUNCS
+#define TARGET_INIT_LIBFUNCS csky_init_libfuncs
+
+
+/******************************************************************
  *    Dividing the Output into Sections (Texts, Data, . . . )     *
  ******************************************************************/
 
@@ -211,6 +223,18 @@ static const struct attribute_spec csky_attribute_table[] =
 #undef  TARGET_OPTION_OVERRIDE
 #define TARGET_OPTION_OVERRIDE csky_option_override
 
+
+static int
+csky_default_branch_cost (bool speed_p, bool predictable_p ATTRIBUTE_UNUSED)
+{
+  return 1;
+}
+
+static bool
+csky_default_logical_op_non_short_circuit(void)
+{
+  return BRANCH_COST (optimize_function_for_speed_p (cfun), false) >= 2;
+}
 
 #include "abiv2_csky_tune_tables.h"
 
@@ -396,6 +420,9 @@ static GTY(()) int tls_labelno;
 #undef  TARGET_RTX_COSTS
 #define TARGET_RTX_COSTS          csky_rtx_costs
 
+#undef  TARGET_ADDRESS_COST
+#define TARGET_ADDRESS_COST       csky_address_cost
+
 
 /******************************************************************
  *                        Anchor address                          *
@@ -412,6 +439,15 @@ static GTY(()) int tls_labelno;
 
 
 /******************************************************************
+ *                     Condition Code Status                      *
+ ******************************************************************/
+
+
+#undef  TARGET_FIXED_CONDITION_CODE_REGS
+#define TARGET_FIXED_CONDITION_CODE_REGS csky_fixed_condition_code_regs
+
+
+/******************************************************************
  *           Adjusting the Instruction Scheduler                  *
  ******************************************************************/
 
@@ -421,6 +457,10 @@ static GTY(()) int tls_labelno;
 
 #undef  TARGET_SCHED_ADJUST_COST
 #define  TARGET_SCHED_ADJUST_COST csky_sched_adjust_cost
+
+#undef  TARGET_SCHED_EXTRA_RESOURCE_CONFILICT
+#define  TARGET_SCHED_EXTRA_RESOURCE_CONFILICT \
+  csky_sched_extra_resource_confilict
 
 
 /* The declaration of functions.  */
@@ -1803,7 +1843,7 @@ csky_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
    these register sets on target flags.
 
    On csky, ck801 has registers r0-r7,r13,r14,r15.
-   ck802 & ck803s has registers r0-r15.
+   ck802 & ck803 has registers r0-r15.
    Other cpu has registers r0-r31 when -mhigh-registers, otherwise it has
    only r0-r15, ck803 default close this option, others default open.  */
 
@@ -1824,11 +1864,11 @@ csky_conditional_register_usage (void)
         call_really_used_regs[CSKY_LR_REGNUM] = 0;
     }
   /* For some targets, the high regitser is not supported.
-     Expect ck801 & ck802 & ck803s, other cpu use high registers
+     Expect ck801 & ck802 & ck803, other cpu use high registers
      depend on -mhigh-registers option(ck803 is default off,
      others are default on).  */
   else if (CSKY_TARGET_ARCH(CK802)
-           || CSKY_TARGET_ARCH(CK803S)
+           || CSKY_TARGET_ARCH(CK803)
            || !TARGET_HIGH_REGISTERS)
    {
       int i;
@@ -1898,7 +1938,7 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
           if (CSKY_ISA_FEATURE(smart) || CSKY_TARGET_ARCH(CK801))
             return (regno < CSKY_LAST_MINI_REGNUM);
           else if (CSKY_TARGET_ARCH(CK802)
-                   || CSKY_TARGET_ARCH(CK803S)
+                   || CSKY_TARGET_ARCH(CK803)
                    || !TARGET_HIGH_REGISTERS)
             {
               /* Without high register, r15 cannot hold two word size data.  */
@@ -1959,6 +1999,13 @@ csky_class_likely_spilled_p (reg_class_t rclass)
 static reg_class_t
 csky_preferred_reload_class (rtx x ATTRIBUTE_UNUSED, reg_class_t rclass)
 {
+  if (TARGET_HARD_FLOAT)
+    {
+      if (CONST_DOUBLE_P (x)
+          && (GET_MODE (x) == DFmode || GET_MODE (x) == SFmode)
+          && rclass == NO_REGS)
+        return GENERAL_REGS;
+    }
   return rclass;
 }
 
@@ -1989,6 +2036,7 @@ csky_class_max_nregs (reg_class_t rclass, machine_mode mode)
     If no intermediate register is required, it should return NO_REGS. If more than
     one intermediate register is required, describe the one that is closest in the
     copy chain to the reload register.  */
+
 reg_class_t
 csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
                        reg_class_t rclass,
@@ -2030,11 +2078,217 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
     return GENERAL_REGS;
 
   if (rclass == V_REGS && !CSKY_GENERAL_REGNO_P (regno))
-    return GENERAL_REGS;
+    {
+      /* Reload between Vector reg and Memory do not need
+         intermediate register.  */
+      if (MEM_P (x) && (mode == SFmode || mode == DFmode))
+        return NO_REGS;
+      else
+        return GENERAL_REGS;
+    }
 
   return NO_REGS;
 }
 
+
+/* Handler of common condition code set expression elimination pass.  */
+
+static unsigned int
+rest_of_handle_cse_cc (void)
+{
+  unsigned int cc_regno_1;
+  unsigned int cc_regno_2;
+  rtx cc_reg_1;
+  rtx cc_reg_2 ATTRIBUTE_UNUSED;
+  basic_block bb;
+
+  /* Get the condition code register number and emit the codition
+     code rtl expression.  */
+  if (! targetm.fixed_condition_code_regs (&cc_regno_1, &cc_regno_2))
+    return 0;
+
+  cc_reg_1 = gen_rtx_REG (CCmode, cc_regno_1);
+  if (cc_regno_2 != INVALID_REGNUM)
+    cc_reg_2 = gen_rtx_REG (CCmode, cc_regno_2);
+  else
+    cc_reg_2 = NULL_RTX;
+
+  /* Scan every basic block to pick all condition code set insns,
+     if the source of condtion code set insns are same and continuous
+     in one basic block, only keep the first insn.  */
+  FOR_EACH_BB_FN (bb, cfun)
+    {
+      rtx_insn *last_insn;
+      rtx_insn *insn;
+      rtx cc_reg;
+
+      if (dump_file)
+        {
+          fprintf (dump_file, "---Scan basic block %d ---\n",
+                   bb->index);
+        }
+      last_insn = BB_END (bb);
+      cc_reg = cc_reg_1;
+
+      rtx_insn *cc_src_insn = NULL;
+      /* Scan insn from bottom of basic block to the top.  */
+      for (insn = PREV_INSN (last_insn);
+           insn && insn != PREV_INSN (BB_HEAD (bb));
+           insn = PREV_INSN (insn))
+        {
+          rtx cc_src;
+          rtx set;
+          rtx_insn *prev_insn = NULL;
+
+          if (dump_file)
+            {
+              fprintf (dump_file, "Scan insn %d\n",
+                       INSN_UID (insn));
+            }
+          if (! INSN_P (insn))
+            continue;
+          set = single_set (insn);
+          if (set
+              && REG_P (SET_DEST (set))
+              && REGNO (SET_DEST (set)) == REGNO (cc_reg))
+            {
+              cc_src_insn = insn;
+              cc_src = SET_SRC (set);
+              if (dump_file)
+                {
+                  fprintf (dump_file,
+                           "Pick insn %d as the second write CC insn.\n",
+                           INSN_UID (insn));
+                }
+            }
+
+          if (! cc_src_insn)
+            continue;
+
+          /* CC_SRC_INSN is the lastest condition code set insn,
+             NULL means having not found one condition code set insn,
+             if it is not NULL, then find the next condition code set
+             insn. If two insns have same set source, delete the
+             previous one and set CC_SRC_INSN to current insn; if 
+             they have different source, just set CC_SRC_INSN to
+             current insn.  */
+          for (prev_insn = PREV_INSN (cc_src_insn);
+               prev_insn && prev_insn != PREV_INSN (BB_HEAD (bb));
+               prev_insn = PREV_INSN (prev_insn))
+            {
+              rtx prev_cc_src = NULL_RTX;
+
+              if (dump_file)
+                {
+                  fprintf (dump_file,
+                           "\tScan for first CC writing insn, insn %d\n",
+                           INSN_UID (prev_insn));
+                }
+              if (! INSN_P (prev_insn))
+                continue;
+              set = single_set (prev_insn);
+              if (set
+                  && REG_P (SET_DEST (set))
+                  && REGNO (SET_DEST (set)) == REGNO (cc_reg))
+                {
+                  prev_cc_src = SET_SRC (set);
+                  if (dump_file)
+                    {
+                      fprintf
+                        (dump_file,
+                         "\tPick insn %d as the first write CC insn.\n",
+                         INSN_UID (prev_insn));
+                    }
+                }
+              if (prev_cc_src != NULL_RTX)
+                {
+                  if (dump_file)
+                    {
+                      fprintf (dump_file,
+                               "\tCompare the source part between "\
+                               "insn %d and %d\n",
+                               INSN_UID (cc_src_insn),
+                               INSN_UID (prev_insn));
+                    }
+                  if (rtx_equal_p(cc_src, prev_cc_src))
+                    {
+                      delete_insn_and_edges (cc_src_insn);
+                      if (dump_file)
+                        {
+                          fprintf (dump_file,
+                                   "\tSame source, delete insn %d\n",
+                                   INSN_UID (cc_src_insn));
+                        }
+                    }
+                  cc_src_insn = prev_insn;
+                  set = single_set (prev_insn);
+                  cc_src = SET_SRC (set);
+                  if (dump_file)
+                    {
+                      fprintf (dump_file,
+                               "\tDifferet source, regard insn %d "\
+                               "as the first write CC insn.\n",
+                               INSN_UID (cc_src_insn));
+                    }
+                  continue;
+                }
+              else if (reg_set_p (cc_reg, prev_insn))
+                {
+                  insn = prev_insn;
+                  cc_src_insn = NULL;
+                  break;
+                }
+            }
+          if (prev_insn == PREV_INSN (BB_HEAD (bb)))
+            break;
+        }
+    }
+  if (dump_file)
+    {
+      fprintf (dump_file, "-------------------------\n");
+      fprintf (dump_file, "Scan complete!\n");
+    }
+  return 0;
+}
+
+namespace {
+
+const pass_data pass_data_cse_cc =
+{
+    RTL_PASS, /* type */
+    "cse_cc", /* name */
+    OPTGROUP_NONE, /* optinfo_flags */
+    TV_NONE, /* tv_id */
+    0, /* properties_required */
+    0, /* properties_provided */
+    0, /* properties_destroyed */
+    0, /* todo_flags_start */
+    TODO_df_finish, /* todo_flags_finish */
+};
+
+class pass_cse_cc : public rtl_opt_pass
+{
+  public:
+      pass_cse_cc (gcc::context *ctxt)
+            : rtl_opt_pass (pass_data_cse_cc, ctxt)
+                {}
+
+        /* opt_pass methods: */
+     virtual bool gate (function *)
+              { return flag_cse_cc; }
+
+      virtual unsigned int execute (function *)
+      {  return rest_of_handle_cse_cc ();}
+}; // class pass_cse_cc
+
+}
+
+
+rtl_opt_pass *
+make_pass_cse_cc (gcc::context *ctxt)
+{
+  return new pass_cse_cc (ctxt);
+}
 
 /* Convert a static initializer array of feature bits to sbitmap
    representation.  */
@@ -2097,9 +2351,10 @@ csky_configure_build_target (struct csky_build_target *target,
     }
   else /* If the user did not specify a processor, choose one for them.  */
     {
-      csky_selected_arch = &all_architectures[TARGET_ARCH_DEFAULT];
-      csky_selected_cpu = csky_selected_arch;
-      target->arch_name = csky_selected_arch->name;
+      csky_selected_cpu = &all_cores[TARGET_CPU_DEFAULT];
+      csky_selected_arch = &all_architectures[csky_selected_cpu->base_arch];
+      csky_initialize_isa (all_sbits, csky_selected_arch->isa_bits);
+      target->core_name = csky_selected_cpu->name;
     }
 
   /* The selected cpu may be an architecture, so lookup tuning by core ID.  */
@@ -2157,7 +2412,7 @@ csky_configure_build_special_isa(struct csky_build_target *target)
   if (TARGET_HAVE_TLS && (CSKY_TARGET_ARCH(CK810) || CSKY_TARGET_ARCH(CK807)))
     bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(tls));
 
-  if (optimize_size && TARGET_CONSTANT_POOL
+  if (TARGET_CONSTANT_POOL
       && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
     {
       bitmap_set_bit(target->isa, CSKY_ISA_FEATURE_GET(casesi));
@@ -2208,7 +2463,7 @@ csky_option_override (void)
           if (csky_active_target.core_name != NULL
               && !strchr (csky_active_target.core_name, 'f'))
             target_fpu_name = "auto";
-          else if (CSKY_TARGET_ARCH (CK803S) || !TARGET_DOUBLE_FLOAT)
+          else if (CSKY_TARGET_ARCH (CK803) || !TARGET_DOUBLE_FLOAT)
             target_fpu_name = "fpv2_sf";
           else if (TARGET_DOUBLE_FLOAT && TARGET_FDIVDU)
             target_fpu_name = "fpv2_divd";
@@ -2258,8 +2513,24 @@ csky_option_override (void)
     dwarf_strict = 1;
   if (!global_options_set.x_dwarf_version)
     dwarf_version = 3;
+  /* Open optimization pass cse-cc by default when
+     optimization level is greater than 1.  */
+  if (!global_options_set.x_flag_cse_cc
+      && (optimize > 1))
+    flag_cse_cc = 1;
+  /* Don't run the scheduler before reload by defualt,
+     since it tends to increase register pressure.  */
+  if (!global_options_set.x_flag_schedule_insns)
+    flag_schedule_insns = 0;
 
   csky_add_gc_roots ();
+
+  /* Register machine-specific passes. */
+  opt_pass *pass_cse_cc = make_pass_cse_cc (g);
+  struct register_pass_info cse_cc_info
+        = { pass_cse_cc, "cse1",
+            1, PASS_POS_INSERT_AFTER};
+  register_pass (&cse_cc_info);
 }
 
 
@@ -2628,6 +2899,12 @@ static int
 ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
 {
   enum rtx_code code = GET_CODE (index);
+
+  if (TARGET_HARD_FLOAT
+      && (mode == SFmode || mode == DFmode))
+    return (code == CONST_INT && INTVAL (index) < 1024
+            && INTVAL (index) >= 0
+            && (INTVAL (index) & 3) == 0);
 
   if (code == CONST_INT)
     {
@@ -3879,7 +4156,7 @@ output_csky_movedouble (rtx operands[],
             }
           else if (CSKY_VREG_P (srcreg))
             {
-              /* Since the vector registers in fpuv2_soft like ck803sf
+              /* Since the vector registers in fpuv2_soft like ck803f
                  are 32bits width, it just need one insn to complete the
                  move operator.  */
               if (TARGET_SOFT_FPU)
@@ -4657,7 +4934,16 @@ emit_csky_regs_pop (unsigned long mask)
   /* The reg range for push is:r4-r11,r15-r17,r28.  */
   gcc_assert (num_regs && num_regs <= 12);
 
-  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs));
+  /* The first element is (return),
+     the second element is
+       (set (reg:SI 'first reg number')
+            (unspec:SI [(mem)] UNSPEC_PUSHPOP_MULT),
+     the rest elements is (use (reg:SI 'rest reg number')),
+     so the length should be number of register to be poped
+     plus one.  */
+  par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (num_regs + 1));
+
+  XVECEXP (par, 0, 0) = ret_rtx;
 
   for (i = 0; i < CSKY_NGPR_REGS; i++)
     {
@@ -4671,7 +4957,7 @@ emit_csky_regs_pop (unsigned long mask)
                                   plus_constant (Pmode, stack_pointer_rtx,
                                                  4 * num_regs)));
 
-          XVECEXP (par, 0, 0)
+          XVECEXP (par, 0, 1)
             = gen_rtx_SET (reg,
                            gen_rtx_UNSPEC (SImode,
                                            gen_rtvec (1, tmp),
@@ -4681,7 +4967,7 @@ emit_csky_regs_pop (unsigned long mask)
         }
     }
 
-  for (j = 1, i++; j < num_regs; i++)
+  for (j = 2, i++; j < (num_regs + 1); i++)
     {
       if (mask & (1 << i))
         {
@@ -4693,7 +4979,7 @@ emit_csky_regs_pop (unsigned long mask)
         }
     }
 
-  par = emit_insn (par);
+  par = emit_jump_insn (par);
 }
 
 
@@ -4813,6 +5099,9 @@ void csky_expand_prologue(void)
                             + fi.pad_local + fi.pad_reg;
       current_function_static_stack_size = space_allocated;
     }
+
+  if (!flag_sched_prolog)
+    emit_insn (gen_blockage ());
 }
 
 
@@ -4821,9 +5110,19 @@ void csky_expand_epilogue(void)
   int sreg, ereg;
   int offset = 0;
   unsigned long func_type = get_csky_current_func_type();
+  bool return_with_pc = false;
+
+  if (!flag_sched_prolog)
+    emit_insn (gen_blockage ());
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
-    return;
+    {
+      emit_jump_insn (gen_rtx_UNSPEC_VOLATILE
+                        (VOIDmode,
+                         gen_rtvec (1, ret_rtx),
+                         FLAG_EPILOGUE));
+      return;
+    }
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
@@ -4851,6 +5150,7 @@ void csky_expand_epilogue(void)
            && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     {
       emit_csky_regs_pop (fi.reg_mask);
+      return_with_pc = true;
     }
   /* TODO: stm */
   else if (is_stm_from_csky_live_regs(fi.reg_mask, &sreg, &ereg))
@@ -4893,6 +5193,11 @@ void csky_expand_epilogue(void)
                            EH_RETURN_STACKADJ_RTX));
     }
   #endif
+   if (!return_with_pc)
+      emit_jump_insn (gen_rtx_UNSPEC_VOLATILE
+                        (VOIDmode,
+                         gen_rtvec (1, ret_rtx),
+                         FLAG_EPILOGUE));
 }
 
 
@@ -5063,7 +5368,7 @@ const char *csky_unexpanded_epilogue(void)
   unsigned long func_type = get_csky_current_func_type();
 
   if (CSKY_FUNCTION_IS_NAKED(func_type))
-    return "";
+    return output_csky_return_instruction ();
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
@@ -5122,7 +5427,7 @@ const char *csky_unexpanded_epilogue(void)
                    reg_names[CSKY_EH_STACKADJ_REGNUM]);
     }
 
-  return "";
+  return output_csky_return_instruction ();
 }
 
 
@@ -5521,23 +5826,31 @@ csky_asm_trampoline_template (FILE *f)
     }
   else
     {
-      fprintf (f, "\tpush\tr4, lr\n");
-      fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
-      fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
-               reg_names[STATIC_CHAIN_REGNUM]);
-      fprintf (f, "\tjsr\tr4\n");
-      fprintf (f, "\tpop\tr4, lr\n");
-
+      /* Ck801 does't support nested function trampolines well.*/
       if (CSKY_TARGET_ARCH(CK801))
         {
-          /* To align 32bits for lrw.  */
-          fprintf (f, "\tnop\n");
+          fprintf (f, "\tpush\tr4, lr\n");
+          fprintf (f, "\tlrw\tr4, [.Lfunc_address]\n");
+          fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+                   reg_names[STATIC_CHAIN_REGNUM]);
+          fprintf (f, "\tjsr\tr4\n");
+          fprintf (f, "\tpop\tr4, lr\n");
         }
+      else
+        {
+          fprintf (f, "\tlrw\tt1, [.Lfunc_address]\n");
+          fprintf (f, "\tlrw\t%s, [.Lstatic_chain]\n",
+                   reg_names[STATIC_CHAIN_REGNUM]);
+          fprintf (f, "\tjmp\tt1\n");
+        }
+
+      /* To align 32bits for lrw.  */
+      fprintf (f, "\t.align 2\n");
     }
-    fprintf (f, ".Lstatic_chain:\n");
-    fprintf (f, "\t.long 0\n");
-    fprintf (f, ".Lfunc_address:\n");
-    fprintf (f, "\t.long 0\n");
+  fprintf (f, ".Lstatic_chain:\n");
+  fprintf (f, "\t.long 0\n");
+  fprintf (f, ".Lfunc_address:\n");
+  fprintf (f, "\t.long 0\n");
 }
 
 /* Worker function for TARGET_TRAMPOLINE_INIT.  */
@@ -5546,7 +5859,7 @@ static void
 csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
 {
   rtx fnaddr = XEXP (DECL_RTL (fndecl), 0);
-  rtx mem;
+  rtx mem, a_tramp;
 
   emit_block_move (m_tramp, assemble_trampoline_template (),
                    GEN_INT (TRAMPOLINE_SIZE), BLOCK_OP_NORMAL);
@@ -5558,7 +5871,10 @@ csky_trampoline_init (rtx m_tramp, tree fndecl, rtx chain_value)
                         CSKY_ISA_FEATURE(2E3) ? 12 : 16);
   emit_move_insn (mem, fnaddr);
 
-  /* TODO Add code about clear insn cache.  */
+  a_tramp = XEXP (m_tramp, 0);
+  emit_library_call (gen_rtx_SYMBOL_REF (Pmode, "__clear_cache"),
+                     LCT_NORMAL, VOIDmode, 2, a_tramp, Pmode,
+                     plus_constant (Pmode, a_tramp, TRAMPOLINE_SIZE), Pmode);
 }
 
 
@@ -5672,6 +5988,12 @@ gen_csky_compare_float (enum rtx_code code, rtx op0, rtx op1)
           code = GE;
           invert = true;
         }
+      break;
+    case UNORDERED:
+      break;
+    case ORDERED:
+      code = UNORDERED;
+      invert = true;
       break;
 
     default:
@@ -5849,7 +6171,7 @@ csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
    and another.  */
 
 int
-csky_register_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
+csky_register_move_cost (machine_mode mode,
                          reg_class_t from, reg_class_t to)
 {
 #define GR_REG_CLASS_P(CLASS) \
@@ -5861,11 +6183,15 @@ csky_register_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
 #define V_REG_CLASS_P(CLASS) \
   ((CLASS) == V_REGS)
 
-  if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
-      || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
-      || (V_REG_CLASS_P (from) && V_REG_CLASS_P (to))
-      || (V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+  if (V_REG_CLASS_P (from) && V_REG_CLASS_P (to))
+    return 2;
+
+  if ((V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
       || (GR_REG_CLASS_P (from) && V_REG_CLASS_P (to)))
+    return 6;
+
+  if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
+      || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)))
     return 16;
 
   if (HILO_REG_CLASS_P (from) && HILO_REG_CLASS_P (to))
@@ -6086,6 +6412,64 @@ ck802_ck801_rtx_costs (rtx x, int code, int outer_code, int *total,
 }
 
 
+static bool
+ck803_rtx_costs (rtx x, int code, int outer_code, int *total,
+                       bool speed ATTRIBUTE_UNUSED)
+{
+  switch (code)
+    {
+    case SET:
+      if (MEM_P (XEXP (x, 1)))
+        {
+          struct csky_address op1;
+          bool address_valid;
+
+          address_valid = decompose_csky_address
+                            (XEXP (XEXP (x, 1), 0), &op1);
+          if (op1.index)
+            {
+              *total = COSTS_N_INSNS (3);
+              return true;
+            }
+          else if (address_valid)
+            {
+              *total = COSTS_N_INSNS (1);
+              return true;
+            }
+        }
+      if (REG_P (XEXP (x, 0)) && (GET_CODE (XEXP (x, 1)) == PLUS))
+       {
+         rtx sub_exp = XEXP (x, 1);
+         if (REG_P (XEXP (sub_exp, 0)) && REG_P (XEXP (sub_exp, 1)))
+         {
+           *total = COSTS_N_INSNS (1);
+           return true;
+         }
+       }
+      return false;
+    case MULT:
+      if (REG_P (XEXP (x, 0)) && CONST_INT_P (XEXP (x, 1)))
+        {
+          if (INTVAL (XEXP (x, 1)) % 2 == 0
+              && INTVAL (XEXP (x, 1)) < 0xffffffff
+              && INTVAL (XEXP (x, 1)) > 0)
+            {
+              *total = 4;
+              return true;
+            }
+        }
+      return false;
+
+    case CONST:
+    case LABEL_REF:
+    case SYMBOL_REF:
+      *total = COSTS_N_INSNS (3);
+      return true;
+    default:
+      return false;
+    }
+}
+
 /* Compute a (partial) cost for rtx X.  Return true if the complete
    cost has been computed, and false if subexpressions should be
    scanned.  In either case, *TOTAL contains the cost result.  */
@@ -6098,6 +6482,11 @@ csky_rtx_costs_internal (rtx x, enum rtx_code code, enum rtx_code outer_code,
   if (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801))
     {
       return ck802_ck801_rtx_costs (x, code, outer_code, total, speed);
+    }
+
+  if (CSKY_TARGET_ARCH(CK803))
+    {
+      return ck803_rtx_costs (x, code, outer_code, total, speed);
     }
 
   switch (code)
@@ -6197,6 +6586,13 @@ csky_sched_issue_rate (void)
 }
 
 
+/* This function implements the target macro TARGET_SCHED_ADJUST_COST.
+   It corrects the value of COST based on the relationship between
+   INSN and DEP through the dependence LINK.  It returns the new
+   value. There is a per-core adjust_cost hook to adjust scheduler costs
+   and the per-core hook can choose to completely override the generic
+   adjust_cost function.  */
+
 static int
 csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
                         rtx link,
@@ -6206,6 +6602,95 @@ csky_sched_adjust_cost (rtx_insn *insn ATTRIBUTE_UNUSED,
   if (REG_NOTE_KIND (link) == REG_DEP_ANTI
       || REG_NOTE_KIND (link) == REG_DEP_OUTPUT)
     return 0;
+  /* The REG_DEP_TURE situation.  */
+  else if (recog_memoized (insn) >= 0
+           && recog_memoized (dep) >= 0)
+    {
+      enum attr_type insn_type = get_attr_type (insn);
+      if (CSKY_TARGET_ARCH(CK803))
+        {
+          /* The ld or st's base reg is depending the pre insn,
+             it will delay 1 cycle.  */
+          if (insn_type == TYPE_LOAD
+              || insn_type == TYPE_STORE)
+            {
+              rtx pattern = PATTERN (insn);
+
+              gcc_assert (GET_CODE (pattern) == SET);
+              rtx addr = (insn_type == TYPE_LOAD) ?
+                SET_SRC (pattern) : SET_DEST (pattern);
+
+              enum rtx_code code = GET_CODE (addr);
+              if (code == ZERO_EXTEND
+                  || code == SIGN_EXTEND)
+                {
+                  addr = XEXP (addr, 0);
+                }
+              gcc_assert (GET_CODE (addr) == MEM);
+
+              rtx base =  XEXP (addr, 0);
+              rtx reg = NULL_RTX;
+              if (REG_P(base))
+                {
+                  reg = base;
+                }
+              if (GET_CODE (base) == PLUS
+                  && GET_CODE (XEXP (base, 0)) == REG)
+                {
+                  reg = XEXP (base, 0);
+                }
+              if ((reg != NULL_RTX) && reg_set_p(reg, PATTERN(dep)))
+                return 2;
+            }
+        }
+      else if (CSKY_TARGET_ARCH(CK802))
+        {
+          if ((insn_type == TYPE_CALL_JSR || insn_type == TYPE_BRANCH_JMP)
+              && get_attr_type (dep) != TYPE_LOAD)
+            return 1;
+
+          if (insn_type == TYPE_LOAD
+              || insn_type == TYPE_STORE)
+            {
+              rtx pattern = PATTERN (insn);
+
+              gcc_assert (GET_CODE (pattern) == SET);
+
+              rtx addr = (insn_type == TYPE_LOAD) ? SET_SRC (pattern)
+                         : SET_DEST(pattern);
+
+              enum rtx_code code = GET_CODE (addr);
+              if (code == ZERO_EXTEND
+                  || code == SIGN_EXTEND)
+                {
+                  addr = XEXP (addr, 0);
+                }
+              gcc_assert (GET_CODE (addr) == MEM);
+
+              rtx base =  XEXP (addr, 0);
+              rtx reg = NULL_RTX;
+              if (REG_P(base))
+                {
+                  reg = base;
+                }
+              if (GET_CODE (base) == PLUS
+                  && GET_CODE (XEXP (base, 0)) == REG)
+                {
+                  reg = XEXP (base, 0);
+                }
+              if ((reg != NULL_RTX) && reg_set_p(reg, PATTERN(dep))
+                  && get_attr_type (dep) != TYPE_LOAD)
+                return 1;
+
+              if (insn_type == TYPE_STORE
+                  && reg_referenced_p(SET_SRC(pattern), PATTERN(dep)))
+                {
+                  return 1;
+                }
+            }
+        }
+    }
+  return cost;
 }
 
 static bool
@@ -6277,6 +6762,259 @@ csky_dwarf_register_span (rtx rtl)
 
   return gen_rtx_PARALLEL (VOIDmode, gen_rtvec_v (nregs , parts));
 }
+
+/* Set up library functions unique to CSKY.  */
+
+static void
+csky_init_libfuncs(void)
+{
+  if (TARGET_CSKY_LINUX)
+    init_sync_libfuncs (UNITS_PER_WORD);
+  if (!TARGET_LIBCCRT)
+    return;
+
+  #define CSKY_GCC_SYM(sym) "__csky_ccrt_" # sym
+
+  /* int */
+
+  /* Arithmetic functions */
+  set_optab_libfunc (ashl_optab,    DImode, CSKY_GCC_SYM(ashldi3));
+  set_optab_libfunc (ashr_optab,    DImode, CSKY_GCC_SYM(ashrdi3));
+  set_optab_libfunc (sdiv_optab,    SImode, CSKY_GCC_SYM(divsi3));
+  set_optab_libfunc (sdiv_optab,    DImode, CSKY_GCC_SYM(divdi3));
+  set_optab_libfunc (lshr_optab,    DImode, CSKY_GCC_SYM(lshrdi3));
+  set_optab_libfunc (smod_optab,    SImode, CSKY_GCC_SYM(modsi3));
+  set_optab_libfunc (smod_optab,    DImode, CSKY_GCC_SYM(moddi3));
+  set_optab_libfunc (smul_optab,    DImode, CSKY_GCC_SYM(muldi3));
+  set_optab_libfunc (neg_optab,     DImode, CSKY_GCC_SYM(negdi2));
+  set_optab_libfunc (udiv_optab,    SImode, CSKY_GCC_SYM(udivsi3));
+  set_optab_libfunc (udiv_optab,    DImode, CSKY_GCC_SYM(udivdi3));
+  set_optab_libfunc (udivmod_optab, DImode, CSKY_GCC_SYM(udivmoddi4));
+  set_optab_libfunc (umod_optab,    SImode, CSKY_GCC_SYM(umodsi3));
+  set_optab_libfunc (umod_optab,    DImode, CSKY_GCC_SYM(umoddi3));
+
+  /* Comparison functions */
+  set_optab_libfunc (cmp_optab,     DImode, CSKY_GCC_SYM(cmpdi2));
+  set_optab_libfunc (ucmp_optab,    DImode, CSKY_GCC_SYM(ucmpdi2));
+
+  /* Trapping arithmetic functions */
+  set_optab_libfunc (absv_optab,    SImode, CSKY_GCC_SYM(absvsi2));
+  set_optab_libfunc (absv_optab,    DImode, CSKY_GCC_SYM(absvdi2));
+  set_optab_libfunc (addv_optab,    SImode, CSKY_GCC_SYM(addvsi3));
+  set_optab_libfunc (addv_optab,    DImode, CSKY_GCC_SYM(addvdi3));
+  set_optab_libfunc (smulv_optab,   SImode, CSKY_GCC_SYM(mulvsi3));
+  set_optab_libfunc (smulv_optab,   DImode, CSKY_GCC_SYM(mulvdi3));
+  set_optab_libfunc (negv_optab,    SImode, CSKY_GCC_SYM(negvsi2));
+  set_optab_libfunc (negv_optab,    DImode, CSKY_GCC_SYM(negvdi2));
+  set_optab_libfunc (subv_optab,    SImode, CSKY_GCC_SYM(subvsi3));
+  set_optab_libfunc (subv_optab,    DImode, CSKY_GCC_SYM(subvdi3));
+
+  /* Bit operations */
+  set_optab_libfunc (clz_optab,     SImode, CSKY_GCC_SYM(clzsi2));
+  set_optab_libfunc (clz_optab,     DImode, CSKY_GCC_SYM(clzdi2));
+  set_optab_libfunc (ctz_optab,     SImode, CSKY_GCC_SYM(ctzsi2));
+  set_optab_libfunc (ctz_optab,     DImode, CSKY_GCC_SYM(ctzdi2));
+  set_optab_libfunc (ffs_optab,     DImode, CSKY_GCC_SYM(ffsdi2));
+  set_optab_libfunc (parity_optab,  SImode, CSKY_GCC_SYM(paritysi2));
+  set_optab_libfunc (parity_optab,  DImode, CSKY_GCC_SYM(paritydi2));
+  set_optab_libfunc (popcount_optab,SImode, CSKY_GCC_SYM(popcountsi2));
+  set_optab_libfunc (popcount_optab,DImode, CSKY_GCC_SYM(popcountdi2));
+  set_optab_libfunc (bswap_optab,   SImode, CSKY_GCC_SYM(bswapsi2));
+  set_optab_libfunc (bswap_optab,   DImode, CSKY_GCC_SYM(bswapdi2));
+
+  /* float */
+
+  /* Arithmetic functions */
+  set_optab_libfunc (add_optab,     SFmode, CSKY_GCC_SYM(addsf3));
+  set_optab_libfunc (add_optab,     DFmode, CSKY_GCC_SYM(adddf3));
+  set_optab_libfunc (sub_optab,     SFmode, CSKY_GCC_SYM(subsf3));
+  set_optab_libfunc (sub_optab,     DFmode, CSKY_GCC_SYM(subdf3));
+  set_optab_libfunc (smul_optab,    SFmode, CSKY_GCC_SYM(mulsf3));
+  set_optab_libfunc (smul_optab,    DFmode, CSKY_GCC_SYM(muldf3));
+  set_optab_libfunc (sdiv_optab,    SFmode, CSKY_GCC_SYM(divsf3));
+  set_optab_libfunc (sdiv_optab,    DFmode, CSKY_GCC_SYM(divdf3));
+  set_optab_libfunc (neg_optab,     SFmode, CSKY_GCC_SYM(negsf2));
+  set_optab_libfunc (neg_optab,     DFmode, CSKY_GCC_SYM(negdf2));
+
+  /* Conversion functions */
+  set_conv_libfunc (sext_optab,    DFmode, SFmode, CSKY_GCC_SYM(extendsfdf2));
+  set_conv_libfunc (trunc_optab,   SFmode, DFmode, CSKY_GCC_SYM(truncdfsf2));
+  set_conv_libfunc (sfix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixsfsi));
+  set_conv_libfunc (sfix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixdfsi));
+  set_conv_libfunc (sfix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixsfdi));
+  set_conv_libfunc (sfix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixdfdi));
+  set_conv_libfunc (ufix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixunssfsi));
+  set_conv_libfunc (ufix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixunsdfsi));
+  set_conv_libfunc (ufix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixunssfdi));
+  set_conv_libfunc (ufix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixunsdfdi));
+  set_conv_libfunc (sfloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatsisf));
+  set_conv_libfunc (sfloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatsidf));
+  set_conv_libfunc (sfloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatdisf));
+  set_conv_libfunc (sfloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatdidf));
+  set_conv_libfunc (ufloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatunsisf));
+  set_conv_libfunc (ufloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatunsidf));
+  set_conv_libfunc (ufloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatundisf));
+  set_conv_libfunc (ufloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatundidf));
+
+  /* Comparison functions */
+  set_optab_libfunc (cmp_optab,    SFmode, CSKY_GCC_SYM(cmpsf2));
+  set_optab_libfunc (cmp_optab,    DFmode, CSKY_GCC_SYM(cmpdf2));
+  set_optab_libfunc (unord_optab,  SFmode, CSKY_GCC_SYM(unordsf2));
+  set_optab_libfunc (unord_optab,  DFmode, CSKY_GCC_SYM(unorddf2));
+  set_optab_libfunc (eq_optab,     SFmode, CSKY_GCC_SYM(eqsf2));
+  set_optab_libfunc (eq_optab,     DFmode, CSKY_GCC_SYM(eqdf2));
+  set_optab_libfunc (ne_optab,     SFmode, CSKY_GCC_SYM(nesf2));
+  set_optab_libfunc (ne_optab,     DFmode, CSKY_GCC_SYM(nedf2));
+  set_optab_libfunc (ge_optab,     SFmode, CSKY_GCC_SYM(gesf2));
+  set_optab_libfunc (ge_optab,     DFmode, CSKY_GCC_SYM(gedf2));
+  set_optab_libfunc (lt_optab,     SFmode, CSKY_GCC_SYM(ltsf2));
+  set_optab_libfunc (lt_optab,     DFmode, CSKY_GCC_SYM(ltdf2));
+  set_optab_libfunc (le_optab,     SFmode, CSKY_GCC_SYM(lesf2));
+  set_optab_libfunc (le_optab,     DFmode, CSKY_GCC_SYM(ledf2));
+  set_optab_libfunc (gt_optab,     SFmode, CSKY_GCC_SYM(gtsf2));
+  set_optab_libfunc (gt_optab,     DFmode, CSKY_GCC_SYM(gtdf2));
+}
+
+
+/* Return cost of the memory address x.
+   For csky, it is same cost between (register) and (register + offset).
+   Other situations will cost more.  */
+
+static int
+csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
+                   addr_space_t as ATTRIBUTE_UNUSED, bool speed ATTRIBUTE_UNUSED)
+{
+  enum rtx_code code = GET_CODE (x);
+
+  if (code == REG)
+    return COSTS_N_INSNS (1);
+  if (code == PLUS
+      && REG_P (XEXP (x, 0))
+      && CONST_INT_P (XEXP (x, 1)))
+    return COSTS_N_INSNS (1);
+
+  return COSTS_N_INSNS (3);
+}
+
+
+/* Return the fixed registers used for condition codes.  */
+
+static bool
+csky_fixed_condition_code_regs (unsigned int *p1, unsigned int *p2)
+{
+  *p1 = CSKY_CC_REGNUM;
+  *p2 = INVALID_REGNUM;
+  return true;
+}
+
+
+/* Insn fetch status used to detect insn fetch confilict when
+   scheduling, lrw will set the fetch status to FETCH_TEXT,
+   ld/st will set the fetch status to FETCH_DATA.  */
+enum insn_fetch_status
+{
+    NONE,
+    FETCH_TEXT,
+    FETCH_DATA
+};
+
+
+/* According to CURR_STATUS and INSN, change the CURR_STATUS and
+   return true if the INSN will cause the insn fetch conflict.  */
+
+static bool
+check_insn_fetch_conflict (rtx_insn *insn, enum insn_fetch_status *curr_status)
+{
+  gcc_assert (insn && INSN_P (insn));
+
+  if (DEBUG_INSN_P (insn))
+    return false;
+
+  if (GET_CODE (PATTERN (insn)) == SET)
+  {
+    /* Find the lrw and set the insn fetch status to FETCH_TEXT.  */
+    if (GET_CODE (XEXP(PATTERN(insn), 0)) == REG
+        && GET_CODE (XEXP(PATTERN(insn), 1)) == SYMBOL_REF)
+    {
+      switch (*curr_status)
+        {
+        case NONE:
+          *curr_status = FETCH_TEXT;
+          break;
+        case FETCH_DATA:
+          return true;
+        case FETCH_TEXT:
+          return false;
+        }
+    }
+    /* Find the ld/st and set the insn fetch status to FETCH_DATA.  */
+    else if ((GET_CODE (XEXP(PATTERN(insn), 0)) == REG
+                && GET_CODE (XEXP(PATTERN(insn), 1)) == MEM)
+            || (GET_CODE (XEXP(PATTERN(insn), 0)) == MEM
+                && GET_CODE (XEXP(PATTERN(insn), 1)) == REG))
+    {
+      switch (*curr_status)
+        {
+        case NONE:
+          *curr_status = FETCH_DATA;
+          break;
+        case FETCH_DATA:
+          return false;
+        case FETCH_TEXT:
+          return true;
+        }
+    }
+    /* Other insn set insn fetch status to NONE.  */
+    else
+    {
+      *curr_status = NONE;
+    }
+    return false;
+  }
+  else
+  {
+    *curr_status = NONE;
+    return false;
+  }
+}
+
+
+/* To check extra resource confilict before issue insns in
+   schedule ready list, if the INSN will cause resource
+   confilict, return true so that the insn will be queued
+   for COST cycles. LAST_SCHED_INSN is the last scheduled
+   no debug instruction.  */
+
+static bool
+csky_sched_extra_resource_confilict (rtx_insn *insn,
+                                     int *cost,
+                                     rtx_insn *last_sched_insn)
+{
+  enum insn_fetch_status current_insn_fetch_status = NONE;
+
+  if (!reload_completed)
+    return false;
+
+  if (CSKY_TARGET_ARCH(CK801)
+      || CSKY_TARGET_ARCH(CK802)
+      || CSKY_TARGET_ARCH(CK803))
+    {
+      /* Use LAST_SCHED_INSN to initialize fetch status.  */
+      if ((last_sched_insn != NULL) && INSN_P(last_sched_insn))
+        check_insn_fetch_conflict (last_sched_insn, &current_insn_fetch_status);
+      /* If INSN do cause fetch conflict, queue for 1 cycle.  */
+      if (check_insn_fetch_conflict (insn, &current_insn_fetch_status))
+        {
+          *cost = 1;
+          return true;
+        }
+      else
+        return false;
+    }
+
+  return false;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

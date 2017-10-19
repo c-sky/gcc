@@ -55,7 +55,7 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
-  "%{pthread:-lpthread} -lc"
+  "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
@@ -111,3 +111,11 @@
     fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
 }
 #define NO_PROFILE_COUNTERS 1
+/* This flag used to enable or disable the sepical
+   features only for linux toolchain.  */
+#define TARGET_CSKY_LINUX 1
+
+/* Clear the instruction cache from `BEG' to `END'.  This makes a
+   call to the ARM_SYNC_ICACHE architecture specific syscall.  */
+#define CLEAR_INSN_CACHE(BEG, END)                      \
+  cacheflush (BEG, END-BEG, 3)

@@ -4135,6 +4135,55 @@ eliminate_dom_walker::before_dom_children (basic_block b)
 		      sprime = NULL_TREE;
 		    }
 		}
+              /* FIXME: eliminate load dependence between loops in unroll mode.
+               * This inhibition works well if the one of the reference of phi's args
+               * is come frome some sibling loop's header block and it could been
+               * eliminated in unroll mode.
+               * Need to keep optimization if it could not been eliminated in unroll mode.
+               */
+              else if (gimple_code (def_stmt) == GIMPLE_PHI
+                       && flag_unroll_all_loops)
+                {
+                  gphi *phi = dyn_cast <gphi *> (def_stmt);
+                  loop_p loop = def_bb->loop_father->inner;
+                  bool found = false;
+                  for (; loop; loop = loop->next)
+                    {
+                      use_operand_p use;
+                      ssa_op_iter iter;
+                      FOR_EACH_PHI_ARG (use, phi, iter, SSA_OP_USE)
+                        {
+                          tree op = USE_FROM_PTR (use);
+                          if (TREE_CODE (op) == SSA_NAME)
+                            {
+                              def_bb = gimple_bb (SSA_NAME_DEF_STMT (op));
+                              if (def_bb && flow_bb_inside_loop_p (loop, def_bb)
+                                  && def_bb == loop->header)
+                                {
+                                  found = true;
+                                  break;
+                                }
+                            }
+                        }
+                      if (found)
+                        break;
+                    }
+                  if (found)
+                    {
+                      if (dump_file && (dump_flags & TDF_DETAILS))
+                        {
+                          fprintf (dump_file, "Not replacing ");
+                          print_gimple_expr (dump_file, stmt, 0, 0);
+                          fprintf (dump_file, " with ");
+                          print_generic_expr (dump_file, sprime, 0);
+                          fprintf (dump_file, " which maybe would add a"
+                             " dependence to unroll loop %d\n",
+                             loop->num);
+                        }
+                      sprime = NULL_TREE;
+                    }
+                }
+
 	    }
 
 	  if (sprime)

@@ -10,10 +10,11 @@
 #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 
 #undef CC1_SPEC
-#define CC1_SPEC       \
-  "%{EB:-EB}           \
-   %{EL:-EL}           \
-   %{fpic|fPIC:-DPIC}  \
+#define CC1_SPEC                 \
+  "%{EB:-EB}                     \
+   %{EL:-EL}                     \
+   %{fpic|fPIC:-DPIC}            \
+   %{march=ck803s:-march=ck803}  \
   "
 
 #undef ASM_SPEC
@@ -26,10 +27,12 @@
   %{march=*:-march=%*}          \
   %{mhard-float:-mhard-float}   \
   %{mdsp:-mdsp}                 \
+  %{medsp:-medsp}                 \
   %{mmac:-mmac}                 \
   %{manchor:-manchor}           \
   %{melrw:-melrw}               \
   %{mistack:-mistack}           \
+  %{mtrust:-mtrust}             \
   "
 
 #undef  LINK_SPEC
@@ -40,12 +43,14 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
-  "%{pthread:-lpthread} -lc"
+  "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
-#define LIBGCC_SPEC "%{mccrt:-lcc-rt;!mccrt:-lgcc}"
 
 #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
 
 #undef TARGET_POSIX_IO
+/* This flag used to enable or disable the sepical
+   features only for linux toolchain.  */
+#define TARGET_CSKY_LINUX 0
