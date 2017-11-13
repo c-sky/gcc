@@ -1,11 +1,9 @@
 		   Configure for csky gcc
 
-Basic elf gcc configuration:
-  ./configure [HOST_TARGET] --enable-languages=c --enable-sjlj-exceptions --target=[TARGET] --with-cskyabi=[ABI VERSION] --without-headers --with-newlib --disable-shared --disable-libssp --disable-libgomp --disable-libmudflap --with-sysroot=[SYSROOT DIRECTORY]  --prefix=[PREFIX]
-Basic linux gcc configuration:]
+Basic linux gcc configuration:
   ./configure [HOST_TARGET] --enable-languages=c --target=[TARGET] --with-cskyabi=[ABI VERSION] --without-headers --with-newlib --enable-shared --disable-libssp --disable-libgomp --disable-libmudflap --with-sysroot=[SYSROOT DIRECTORY]  --prefix=[PREFIX]
 HOST_TARGET is the host to execute binutils, such as x86_64-linux.
-TARGET can choose one of csky-abiv2-linux,csky-abiv2-elf,csky-linux,csky-elf. If building linux tools, add --with-sysroot=yes.
+TARGET can choose one of csky-abiv2-linux,csky-linux. 
 ABI VERSION is abiv1 or abiv2.
 If you want to build no multilib gcc, you should add:
   --disable-multilib --with-cpu=[CPU] --with-endian=[ENDIAN] --with-float=[FLOAT VERSION]
@@ -13,9 +11,6 @@ CPU is one of csky cpu models, such as ck810f.
 ENDIAN is big or little.
 FLOAT VERSION is hard or soft.
 If c++ is needed, build the libc fisrt, and add following to configuration.
-Elf gcc:
-  --enable-languages=c,c++ --with-lib=[LIBC DIRECTORY] --with-headers=[LIBC HEADER DIRECTORY]  --disable-threads
-Linux gcc:
   --enable-languages=c,c++ --enable-threads=posix --with-lib=[LIBC DIRECTORY] --with-headers=[LIBC HEADER DIRECTORY] --with-build-sysroot=[SYSROOT DIRECTORY] --enable-poison-system-directories --with-build-time-tools=[INSTALL DIRECTORY/bin]
 
 This directory contains the GNU Compiler Collection (GCC).
