@@ -207,6 +207,29 @@
       }
   })
 
+(define_predicate "csky_addr_reg"
+  (match_code "mem")
+  {
+    if (! general_operand(op, mode))
+      return 0;
+    else
+      {
+        struct csky_address addr;
+
+        decompose_csky_address (XEXP(op, 0), &addr);
+
+        /* FIXME The PIC related code.
+           Check if load the symbol address from got table.  */
+        if (addr.disp && GET_CODE(addr.disp) == UNSPEC)
+            return 0;
+
+        if (!addr.symbol)
+          return 1;
+
+        return 0;
+      }
+  })
+
 (define_predicate "csky_arith_any_imm_operand"
   (match_code "const_int,reg,subreg")
   {

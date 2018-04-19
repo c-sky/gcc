@@ -1,5 +1,6 @@
 #include <stdarg.h>
-#ifdef __unix__
+//#ifdef __unix__
+#if defined(__unix__) || defined(__CSKY__)
 #include <sys/types.h>
 #endif
 
@@ -485,7 +486,8 @@ snprintf (char *str, __SIZE_TYPE__ len, const char *fmt, ...)
 }
 
 /* uClibc's vsprintf calls vsnprintf.  */
-#ifndef __UCLIBC__
+//#ifndef __UCLIBC__
+#if (!defined(__UCLIBC__) && !defined(__CSKY__))
 int
 vsnprintf (char *str, __SIZE_TYPE__ len, const char *fmt, va_list ap)
 {

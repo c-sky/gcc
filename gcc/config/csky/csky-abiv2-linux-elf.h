@@ -26,6 +26,11 @@
   %{mcpu=*:-mcpu=%*}            \
   %{march=*:-march=%*}          \
   %{mhard-float:-mhard-float}   \
+<<<<<<< HEAD
+=======
+  %{mfloat-abi=softfp:-mhard-float}   \
+  %{mfloat-abi=hard:-mhard-float}   \
+>>>>>>> csky-gcc-6_3-dev-Release_v3_4_0
   %{mdsp:-mdsp}                 \
   %{medsp:-medsp}               \
   %{mmac:-mmac}                 \
@@ -54,10 +59,19 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
+<<<<<<< HEAD
   "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
+=======
+  "%{pthread:-lpthread} -lc"
+/* FIXME add this to LIB_SPEC when need */
+/*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
+
+#define LIBGCC_SPEC "%{mccrt: -lcc-rt;!mccrt: -lgcc}"
+
+>>>>>>> csky-gcc-6_3-dev-Release_v3_4_0
 #define TARGET_OS_CPP_BUILTINS()            \
   do                                        \
     {                                       \

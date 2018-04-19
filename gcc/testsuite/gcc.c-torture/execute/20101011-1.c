@@ -15,6 +15,9 @@
 #elif defined (__v850__)
   /* On V850 division by zero does not trap.  */
 # define DO_TEST 0
+#elif defined (__csky__)
+  /* On csky division by zero does not trap.  */
+# define DO_TEST 0
 #elif defined (__MSP430__)
   /* On MSP430 division by zero does not trap.  */
 # define DO_TEST 0

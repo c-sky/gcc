@@ -63,9 +63,14 @@ extern unsigned long csky_flags;
 
 #define TARGET_MU           (csky_flags & MASK_MU)
 
+/* Run-time Target Specification.  */
+#define TARGET_SOFT_FLOAT   (csky_float_abi == CSKY_FLOAT_ABI_SOFT)
+/* Use hardware floating point instructions. */
+#define TARGET_HARD_FLOAT   (csky_float_abi != CSKY_FLOAT_ABI_SOFT)
+
 /*  TARGET SEPC   */
 #define MULTILIB_DEFAULTS \
-  {"mlittle-endian", "mcpu=ck610", "mno-stm", "msoft-float"}
+  {"mlittle-endian", "mcpu=ck610", "mno-stm", "mfloat-abi=soft"}
 
 /* Support for a compile-time default CPU, et cetera.  The rules are:
    --with-arch is ignored if -march or -mcpu are specified.
@@ -75,7 +80,7 @@ extern unsigned long csky_flags;
   {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
   {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
   {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" }, \
-  {"float", "%{!msoft-float:%{!mhard-float:-m%(VALUE)-float}}" },
+  {"float", "%{!mfloat-abi=*:-mfloat-abi=%(VALUE)}" },
 
 /* debugging info */
 #undef  DWARF2_DEBUGGING_INFO

@@ -43,6 +43,7 @@
 #include "pass_manager.h"
 #include "tree-pass.h"
 #include "context.h"
+#include "cfgloop.h"
 
 #include "abiv2_csky_internal.h"
 
@@ -94,11 +95,11 @@ const int csky_dbx_regno[FIRST_PSEUDO_REGISTER] =
   8,  9,  10, 11, 12, 13, 14, 15,
   16, 17, 18, 19, 20, 21, 22, 23,
   24, 25, 26, 27, 28, 29, 30, 31,
-  -1, -1, 36, 37, -1, -1, -1, -1,
-  -1, -1, -1, -1, -1, -1, -1, -1,
-  -1, -1, -1, -1, 56, 57, 58, 59,
-  60, 61, 62, 63, 64, 65, 66, 67,
-  68, 69, 70, 71, -1, -1, 72
+  -1, -1, 36, 37, 35, 38, 39, 40,
+  41, 42, 43, 44, 45, 46, 47, 48,
+  49, 50, 51, 52, 53, 54, 55, 56,
+  57, 58, 59, 60, 61, 62, 63, 64,
+  65, 66, 67, 68, -1, -1, 72
 };
 
 /* Table of machine attributes.  */
@@ -393,6 +394,12 @@ static GTY(()) int tls_labelno;
 
 #undef  TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS
 #define TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS csky_allocate_stack_slots_for_args
+
+#undef TARGET_CAN_USE_DOLOOP_P
+#define TARGET_CAN_USE_DOLOOP_P csky_can_use_doloop_p
+
+#undef TARGET_INVALID_WITHIN_DOLOOP
+#define TARGET_INVALID_WITHIN_DOLOOP csky_invalid_within_doloop
 
 
 /******************************************************************
@@ -1412,12 +1419,16 @@ ck801_force_lr_save(void)
   return (!leaf_function_p() || ck801_far_jump_used_p());
 }
 
+/* The COUNT will be set as the living general register number,
+   The FRCOUNT will be set as the living float register number.  */
+
 static int
-get_csky_live_regs (int *count)
+get_csky_live_regs (int *count, int *frcount, int *freg_mask)
 {
   int reg;
-  int live_regs_mask = 0;
+  int live_regs_mask = 0, live_fregs_mask = 0;
   *count = 0;
+  *frcount = 0;
 
   /* FIXME: we should set live regs in one please
      and use interface of gcc to detect all readlly used regs ?  */
@@ -1454,6 +1465,21 @@ get_csky_live_regs (int *count)
           live_regs_mask |= (1 << EH_RETURN_DATA_REGNO (i));
         }
     }
+
+  if (TARGET_HARD_FLOAT)
+    {
+      for (reg = CSKY_FIRST_VFP_REGNUM; reg <= CSKY_LAST_VFP_REGNUM; reg++)
+        {
+          if (df_regs_ever_live_p (reg) && !call_really_used_regs[reg]
+              && !(live_fregs_mask & (1 << (reg - CSKY_FIRST_VFP_REGNUM))))
+            {
+              (*frcount)++;
+              live_fregs_mask |= (1 << (reg - CSKY_FIRST_VFP_REGNUM));
+            }
+        }
+    }
+  *freg_mask = live_fregs_mask;
+
   return live_regs_mask;
 }
 
@@ -1461,10 +1487,11 @@ get_csky_live_regs (int *count)
 static void
 get_csky_frame_layout (csky_stack_frame *infp)
 {
-  int arg_size, reg_size, local_size, outbound_size;
+  int arg_size, reg_size, local_size, outbound_size, freg_size;
   int pad_arg, pad_reg, pad_local, pad_outbound;
   int spill_size; /* the size of args we need to spill ourselves */
-  int reg_mask, reg_count;
+  int reg_mask, reg_count, freg_count;
+  int freg_mask;
   int mod = 0;
 
   memset(infp, 0, sizeof(*infp));
@@ -1491,15 +1518,18 @@ get_csky_frame_layout (csky_stack_frame *infp)
       > (CSKY_ADDI_MAX_STEP * 2))
     df_set_regs_ever_live(4, true); /* need r4 as tmp reg for adjust sp */
 
-  reg_mask = get_csky_live_regs (&reg_count);
-  reg_size = reg_count * 4;
+  reg_mask = get_csky_live_regs (&reg_count, &freg_count, &freg_mask);
+  freg_size = freg_count * (csky_fpu_index == TARGET_FPU_fpv2_sf ? 4 : 8);
+  reg_size = reg_count * 4 + freg_size;
 
   mod = reg_size % CSKY_STACK_BOUNDARY_BYTES;
   pad_reg = mod ? (CSKY_STACK_BOUNDARY_BYTES - mod) : 0;
 
   infp->arg_size = arg_size;
   infp->reg_size = reg_size;
+  infp->freg_size = freg_size;
   infp->reg_mask = reg_mask;
+  infp->freg_mask = freg_mask;
   infp->local_size = local_size;
   infp->outbound_size = outbound_size;
 }
@@ -1551,13 +1581,25 @@ csky_function_arg (cumulative_args_t pcum_v, machine_mode mode,
                    const_tree type, bool named)
 {
   CUMULATIVE_ARGS *pcum = get_cumulative_args (pcum_v);
-  int arg_reg = *pcum;
+  int arg_reg = pcum->reg;
 
   if (!named || mode == VOIDmode)
     return NULL_RTX;
 
   if (targetm.calls.must_pass_in_stack (mode, type))
     return NULL_RTX;
+
+  if (TARGET_HARD_FLOAT_ABI
+      && (mode == SFmode || mode == DFmode)
+      && !pcum->is_stdarg
+      && !(mode == DFmode && csky_fpu_index == TARGET_FPU_fpv2_sf))
+    {
+      int arg_reg = pcum->freg;
+      if (!IN_RANGE (arg_reg, 0, 3))
+        return NULL_RTX;
+
+      return gen_rtx_REG (mode, arg_reg + CSKY_FIRST_VFP_REGNUM);
+    }
 
   if (arg_reg < CSKY_NPARM_REGS)
     return gen_rtx_REG (mode, CSKY_FIRST_PARM_REG + arg_reg);
@@ -1591,8 +1633,21 @@ csky_function_arg_advance (cumulative_args_t pcum_v, machine_mode mode,
                            const_tree type, bool named)
 {
   CUMULATIVE_ARGS *pcum = get_cumulative_args (pcum_v);
+  int *reg = &pcum->reg;
 
-  *pcum = *pcum + named * get_csky_arg_regs_num(mode, type);
+  if (TARGET_HARD_FLOAT_ABI
+      && (mode == SFmode || mode == DFmode)
+      && !pcum->is_stdarg
+      && !(mode == DFmode && csky_fpu_index == TARGET_FPU_fpv2_sf))
+    {
+      int *reg = &pcum->freg;
+      if (csky_fpu_index == TARGET_FPU_fpv2_sf)
+        *reg = *reg + named * get_csky_arg_regs_num(mode, type);
+      else
+        *reg = *reg + named * ((get_csky_arg_regs_num(mode, type) + 1) / 2);
+      return;
+    }
+  *reg = *reg + named * get_csky_arg_regs_num(mode, type);
 }
 
 
@@ -1615,6 +1670,14 @@ csky_function_value(const_tree type, const_tree func,
 
   mode = TYPE_MODE (type);
   size = int_size_in_bytes (type);
+
+  if (TARGET_HARD_FLOAT_ABI
+      && (mode == SFmode || mode == DFmode)
+      && !(mode == DFmode && csky_fpu_index == TARGET_FPU_fpv2_sf))
+    {
+      mode = promote_function_mode (type, mode, &unsignedp, func, 1);
+      return gen_rtx_REG (mode, CSKY_FIRST_VFP_REGNUM);
+    }
 
   /* Since we promote return types, we must promote the mode here too.  */
   if (INTEGRAL_TYPE_P (type))
@@ -1651,6 +1714,12 @@ static rtx
 csky_libcall_value (machine_mode mode,
                     const_rtx libcall ATTRIBUTE_UNUSED)
 {
+  if (TARGET_HARD_FLOAT_ABI
+      && (mode == SFmode || mode == DFmode)
+      && !(mode == DFmode && csky_fpu_index == TARGET_FPU_fpv2_sf))
+    {
+      return gen_rtx_REG (mode, CSKY_FIRST_VFP_REGNUM);
+    }
   return gen_rtx_REG (mode, CSKY_FIRST_RET_REG);
 }
 
@@ -1660,7 +1729,11 @@ csky_libcall_value (machine_mode mode,
 static bool
 csky_function_value_regno_p (const unsigned int regno)
 {
-  return (regno == CSKY_FIRST_RET_REG);
+  if (regno == CSKY_FIRST_RET_REG
+      || (TARGET_HARD_FLOAT_ABI
+          && regno == CSKY_FIRST_VFP_REGNUM))
+    return true;
+  return false;
 }
 
 
@@ -1686,13 +1759,34 @@ csky_arg_partial_bytes (cumulative_args_t pcum_v, enum machine_mode mode,
 {
   CUMULATIVE_ARGS *pcum = get_cumulative_args (pcum_v);
 
-  int reg = *pcum;
+  int reg = pcum->reg;
 
   if (named == 0)
     return 0;
 
   if (targetm.calls.must_pass_in_stack (mode, type))
     return 0;
+
+  if (TARGET_HARD_FLOAT_ABI
+      && (mode == SFmode || mode == DFmode)
+      && !pcum->is_stdarg
+      && !(mode == DFmode && csky_fpu_index == TARGET_FPU_fpv2_sf))
+    {
+      int reg = pcum->freg;
+
+      if (!IN_RANGE (reg, 0, 3))
+        return 0;
+
+      int size = (get_csky_arg_regs_num(mode, type) + 1) / 2;
+      if (csky_fpu_index == TARGET_FPU_fpv2_sf)
+        size = get_csky_arg_regs_num (mode, type);
+
+      if (reg + size <= CSKY_NPARM_FREGS)
+        return 0;
+
+      /* TODO: need to split param */
+      return 0;
+    }
 
   /* REG is not the *hardware* register number of the register that holds
      the argument, it is the *argument* register number.  So for example,
@@ -1726,7 +1820,7 @@ csky_setup_incoming_varargs (cumulative_args_t pcum_v,
                              int second_time ATTRIBUTE_UNUSED)
 {
   CUMULATIVE_ARGS *pcum = get_cumulative_args (pcum_v);
-  int reg = *pcum;
+  int reg = pcum->reg;
 
   cfun->machine->uses_anonymous_args = 1;
 
@@ -1864,12 +1958,11 @@ csky_conditional_register_usage (void)
         call_really_used_regs[CSKY_LR_REGNUM] = 0;
     }
   /* For some targets, the high regitser is not supported.
-     Expect ck801 & ck802 & ck803, other cpu use high registers
+     Expect ck801 & ck802, other cpu use high registers
      depend on -mhigh-registers option(ck803 is default off,
      others are default on).  */
   else if (CSKY_TARGET_ARCH(CK802)
-           || CSKY_TARGET_ARCH(CK803)
-           || !TARGET_HIGH_REGISTERS)
+           || !CSKY_ISA_FEATURE(hreg))
    {
       int i;
 
@@ -1938,8 +2031,7 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
           if (CSKY_ISA_FEATURE(smart) || CSKY_TARGET_ARCH(CK801))
             return (regno < CSKY_LAST_MINI_REGNUM);
           else if (CSKY_TARGET_ARCH(CK802)
-                   || CSKY_TARGET_ARCH(CK803)
-                   || !TARGET_HIGH_REGISTERS)
+                   || !CSKY_ISA_FEATURE(hreg))
             {
               /* Without high register, r15 cannot hold two word size data.  */
               return (regno < (CSKY_SP_REGNUM - 1));
@@ -1966,10 +2058,16 @@ csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode)
       else
         return 1;
     }
-  else if (CSKY_VREG_P (regno)
-           && TARGET_HARD_FLOAT)
+  else if (CSKY_VREG_P (regno))
     {
-      return 1;
+      if (TARGET_HARD_FLOAT)
+        {
+          if (!TARGET_HARD_FLOAT_ABI)
+            return 1;
+          if (mode == SFmode || mode == SImode
+              || mode == DFmode)
+            return 1;
+        }
     }
 
   return 0;
@@ -2082,7 +2180,12 @@ csky_secondary_reload (bool in_p ATTRIBUTE_UNUSED, rtx x,
       /* Reload between Vector reg and Memory do not need
          intermediate register.  */
       if (MEM_P (x) && (mode == SFmode || mode == DFmode))
-        return NO_REGS;
+        {
+          if (GET_CODE (XEXP (x, 0)) == POST_INC)
+            return GENERAL_REGS;
+          else
+            return NO_REGS;
+        }
       else
         return GENERAL_REGS;
     }
@@ -2169,7 +2272,7 @@ rest_of_handle_cse_cc (void)
              NULL means having not found one condition code set insn,
              if it is not NULL, then find the next condition code set
              insn. If two insns have same set source, delete the
-             previous one and set CC_SRC_INSN to current insn; if 
+             previous one and set CC_SRC_INSN to current insn; if
              they have different source, just set CC_SRC_INSN to
              current insn.  */
           for (prev_insn = PREV_INSN (cc_src_insn);
@@ -2446,6 +2549,9 @@ csky_option_override (void)
 
   if (TARGET_HARD_FLOAT)
     {
+      if (TARGET_LIBCCRT)
+        error ("-mccrt and hard float are incompatible");
+
       const struct csky_fpu_desc *csky_selected_fpu = NULL;
 
       if (csky_fpu_index == TARGET_FPU_auto)
@@ -2522,6 +2628,17 @@ csky_option_override (void)
      since it tends to increase register pressure.  */
   if (!global_options_set.x_flag_schedule_insns)
     flag_schedule_insns = 0;
+  /* Backtrace need use frame pointer reg.  */
+  if (TARGET_BACKTRACE)
+      flag_omit_frame_pointer = 0;
+
+  if (!TARGET_CSKY_LINUX)
+    {
+      /* Don't open optimization isolate_erroneous_paths_dereference
+         by default in elf gcc.  */
+      if (!global_options_set.x_flag_isolate_erroneous_paths_dereference)
+        flag_isolate_erroneous_paths_dereference = 0;
+    }
 
   csky_add_gc_roots ();
 
@@ -2901,8 +3018,9 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   enum rtx_code code = GET_CODE (index);
 
   if (TARGET_HARD_FLOAT
-      && (mode == SFmode || mode == DFmode))
-    return (code == CONST_INT && INTVAL (index) < 1024
+      && (mode == SFmode || mode == DFmode)
+      && code == CONST_INT)
+    return (INTVAL (index) < 1024
             && INTVAL (index) >= 0
             && (INTVAL (index) & 3) == 0);
 
@@ -3001,7 +3119,23 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
               || (is_csky_address_register_rtx_p (xop1, strict_p)
                   && csky_legitimate_index_p (mode, xop0, strict_p)));
     }
+  else if (CSKY_ISA_FEATURE(dspv2) && code == POST_INC
+           && GET_MODE_SIZE (mode) <= 4)
+    {
+      int regno;
 
+      if (!REG_P (XEXP(addr, 0)))
+        return 0;
+
+      regno = REGNO (XEXP (addr, 0));
+
+      if (strict_p)
+        return (CSKY_GENERAL_REGNO_P(regno)
+                || CSKY_GENERAL_REGNO_P(reg_renumber[regno]));
+
+      return (CSKY_GENERAL_REGNO_P(regno)
+              || regno >= FIRST_PSEUDO_REGISTER);
+    }
   return 0;
 }
 
@@ -3062,8 +3196,15 @@ decompose_csky_address (rtx addr, struct csky_address * out)
   rtx scale_rtx = NULL_RTX;
   int i;
 
-  out->base = out->index = out->symbol = out->label = out->disp = NULL_RTX;
+  out->base = out->index = out->symbol = out->label = out->disp
+    = out->post_inc_reg = NULL_RTX;
   out->scale = 0;
+
+  if (CSKY_ISA_FEATURE(dspv2) && GET_CODE (addr) == POST_INC)
+    {
+      out->post_inc_reg = XEXP (addr, 0);
+      return true;
+    }
 
   if (REG_P (addr))
     {
@@ -3271,6 +3412,10 @@ csky_print_operand_address (FILE * stream,
       fprintf (stream, "(%s, %s << %d)",
                reg_names[REGNO (addr.base)], reg_names[REGNO (addr.index)],
                exact_log2 ((int) (addr.scale)));
+    }
+  else if (addr.post_inc_reg)
+    {
+      fprintf (stream, "(%s)", reg_names[REGNO (addr.post_inc_reg)]);
     }
   else
     {
@@ -3886,7 +4031,22 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
         {
           decompose_csky_address (XEXP (src, 0), &op1);
 
-          if (op1.index)
+          if (op1.post_inc_reg)
+            {
+              switch (GET_MODE (src))
+                {
+                case HImode:
+                  return "ldbi.h\t%0, %1";
+                case QImode:
+                  return "ldbi.b\t%0, %1";
+                case SImode:
+                case SFmode:
+                  return "ldbi.w\t%0, %1";
+                default:
+                  gcc_unreachable ();
+               }
+            }
+          else if (op1.index)
             {
               switch (GET_MODE (src))
                 {
@@ -3974,7 +4134,22 @@ output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
     {
       decompose_csky_address (XEXP (dst, 0), &op0);
 
-      if (op0.index)
+      if (op0.post_inc_reg)
+        {
+          switch (GET_MODE (src))
+            {
+            case HImode:
+              return "stbi.h\t%1, %0";
+            case QImode:
+              return "stbi.b\t%1, %0";
+            case SFmode:
+            case SImode:
+              return "stbi.w\t%1, %0";
+            default:
+              gcc_unreachable ();
+            }
+        }
+      else if (op0.index)
         {
           switch (GET_MODE (src))
             {
@@ -4613,7 +4788,8 @@ output_csky_return_instruction(void)
 
   csky_stack_frame fi;
   get_csky_frame_layout(&fi);
-  if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
+  if (!TARGET_BACKTRACE && TARGET_PUSHPOP
+      && is_pushpop_from_csky_live_regs(fi.reg_mask)
       && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     return "";
 
@@ -5003,7 +5179,7 @@ void csky_expand_prologue(void)
     {
       offset = fi.arg_size + fi.pad_arg;
       insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-                                 GEN_INT(-offset)));
+                                  GEN_INT(-offset)));
       RTX_FRAME_RELATED_P (insn) = 1;
     }
 
@@ -5026,24 +5202,99 @@ void csky_expand_prologue(void)
         }
     }
 
-  /* TODO: backtrace */
-  if (0 /* target_flags & MASK_BACKTRACE */)
+  if (TARGET_BACKTRACE)
     {
+      int remain_loc_reg = fi.reg_size - fi.freg_size;
+      int remain_lr_fp = 0;
+      int loc_reg_mask = fi.reg_mask;
+      int lr_fp_mask = 0;
+      int remain;
+      int rn;
 
+      if (fi.reg_mask & (1 << HARD_FRAME_POINTER_REGNUM))
+        {
+          remain_loc_reg -= 4;
+          remain_lr_fp += 4;
+          loc_reg_mask &= ~(1 << HARD_FRAME_POINTER_REGNUM);
+          lr_fp_mask |= (1 << HARD_FRAME_POINTER_REGNUM);
+        }
+      if (fi.reg_mask & (1 << CSKY_LR_REGNUM))
+        {
+          remain_loc_reg -= 4;
+          remain_lr_fp += 4;
+          loc_reg_mask &= ~(1 << CSKY_LR_REGNUM);
+          lr_fp_mask |= (1 << CSKY_LR_REGNUM);
+        }
+
+      if (remain_loc_reg > 4 && is_pushpop_from_csky_live_regs (loc_reg_mask))
+        {
+          emit_csky_regs_push (loc_reg_mask);
+          offset = fi.reg_size + fi.pad_reg - fi.freg_size - remain_loc_reg;
+          gcc_assert (offset > 0);
+
+          insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                      GEN_INT(-offset)));
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+      else
+        {
+          offset = fi.reg_size + fi.pad_reg - fi.freg_size;
+
+          /* FIXME Add the condition of greater than zero is to
+             avoid internal error when add -flto, deep reasons
+             to be examined.  */
+          if (offset > 0)
+          {
+            insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                        GEN_INT(-offset)));
+            RTX_FRAME_RELATED_P (insn) = 1;
+          }
+        }
+
+      remain = remain_lr_fp;
+      rn = -1;
+      for (offset = 0; remain > 0; offset += 4, remain -= 4)
+        {
+          while (!(lr_fp_mask & (1 << ++rn)));
+
+          rtx dst = gen_rtx_MEM (SImode,
+                                 plus_constant (Pmode,
+                                                stack_pointer_rtx,
+                                                offset));
+          insn = emit_insn (gen_movsi (dst, gen_rtx_REG (SImode, rn)));
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+
+      if (!(remain_loc_reg > 4 && is_pushpop_from_csky_live_regs (loc_reg_mask)))
+        {
+          remain = remain_loc_reg;
+          rn = -1;
+          for (; remain > 0; offset += 4, remain -= 4)
+            {
+              while (!(loc_reg_mask & (1 << ++rn)));
+
+              rtx dst = gen_rtx_MEM (SImode,
+                                     plus_constant (Pmode,
+                                                    stack_pointer_rtx,
+                                                    offset));
+              insn = emit_insn (gen_movsi (dst, gen_rtx_REG (SImode, rn)));
+              RTX_FRAME_RELATED_P (insn) = 1;
+            }
+        }
     }
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask))
     {
       emit_csky_regs_push (fi.reg_mask);
     }
-  else if (fi.reg_size > 0)
+  else if ((fi.reg_size - fi.freg_size) > 0)
     {
-      offset = fi.reg_size + fi.pad_reg;
+      offset = fi.reg_size + fi.pad_reg - fi.freg_size;
 
       insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-                                 GEN_INT(-offset)));
+                                  GEN_INT(-offset)));
       RTX_FRAME_RELATED_P (insn) = 1;
 
-      int remain = fi.reg_size;
+      int remain = fi.reg_size - fi.freg_size;
       int rn = -1;
       for (offset = 0; remain > 0; offset += 4, remain -= 4)
         {
@@ -5054,6 +5305,30 @@ void csky_expand_prologue(void)
                                                 stack_pointer_rtx,
                                                 offset));
           insn = emit_insn (gen_movsi (dst, gen_rtx_REG (SImode, rn)));
+          RTX_FRAME_RELATED_P (insn) = 1;
+        }
+    }
+  if (TARGET_HARD_FLOAT && fi.freg_size > 0)
+    {
+      offset = fi.freg_size;
+
+      insn = emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                  GEN_INT(-offset)));
+      RTX_FRAME_RELATED_P (insn) = 1;
+
+      int remain = fi.freg_size;
+      int rn = CSKY_FIRST_VFP_REGNUM - 1;
+      int step = (csky_fpu_index == TARGET_FPU_fpv2_sf ? 4 : 8);
+      machine_mode fr_mode = (csky_fpu_index == TARGET_FPU_fpv2_sf ? SFmode : DFmode);
+      for (offset = 0; remain > 0; offset += step, remain -= step)
+        {
+          while (!(fi.freg_mask & (1 << (++rn - CSKY_FIRST_VFP_REGNUM))));
+
+          rtx dst = gen_rtx_MEM (fr_mode,
+                                 plus_constant (Pmode,
+                                                stack_pointer_rtx,
+                                                offset));
+          insn = emit_insn (gen_movsi (dst, gen_rtx_REG (fr_mode, rn)));
           RTX_FRAME_RELATED_P (insn) = 1;
         }
     }
@@ -5140,12 +5415,134 @@ void csky_expand_epilogue(void)
         }
     }
 
-  /* TODO: backtrace */
-  if (0 /* target_flags & MASK_BACKTRACE */)
+  if (TARGET_HARD_FLOAT && fi.freg_size > 0)
     {
+      offset = fi.freg_size;
+      int remain = fi.freg_size;
+      int step = (csky_fpu_index == TARGET_FPU_fpv2_sf ? 4 : 8);
+      int rn = CSKY_LAST_VFP_REGNUM + 1;
+      machine_mode fr_mode = (csky_fpu_index == TARGET_FPU_fpv2_sf ? SFmode : DFmode);
 
+      if (offset)
+        {
+          for (offset -= step;
+               remain > 0;
+               offset -= step, remain -= step)
+            {
+              while (!(fi.freg_mask & (1 << (--rn - CSKY_FIRST_VFP_REGNUM))));
+
+              rtx src = gen_rtx_MEM (fr_mode,
+                                     plus_constant (Pmode,
+                                                    stack_pointer_rtx,
+                                                    offset));
+              emit_insn (gen_movsi (gen_rtx_REG (fr_mode, rn), src));
+            }
+          emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                               GEN_INT(fi.freg_size)));
+        }
     }
-  /* TODO: pushpop */
+
+  if (TARGET_BACKTRACE)
+    {
+      int offset = fi.reg_size + fi.pad_reg - fi.freg_size;
+      int adjust = fi.arg_size + fi.pad_arg + offset;
+      int remain_loc_reg = fi.reg_size - fi.freg_size;
+      int remain_lr_fp = 0;
+      int loc_reg_mask = fi.reg_mask;
+      int lr_fp_mask = 0;
+      int rn;
+      int remain;
+
+      if (fi.reg_mask & (1 << HARD_FRAME_POINTER_REGNUM))
+        {
+          remain_loc_reg -= 4;
+          remain_lr_fp += 4;
+          loc_reg_mask &= ~(1 << HARD_FRAME_POINTER_REGNUM);
+          lr_fp_mask |= (1 << HARD_FRAME_POINTER_REGNUM);
+        }
+      if (fi.reg_mask & (1 << CSKY_LR_REGNUM))
+        {
+          remain_loc_reg -= 4;
+          remain_lr_fp += 4;
+          loc_reg_mask &= ~(1 << CSKY_LR_REGNUM);
+          lr_fp_mask |= (1 << CSKY_LR_REGNUM);
+        }
+
+      if (offset > 0)
+        {
+          offset -= fi.pad_reg;
+          offset -= 4;
+
+          if (remain_loc_reg > 4
+              && is_pushpop_from_csky_live_regs (loc_reg_mask)
+              && fi.arg_size == 0
+              && (!(func_type & CSKY_FT_INTERRUPT)))
+            {
+              int offset_lr_fp = offset - remain_loc_reg;
+
+              remain = remain_lr_fp;
+              rn = 31;
+              while (remain > 0)
+                {
+                  while (!(lr_fp_mask & (1 << --rn)));
+
+                  rtx src = gen_rtx_MEM (SImode,
+                                         plus_constant (Pmode,
+                                                        stack_pointer_rtx,
+                                                        offset_lr_fp));
+                  emit_insn (gen_movsi (gen_rtx_REG (SImode, rn), src));
+
+                  offset_lr_fp -= 4;
+                  remain -= 4;
+                }
+              emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                   GEN_INT(adjust - remain_loc_reg)));
+
+              emit_csky_regs_pop (loc_reg_mask);
+              return_with_pc = true;
+            }
+        else
+          {
+            remain = remain_loc_reg;
+            rn = 31;
+            while (remain > 0)
+              {
+                while (!(loc_reg_mask & (1 << --rn)));
+
+                rtx src = gen_rtx_MEM (SImode,
+                                       plus_constant (Pmode,
+                                                      stack_pointer_rtx,
+                                                      offset));
+                emit_insn (gen_movsi (gen_rtx_REG (SImode, rn), src));
+
+                offset -= 4;
+                remain -= 4;
+              }
+            remain = remain_lr_fp;
+            rn = 31;
+            while (remain > 0)
+              {
+                while (!(lr_fp_mask & (1 << --rn)));
+
+                rtx src = gen_rtx_MEM (SImode,
+                                       plus_constant (Pmode,
+                                                      stack_pointer_rtx,
+                                                      offset));
+                emit_insn (gen_movsi (gen_rtx_REG (SImode, rn), src));
+
+                offset -= 4;
+                remain -= 4;
+              }
+            emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                                 GEN_INT(adjust)));
+          }
+        }
+      else if (adjust)
+        {
+          emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+                               GEN_INT(adjust)));
+        }
+    }
   else if (TARGET_PUSHPOP && is_pushpop_from_csky_live_regs(fi.reg_mask)
            && fi.arg_size == 0 && !CSKY_FUNCTION_IS_INTERRUPT(func_type))
     {
@@ -5159,10 +5556,10 @@ void csky_expand_epilogue(void)
     }
   else
     {
-      offset = fi.reg_size + fi.pad_reg;
+      offset = fi.reg_size + fi.pad_reg - fi.freg_size;
       int adjust = fi.arg_size + fi.pad_arg + offset;
 
-      int remain = fi.reg_size;
+      int remain = fi.reg_size - fi.freg_size;
       int rn = 31;
       if (offset)
         {
@@ -6051,6 +6448,30 @@ get_cskyv2_mem_constraint (const char *str, rtx op)
 
       return true;
     }
+  else if (*str == 'W')
+    {
+      struct csky_address addr;
+
+      if (!decompose_csky_address (XEXP (op, 0), &addr))
+        return false;
+
+      /* Verify base register. */
+      if (!is_csky_address_register_rtx_p (addr.base, 0))
+        return false;
+
+      /* Verify index operand. */
+      if (addr.index)
+        {
+          if (!is_csky_address_register_rtx_p (addr.index, 0))
+            return false;
+
+          if (addr.scale == 1 || addr.scale == 2 || addr.scale == 4
+              || addr.scale == 8)
+            return true;
+
+          return false;
+        }
+    }
 
   return false;
 }
@@ -6111,7 +6532,7 @@ static tree
 csky_handle_isr_attribute (tree *node, tree name, tree args, int flags,
                            bool *no_add_attrs)
 {
-  if(!TARGET_ATTRIBUTE_ISR)
+  if(!CSKY_ISA_FEATURE(isr))
     {
       warning(OPT_Wattributes, "%qE attribute ignored", name);
       *no_add_attrs = true;
@@ -6188,7 +6609,7 @@ csky_register_move_cost (machine_mode mode,
 
   if ((V_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
       || (GR_REG_CLASS_P (from) && V_REG_CLASS_P (to)))
-    return 6;
+    return 16;
 
   if ((HILO_REG_CLASS_P (from) && GR_REG_CLASS_P (to))
       || (GR_REG_CLASS_P (from) && HILO_REG_CLASS_P (to)))
@@ -6211,7 +6632,16 @@ int
 csky_memory_move_cost (machine_mode mode, reg_class_t rclass,
                        bool in ATTRIBUTE_UNUSED)
 {
-  return (4 + memory_move_secondary_cost(mode, rclass, in));
+  int cost = 4;
+
+  if (TARGET_HARD_FLOAT)
+    {
+      if (mode == DFmode || mode == SFmode)
+        {
+          cost += 4;
+        }
+    }
+  return (cost + memory_move_secondary_cost(mode, rclass, in));
 }
 
 
@@ -6755,9 +7185,18 @@ csky_dwarf_register_span (rtx rtl)
          as the CPU bit width. Transform the 64bits FPU register to
          32bits here, and we will modify the unwind processing to
          fit CSKY architecture later.  */
-      nregs = GET_MODE_SIZE (mode) / 8;
-      for (i = 0; i < nregs; i++)
-        parts[i] = gen_rtx_REG (SImode, regno + i);
+      nregs = GET_MODE_SIZE (mode) / 4;
+      for (i = 0; i < nregs; i += 2)
+      if (TARGET_BIG_ENDIAN)
+        {
+          parts[i] = gen_rtx_REG (SImode, regno + i - 16);
+          parts[i + 1] = gen_rtx_REG (SImode, regno + i);
+        }
+      else
+        {
+          parts[i] = gen_rtx_REG (SImode, regno + i);
+          parts[i + 1] = gen_rtx_REG (SImode, regno + i - 16);
+        }
     }
 
   return gen_rtx_PARALLEL (VOIDmode, gen_rtvec_v (nregs , parts));
@@ -6770,109 +7209,6 @@ csky_init_libfuncs(void)
 {
   if (TARGET_CSKY_LINUX)
     init_sync_libfuncs (UNITS_PER_WORD);
-  if (!TARGET_LIBCCRT)
-    return;
-
-  #define CSKY_GCC_SYM(sym) "__csky_ccrt_" # sym
-
-  /* int */
-
-  /* Arithmetic functions */
-  set_optab_libfunc (ashl_optab,    DImode, CSKY_GCC_SYM(ashldi3));
-  set_optab_libfunc (ashr_optab,    DImode, CSKY_GCC_SYM(ashrdi3));
-  set_optab_libfunc (sdiv_optab,    SImode, CSKY_GCC_SYM(divsi3));
-  set_optab_libfunc (sdiv_optab,    DImode, CSKY_GCC_SYM(divdi3));
-  set_optab_libfunc (lshr_optab,    DImode, CSKY_GCC_SYM(lshrdi3));
-  set_optab_libfunc (smod_optab,    SImode, CSKY_GCC_SYM(modsi3));
-  set_optab_libfunc (smod_optab,    DImode, CSKY_GCC_SYM(moddi3));
-  set_optab_libfunc (smul_optab,    DImode, CSKY_GCC_SYM(muldi3));
-  set_optab_libfunc (neg_optab,     DImode, CSKY_GCC_SYM(negdi2));
-  set_optab_libfunc (udiv_optab,    SImode, CSKY_GCC_SYM(udivsi3));
-  set_optab_libfunc (udiv_optab,    DImode, CSKY_GCC_SYM(udivdi3));
-  set_optab_libfunc (udivmod_optab, DImode, CSKY_GCC_SYM(udivmoddi4));
-  set_optab_libfunc (umod_optab,    SImode, CSKY_GCC_SYM(umodsi3));
-  set_optab_libfunc (umod_optab,    DImode, CSKY_GCC_SYM(umoddi3));
-
-  /* Comparison functions */
-  set_optab_libfunc (cmp_optab,     DImode, CSKY_GCC_SYM(cmpdi2));
-  set_optab_libfunc (ucmp_optab,    DImode, CSKY_GCC_SYM(ucmpdi2));
-
-  /* Trapping arithmetic functions */
-  set_optab_libfunc (absv_optab,    SImode, CSKY_GCC_SYM(absvsi2));
-  set_optab_libfunc (absv_optab,    DImode, CSKY_GCC_SYM(absvdi2));
-  set_optab_libfunc (addv_optab,    SImode, CSKY_GCC_SYM(addvsi3));
-  set_optab_libfunc (addv_optab,    DImode, CSKY_GCC_SYM(addvdi3));
-  set_optab_libfunc (smulv_optab,   SImode, CSKY_GCC_SYM(mulvsi3));
-  set_optab_libfunc (smulv_optab,   DImode, CSKY_GCC_SYM(mulvdi3));
-  set_optab_libfunc (negv_optab,    SImode, CSKY_GCC_SYM(negvsi2));
-  set_optab_libfunc (negv_optab,    DImode, CSKY_GCC_SYM(negvdi2));
-  set_optab_libfunc (subv_optab,    SImode, CSKY_GCC_SYM(subvsi3));
-  set_optab_libfunc (subv_optab,    DImode, CSKY_GCC_SYM(subvdi3));
-
-  /* Bit operations */
-  set_optab_libfunc (clz_optab,     SImode, CSKY_GCC_SYM(clzsi2));
-  set_optab_libfunc (clz_optab,     DImode, CSKY_GCC_SYM(clzdi2));
-  set_optab_libfunc (ctz_optab,     SImode, CSKY_GCC_SYM(ctzsi2));
-  set_optab_libfunc (ctz_optab,     DImode, CSKY_GCC_SYM(ctzdi2));
-  set_optab_libfunc (ffs_optab,     DImode, CSKY_GCC_SYM(ffsdi2));
-  set_optab_libfunc (parity_optab,  SImode, CSKY_GCC_SYM(paritysi2));
-  set_optab_libfunc (parity_optab,  DImode, CSKY_GCC_SYM(paritydi2));
-  set_optab_libfunc (popcount_optab,SImode, CSKY_GCC_SYM(popcountsi2));
-  set_optab_libfunc (popcount_optab,DImode, CSKY_GCC_SYM(popcountdi2));
-  set_optab_libfunc (bswap_optab,   SImode, CSKY_GCC_SYM(bswapsi2));
-  set_optab_libfunc (bswap_optab,   DImode, CSKY_GCC_SYM(bswapdi2));
-
-  /* float */
-
-  /* Arithmetic functions */
-  set_optab_libfunc (add_optab,     SFmode, CSKY_GCC_SYM(addsf3));
-  set_optab_libfunc (add_optab,     DFmode, CSKY_GCC_SYM(adddf3));
-  set_optab_libfunc (sub_optab,     SFmode, CSKY_GCC_SYM(subsf3));
-  set_optab_libfunc (sub_optab,     DFmode, CSKY_GCC_SYM(subdf3));
-  set_optab_libfunc (smul_optab,    SFmode, CSKY_GCC_SYM(mulsf3));
-  set_optab_libfunc (smul_optab,    DFmode, CSKY_GCC_SYM(muldf3));
-  set_optab_libfunc (sdiv_optab,    SFmode, CSKY_GCC_SYM(divsf3));
-  set_optab_libfunc (sdiv_optab,    DFmode, CSKY_GCC_SYM(divdf3));
-  set_optab_libfunc (neg_optab,     SFmode, CSKY_GCC_SYM(negsf2));
-  set_optab_libfunc (neg_optab,     DFmode, CSKY_GCC_SYM(negdf2));
-
-  /* Conversion functions */
-  set_conv_libfunc (sext_optab,    DFmode, SFmode, CSKY_GCC_SYM(extendsfdf2));
-  set_conv_libfunc (trunc_optab,   SFmode, DFmode, CSKY_GCC_SYM(truncdfsf2));
-  set_conv_libfunc (sfix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixsfsi));
-  set_conv_libfunc (sfix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixdfsi));
-  set_conv_libfunc (sfix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixsfdi));
-  set_conv_libfunc (sfix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixdfdi));
-  set_conv_libfunc (ufix_optab,    SImode, SFmode, CSKY_GCC_SYM(fixunssfsi));
-  set_conv_libfunc (ufix_optab,    SImode, DFmode, CSKY_GCC_SYM(fixunsdfsi));
-  set_conv_libfunc (ufix_optab,    DImode, SFmode, CSKY_GCC_SYM(fixunssfdi));
-  set_conv_libfunc (ufix_optab,    DImode, DFmode, CSKY_GCC_SYM(fixunsdfdi));
-  set_conv_libfunc (sfloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatsisf));
-  set_conv_libfunc (sfloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatsidf));
-  set_conv_libfunc (sfloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatdisf));
-  set_conv_libfunc (sfloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatdidf));
-  set_conv_libfunc (ufloat_optab,  SFmode, SImode, CSKY_GCC_SYM(floatunsisf));
-  set_conv_libfunc (ufloat_optab,  DFmode, SImode, CSKY_GCC_SYM(floatunsidf));
-  set_conv_libfunc (ufloat_optab,  SFmode, DImode, CSKY_GCC_SYM(floatundisf));
-  set_conv_libfunc (ufloat_optab,  DFmode, DImode, CSKY_GCC_SYM(floatundidf));
-
-  /* Comparison functions */
-  set_optab_libfunc (cmp_optab,    SFmode, CSKY_GCC_SYM(cmpsf2));
-  set_optab_libfunc (cmp_optab,    DFmode, CSKY_GCC_SYM(cmpdf2));
-  set_optab_libfunc (unord_optab,  SFmode, CSKY_GCC_SYM(unordsf2));
-  set_optab_libfunc (unord_optab,  DFmode, CSKY_GCC_SYM(unorddf2));
-  set_optab_libfunc (eq_optab,     SFmode, CSKY_GCC_SYM(eqsf2));
-  set_optab_libfunc (eq_optab,     DFmode, CSKY_GCC_SYM(eqdf2));
-  set_optab_libfunc (ne_optab,     SFmode, CSKY_GCC_SYM(nesf2));
-  set_optab_libfunc (ne_optab,     DFmode, CSKY_GCC_SYM(nedf2));
-  set_optab_libfunc (ge_optab,     SFmode, CSKY_GCC_SYM(gesf2));
-  set_optab_libfunc (ge_optab,     DFmode, CSKY_GCC_SYM(gedf2));
-  set_optab_libfunc (lt_optab,     SFmode, CSKY_GCC_SYM(ltsf2));
-  set_optab_libfunc (lt_optab,     DFmode, CSKY_GCC_SYM(ltdf2));
-  set_optab_libfunc (le_optab,     SFmode, CSKY_GCC_SYM(lesf2));
-  set_optab_libfunc (le_optab,     DFmode, CSKY_GCC_SYM(ledf2));
-  set_optab_libfunc (gt_optab,     SFmode, CSKY_GCC_SYM(gtsf2));
-  set_optab_libfunc (gt_optab,     DFmode, CSKY_GCC_SYM(gtdf2));
 }
 
 
@@ -6886,7 +7222,7 @@ csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
 {
   enum rtx_code code = GET_CODE (x);
 
-  if (code == REG)
+  if (code == REG || code == POST_INC)
     return COSTS_N_INSNS (1);
   if (code == PLUS
       && REG_P (XEXP (x, 0))
@@ -7013,6 +7349,128 @@ csky_sched_extra_resource_confilict (rtx_insn *insn,
     }
 
   return false;
+}
+
+void
+csky_init_cumulative_args (CUMULATIVE_ARGS *pcum, tree fntype,
+        rtx libname,
+        tree fndecl ATTRIBUTE_UNUSED)
+{
+  memset(pcum, 0, sizeof(*pcum));
+  if (stdarg_p (fntype))
+    pcum->is_stdarg = true;
+}
+
+
+/* Return true if VALUE is the constants can be currently split
+   by csky_split_constant, else return false.  */
+
+bool
+csky_can_split_constant (enum rtx_code code,
+                         rtx insn,
+                         HOST_WIDE_INT value)
+{
+  enum csky_inline_const_type trick_type;
+  HOST_WIDE_INT x = 0, y = 0;
+  rtx cond;
+
+  if (insn && GET_CODE (PATTERN (insn)) == COND_EXEC)
+    cond = COND_EXEC_TEST (PATTERN (insn));
+  else
+    cond = NULL_RTX;
+
+  trick_type = try_csky_constant_tricks (value, &x, &y);
+
+  if (trick_type == IC_APPEND_SUBI && code == SET && !cond)
+    return true;
+  else
+    return false;
+}
+
+/* Emit a sequence of insns to handle a large constant.
+   CODE is the code of the operation required, it can be any of SET, PLUS,
+   IOR, AND, XOR, MINUS;
+   MODE is the mode in which the operation is being performed;
+   VAL is the integer to operate on;
+   SOURCE is the other operand (a register, or a null-pointer for SET);
+   SUBTARGETS means it is safe to create scratch registers if that will
+   either produce a simpler sequence, or we will want to cse the values.
+   Return value is the number of insns emitted.  */
+
+int
+csky_split_constant (enum rtx_code code, machine_mode mode, rtx insn,
+                     HOST_WIDE_INT val, rtx target, rtx source,
+                     int subtargets)
+{
+  enum csky_inline_const_type trick_type;
+  HOST_WIDE_INT x = 0, y = 0;
+  rtx cond;
+
+  if (insn && GET_CODE (PATTERN (insn)) == COND_EXEC)
+    cond = COND_EXEC_TEST (PATTERN (insn));
+  else
+    cond = NULL_RTX;
+
+  trick_type = try_csky_constant_tricks (val, &x, &y);
+
+  if (trick_type == IC_APPEND_SUBI && code == SET && !cond)
+    {
+      x = trunc_int_for_mode (x, SImode);
+      y = trunc_int_for_mode (y, SImode);
+      emit_insn (gen_rtx_SET (target, GEN_INT (x)));
+      emit_insn (gen_subsi3 (target, target, GEN_INT (y)));
+    }
+  /*TODO supplement other const values and codes.  */
+  else
+    {
+      rtx pattern = gen_rtx_SET (target, GEN_INT (val));
+      if (cond)
+        pattern = gen_rtx_COND_EXEC (VOIDmode, copy_rtx (cond), pattern);
+      emit_insn (pattern);
+    }
+}
+
+
+/* Implement TARGET_CAN_USE_DOLOOP_P.  */
+
+static bool
+csky_can_use_doloop_p (const widest_int &iterations, const widest_int &,
+                         unsigned int loop_depth, bool entered_at_top)
+{
+  if (!CSKY_ISA_FEATURE(dspv2))
+    return false;
+
+  /* Considering limitations in the hardware, only use doloop
+     for innermost loops which must be entered from the top.  */
+  if (loop_depth > 1 || !entered_at_top)
+    return false;
+
+  if (wi::gtu_p (iterations, 0)
+      && wi::leu_p (iterations, 0x10000))
+    return true;
+  else
+    return false;
+}
+
+
+/* NULL if INSN insn is valid within a low-overhead loop.
+   Otherwise return why doloop cannot be applied.  */
+
+static const char *
+csky_invalid_within_doloop (const rtx_insn *insn)
+{
+  basic_block bb = BLOCK_FOR_INSN (insn);
+
+  if (CALL_P (insn))
+    return "Function call in the loop.";
+
+  if (bb->loop_father->num_nodes > 2)
+    return "Jump instruction in the loop.";
+
+  if (tablejump_p (insn, NULL, NULL) || computed_jump_p (insn))
+    return "Computed branch in the loop.";
+
+  return NULL;
 }
 
 

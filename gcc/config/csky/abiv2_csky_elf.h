@@ -26,6 +26,8 @@
   %{mcpu=*:-mcpu=%*}            \
   %{march=*:-march=%*}          \
   %{mhard-float:-mhard-float}   \
+  %{mfloat-abi=softfp:-mhard-float}   \
+  %{mfloat-abi=hard:-mhard-float}   \
   %{mdsp:-mdsp}                 \
   %{medsp:-medsp}                 \
   %{mmac:-mmac}                 \
@@ -43,10 +45,11 @@
 
 #undef  LIB_SPEC
 #define LIB_SPEC \
-  "%{pthread:-lpthread} -lc %{mccrt:-lcc-rt}"
+  "%{pthread:-lpthread} -lc"
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 
+#define LIBGCC_SPEC "%{mccrt: -lcc-rt;!mccrt: -lgcc}"
 
 #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
 

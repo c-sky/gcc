@@ -222,6 +222,10 @@ proc g++_init { args } {
 	}
     }
 
+    if { [ istarget csky* ] && [board_info target exists c++compiler ] } {
+	set GXX_UNDER_TEST  [ board_info target c++compiler ]
+    }
+
     # Bleah, nasty. Bad taste.
     if [ishost "*-dos-*" ] {
 	regsub "c\\+\\+" "$GXX_UNDER_TEST" "gcc" GXX_UNDER_TEST

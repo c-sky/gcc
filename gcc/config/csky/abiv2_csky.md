@@ -34,6 +34,7 @@
    (VUNSPEC_POOL_LABEL     1)
    (VUNSPEC_POOL_4         2)
    (VUNSPEC_SYMBOL_REF     3)
+   (VUNSPEC_BLOCKAGE       4)
 ])
 
 ;; Supported TLS relocations
@@ -50,6 +51,7 @@
                         ;   operand 0 is the first register,
                         ;   subsequent registers are in parallel (use ...)
                         ;   expressions.
+  UNSPEC_DOLOOP         ;   Used to emit bloop instruction.
   ]
 )
 
@@ -71,6 +73,21 @@
 ; Used for insn schedule
 (define_attr "type" "alu,load,store,cmp,branch,cbranch,addsub,alu_ix,branch_jmp,call_jsr,call"
     (const_string "alu"))
+
+; Used to distinguish between the constraints of the instruction
+(define_attr "isa" "def, e1, e2, 2e3, 3e3r1, 3e7, 7e10"
+  (const_string "def"))
+
+(define_attr "enabled" ""
+  (cond [
+    (eq_attr "isa" "e1") (symbol_ref "CSKY_ISA_FEATURE(E1)")
+    (eq_attr "isa" "e2") (symbol_ref "CSKY_ISA_FEATURE(E2)")
+    (eq_attr "isa" "2e3") (symbol_ref "CSKY_ISA_FEATURE(2E3)")
+    (eq_attr "isa" "3e3r1") (symbol_ref "CSKY_ISA_FEATURE(3E3r1)")
+    (eq_attr "isa" "3e7") (symbol_ref "CSKY_ISA_FEATURE(3E7)")
+    (eq_attr "isa" "7e10") (symbol_ref "CSKY_ISA_FEATURE(7E10)")
+  ]
+    (const_int 1)))
 
 
 ;; ------------------------------------------------------------------------
@@ -156,6 +173,19 @@
   (set_attr "type" "alu,alu,alu,store,alu,alu,store")]
 )
 
+;;Split constant assignment instruction, if possible.
+(define_split
+  [(set (match_operand:SI 0 "register_operand" "")
+        (match_operand:SI 1 "const_int_operand" ""))]
+  "csky_can_split_constant (SET, NULL_RTX, INTVAL (operands[1]))"
+  [(clobber (const_int 0))]
+  "
+    csky_split_constant (SET, SImode, NULL_RTX,
+                         INTVAL (operands[1]), operands[0], NULL_RTX, 0);
+    DONE;
+  "
+)
+
 ;;Convert negative assignments to zero minus positive numbers.
 (define_split
   [(set (match_operand:SI 0 "register_operand" "")
@@ -239,19 +269,31 @@
   ""
   "
   {
-    if (can_create_pseudo_p () && GET_CODE (operands[0]) == MEM)
-        operands[1] = force_reg (QImode, operands[1]);
-    else if (CONSTANT_P (operands[1])
-             && (GET_CODE (operands[1]) != CONST_INT
-                 || (! CSKY_CONST_OK_FOR_I (INTVAL (operands[1]))
+    if (can_create_pseudo_p ())
+      {
+        if (GET_CODE (operands[0]) == MEM)
+          operands[1] = force_reg (QImode, operands[1]);
+        else if (CONSTANT_P (operands[1])
+                 && (GET_CODE (operands[1]) != CONST_INT
+                     || (! CSKY_CONST_OK_FOR_I (INTVAL (operands[1]))
                      && ! CSKY_CONST_OK_FOR_Ub(INTVAL (operands[1]))
                      && ! CSKY_CONST_OK_FOR_Uc (INTVAL (operands[1]))))
-             && ! reload_completed && ! reload_in_progress)
-    {
-        rtx reg = gen_reg_rtx (SImode);
-        emit_insn (gen_movsi (reg, operands[1]));
-        operands[1] = gen_lowpart (QImode, reg);
-    }
+                 && ! reload_completed && ! reload_in_progress)
+          {
+            rtx reg = gen_reg_rtx (SImode);
+            emit_insn (gen_movsi (reg, operands[1]));
+            operands[1] = gen_lowpart (QImode, reg);
+          }
+
+        if (MEM_P (operands[1]) && optimize > 0)
+          {
+            rtx reg = gen_reg_rtx (SImode);
+
+            emit_insn (gen_zero_extendqisi2 (reg, operands[1]));
+            operands[1] = gen_lowpart (QImode, reg);
+          }
+      }
+
   }"
 )
 
@@ -469,10 +511,12 @@
 )
 
 (define_insn "mvcv"
-  [(set (match_operand:SI 0 "register_operand" "=r")
+  [(set (match_operand:SI 0 "register_operand" "=b,r")
         (eq:SI (reg:CC 33) (const_int 0)))]
   ""
   "mvcv\t%0"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 ;; ------------------------------------------------------------------------
@@ -726,9 +770,9 @@
 ;; TODO calculate the length more precisely
 ;; TODO split the insn in rtx.
 (define_insn "*cskyv2_adddi3"
-  [(set (match_operand:DI          0 "register_operand" "=&r,&r")
-        (plus:DI (match_operand:DI 1 "register_operand" "%0, r")
-                 (match_operand:DI 2 "register_operand" "r,  r")))
+  [(set (match_operand:DI          0 "register_operand" "=&b,&b,&r,&r")
+        (plus:DI (match_operand:DI 1 "register_operand" "%0, b, 0, r")
+                 (match_operand:DI 2 "register_operand" "b,  b, r, r")))
    (clobber (reg:CC 33))]
   "CSKY_ISA_FEATURE(E2)"
   "*
@@ -737,7 +781,8 @@
       return \"cmplt\t%R0, %R0\;addc\t%R0, %R1, %R2\;addc\t%0, %1, %2\";
     return \"cmplt\t%0, %0\;addc\t%0, %1, %2\;addc\t%R0, %R1, %R2\";
   }"
-  [(set_attr "length" "12,12")]
+  [(set_attr "length" "6,6,12,12")
+   (set_attr "isa"    "def,def,2e3,2e3")]
 )
 
 (define_insn "*ck801_adddi3"
@@ -873,9 +918,9 @@
 ;; TODO calculate the length more precisely
 ;;TODO split insn in rtx.
 (define_insn "*cskyv2_subdi3"
-  [(set (match_operand:DI           0 "register_operand" "=&r,&r,&r")
-        (minus:DI (match_operand:DI 1 "register_operand" "0,  r,r")
-                  (match_operand:DI 2 "register_operand" "r,  0,r")))
+  [(set (match_operand:DI           0 "register_operand" "=&b,&b,&b,&r,&r,&r")
+        (minus:DI (match_operand:DI 1 "register_operand" "0,  b, b, 0,  r,r")
+                  (match_operand:DI 2 "register_operand" "b,  0, b, r,  0,r")))
   (clobber (reg:CC 33))]
   "CSKY_ISA_FEATURE(E2)"
   "*{
@@ -883,7 +928,8 @@
       return \"cmphs\t%R0, %R0\;subc\t%R0, %R1,%R2\;subc\t%0, %1, %2\";
     return \"cmphs\t%0, %0\;subc\t%0, %1, %2\;subc\t%R0, %R1, %R2\";
   }"
-  [(set_attr "length" "12,12,12")]
+  [(set_attr "length" "6,6,6,12,12,12")
+   (set_attr "isa"    "def,def,def,2e3,2e3,2e3")]
 )
 
 (define_insn "*ck801_subdi3"
@@ -1156,42 +1202,53 @@
 ;; Zero extension instructions
 ;; -------------------------------------------------------------------------
 (define_insn "zero_extendhisi2"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (zero_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  [(set (match_operand:SI                 0 "register_operand" "=b,r")
+        (zero_extend:SI (match_operand:HI 1 "register_operand" "b, r")))]
   ""
   "zexth\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cskyv2_zextend_ldh"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (zero_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "m")))]
+  [(set (match_operand:SI                 0 "register_operand" "=r,r")
+        (zero_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "Dm,Dp")))]
   ""
-  "ld.h\t%0, %1"
+  "@
+   ld.h\t%0, %1
+   ldbi.h\t%0, %1"
   [(set_attr "length" "4")
    (set_attr "type" "load")]
 )
 
 (define_insn "zero_extendqisi2"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (zero_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  [(set (match_operand:SI                 0 "register_operand" "=b,r")
+        (zero_extend:SI (match_operand:QI 1 "register_operand" "b, r")))]
   ""
   "zextb\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cskyv2_zextend_ldb"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (zero_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "m")))]
+  [(set (match_operand:SI                 0 "register_operand" "=r,r, r")
+        (zero_extend:SI (match_operand:QI 1 "csky_addr_reg"    "W, Dm,Dp")))]
   ""
-  "ld.b\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ldr.b\t%0, %1
+   ld.b\t%0, %1
+   ldbi.b\t%0, %1"
+  [(set_attr "length" "4,4,4")
+   (set_attr "type" "load,load,load")]
 )
 
 (define_insn "zero_extendqihi2"
-  [(set (match_operand:HI                 0 "register_operand" "=r")
-        (zero_extend:HI (match_operand:QI 1 "register_operand" "r")))]
+  [(set (match_operand:HI                 0 "register_operand" "=b,r")
+        (zero_extend:HI (match_operand:QI 1 "register_operand" "b, r")))]
   ""
   "zextb\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cskyv2_zextend_ldbhi"
@@ -1271,35 +1328,54 @@
 )
 
 (define_insn "extendhisi2"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (sign_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  [(set (match_operand:SI                 0 "register_operand" "=b,r")
+        (sign_extend:SI (match_operand:HI 1 "register_operand" "b, r")))]
   ""
-  "sexth  %0, %1"
+  "sexth\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cskyv2_sextend_ldhs"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (sign_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "m")))]
+  [(set (match_operand:SI                 0 "register_operand" "=r,r")
+        (sign_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "Dm,Dp")))]
   "CSKY_ISA_FEATURE(E2)"
-  "ld.hs\t%0, %1"
+  "@
+   ld.hs\t%0, %1
+   ldbi.hs\t%0, %1"
   [(set_attr "length" "4")
    (set_attr "type" "load")]
 )
 
 ;; qi -> si
 (define_insn "extendqisi2"
-  [(set (match_operand:SI                 0 "register_operand" "=r")
-        (sign_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  [(set (match_operand:SI                 0 "register_operand" "=b,r")
+        (sign_extend:SI (match_operand:QI 1 "register_operand" "b, r")))]
   ""
-  "sextb  %0, %1"
+  "sextb\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
+
+;;(define_insn "*cskyv2_sextend_ldbs"
+;;  [(set (match_operand:SI                 0 "register_operand" "=r,r")
+;;        (sign_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "Dm,Dp")))]
+;;  ""
+;;  "@
+;;   ld.bs\t%0, %1
+;;   ldbi.bs\t%0, %1"
+;;  [(set_attr "length" "4")
+;;   (set_attr "type" "load")]
+;;)
 
 ;; qi -> hi
 (define_insn "extendqihi2"
-  [(set (match_operand:HI                 0 "register_operand" "=r")
-        (sign_extend:HI (match_operand:QI 1 "register_operand" "r")))]
+  [(set (match_operand:HI                 0 "register_operand" "=b,r")
+        (sign_extend:HI (match_operand:QI 1 "register_operand" "b, r")))]
   ""
-  "sextb  %0, %1"
+  "sextb\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
 )
 
 ;; -------------------------------------------------------------------------
@@ -2369,11 +2445,13 @@
 )
 
 (define_insn "*tablejump"
-  [(set (pc) (match_operand:SI    0 "register_operand" "r"))
+  [(set (pc) (match_operand:SI    0 "register_operand" "b,r"))
    (use (label_ref (match_operand 1 ""                 "")))]
   ""
-  "jmp  %0"
-  [(set_attr "type" "branch_jmp")]
+  "jmp\t%0"
+  [(set_attr "length" "2,4")
+   (set_attr "type"   "branch_jmp,branch_jmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_expand "jump"
@@ -2418,11 +2496,10 @@
 (define_insn "indirect_jump"
   [(set (pc) (match_operand:SI 0 "register_operand" "b,r"))]
   ""
-  "@
-    jmp\t%0
-    jmp\t%0"
+  "jmp\t%0"
   [(set_attr "length" "2,4")
-   (set_attr "type" "branch_jmp")]
+   (set_attr "type"   "branch_jmp,branch_jmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 
@@ -2606,11 +2683,10 @@
   [(set (reg:CC 33) (ne:CC (match_operand:SI 0 "register_operand" "b,r")
                            (match_operand:SI 1 "register_operand" "b,r")))]
   ""
-  "@
-    cmpne\t%0, %1
-    cmpne\t%0, %1"
+  "cmpne\t%0, %1"
   [(set_attr "length" "2,4")
-   (set_attr "type" "cmp")]
+   (set_attr "type"   "cmp,cmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 ;;cmpnei is 0-31 for Smart MODE
@@ -2637,7 +2713,8 @@
   ""
   "cmplt\t%1, %0"
   [(set_attr "length" "2,4")
-   (set_attr "type" "cmp")]
+   (set_attr "type"   "cmp,cmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cmpltsi_r"
@@ -2646,7 +2723,8 @@
   ""
   "cmplt\t%0, %1"
   [(set_attr "length" "2,4")
-   (set_attr "type" "cmp")]
+   (set_attr "type"   "cmp,cmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 ;;cmplti is 1-32 for Smart MODE
@@ -2698,7 +2776,8 @@
   ""
   "cmphs\t%0, %1"
   [(set_attr "length" "2,4")
-   (set_attr "type" "cmp")]
+   (set_attr "type"   "cmp,cmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*smart_cmpgeusi_i"
@@ -2725,7 +2804,8 @@
   ""
   "cmphs\t%1, %0"
   [(set_attr "length" "2,4")
-   (set_attr "type" "cmp")]
+   (set_attr "type"   "cmp,cmp")
+   (set_attr "isa"    "def,2e3")]
 )
 
 ;; -------------------------------------------------------------------------
@@ -2771,7 +2851,8 @@
     jsr\t%0
     jbsr\t%0"
   [(set_attr "length" "2,4,4")
-   (set_attr "type"   "call_jsr,call_jsr,call")]
+   (set_attr "type"   "call_jsr,call_jsr,call")
+   (set_attr "isa"    "def,2e3,def")]
 )
 
 (define_insn "*call_internal_pic"
@@ -2811,6 +2892,70 @@
     }
   }")
 
+;; Call subroutine returning any type.
+
+(define_expand "untyped_call"
+  [(parallel [(call (match_operand 0 "" "")
+        (const_int 0))
+        (match_operand 1 "" "")
+        (match_operand 2 "" "")])]
+  "TARGET_HARD_FLOAT_ABI"
+{
+  int i;
+
+  emit_call_insn (gen_call (operands[0], const0_rtx));
+
+  for (i = 0; i < XVECLEN (operands[2], 0); i++)
+    {
+      rtx set = XVECEXP (operands[2], 0, i);
+      emit_move_insn (SET_DEST (set), SET_SRC (set));
+    }
+
+  /* The optimizer does not know that the call sets the function value
+     registers we stored in the result block.  We avoid problems by
+     claiming that all hard registers are used and clobbered at this
+     point.  */
+  emit_insn (gen_blockage ());
+
+  DONE;
+})
+
+;; UNSPEC_VOLATILE is considered to use and clobber all hard registers and
+;; all of memory.  This blocks insns from being moved across this point.
+
+(define_insn "blockage"
+  [(unspec_volatile [(const_int 0)] VUNSPEC_BLOCKAGE)]
+  ""
+  "")
+
+(define_insn "*call_value_internal_vs"
+  [(set (match_operand:SF               0 "register_operand"          "=v,v,v")
+        (call (mem:SI (match_operand:SI 1 "csky_call_address_operand" "b, r,S"))
+              (match_operand 2 "" "")))
+   (clobber (reg:SI 15))]
+  "TARGET_HARD_FLOAT_ABI"
+  "@
+    jsr\t%1
+    jsr\t%1
+    jbsr\t%1"
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")
+   (set_attr "isa"    "def,2e3,def")]
+)
+
+(define_insn "*call_value_internal_vd"
+  [(set (match_operand:DF               0 "register_operand"          "=v,v,v")
+        (call (mem:SI (match_operand:SI 1 "csky_call_address_operand" "b, r,S"))
+              (match_operand 2 "" "")))
+   (clobber (reg:SI 15))]
+  "TARGET_HARD_FLOAT_ABI && csky_fpu_index != TARGET_FPU_fpv2_sf"
+  "@
+    jsr\t%1
+    jsr\t%1
+    jbsr\t%1"
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")]
+)
 
 (define_insn "*call_value_internal"
   [(set (match_operand                  0 "register_operand"          "=r,r,r")
@@ -2823,7 +2968,26 @@
     jsr\t%1
     jbsr\t%1"
   [(set_attr "length" "2,4,4")
-   (set_attr "type"   "call_jsr,call_jsr,call")]
+   (set_attr "type"   "call_jsr,call_jsr,call")
+   (set_attr "isa"    "def,2e3,def")]
+)
+
+(define_insn "*call_value_internal_pic_vs"
+  [(set (match_operand:SF               0 "register_operand"    "=v")
+        (call (mem:SI (match_operand:SI 1 "csky_unspec_operand" "X"))
+                      (match_operand    2 "" "")))
+   (clobber (reg:SI 15))]
+  "flag_pic && TARGET_HARD_FLOAT_ABI"
+  "* return csky_output_call (operands, 1);"
+)
+
+(define_insn "*call_value_internal_pic_vd"
+  [(set (match_operand:DF               0 "register_operand"    "=v")
+        (call (mem:SI (match_operand:SI 1 "csky_unspec_operand" "X"))
+                      (match_operand    2 "" "")))
+   (clobber (reg:SI 15))]
+  "flag_pic && TARGET_HARD_FLOAT_ABI && csky_fpu_index != TARGET_FPU_fpv2_sf"
+  "* return csky_output_call (operands, 1);"
 )
 
 (define_insn "*call_value_internal_pic"
@@ -2849,7 +3013,8 @@
     jsr\t%1
     jbsr\t%1"
   [(set_attr "length" "2,4,4")
-   (set_attr "type"   "call_jsr,call_jsr,call")]
+   (set_attr "type"   "call_jsr,call_jsr,call")
+   (set_attr "isa"    "def,2e3,def")]
 )
 
 (define_insn "*call_value_struct_pic"
@@ -3471,10 +3636,85 @@
 ;; ------------------------------------------------------------------------
 
 (define_insn "bswapsi2"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-        (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+  [(set (match_operand:SI           0 "register_operand" "=b,r")
+        (bswap:SI (match_operand:SI 1 "register_operand" "b, r")))]
   "CSKY_ISA_FEATURE(E2)"
   "revb\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
+)
+
+;; ------------------------------------------------------------------------
+;; Peephole optimize
+;; ------------------------------------------------------------------------
+
+;; optimize
+;;   movi rx, const
+;;   subi rx, rx, 1
+;;   cmphs rx, ry
+;;   bt label
+;; To
+;;   movi rx, const
+;;   cmphs ry, rx
+;;   bf label
+;; const must not be zero to avoid subtraction overflow.
+(define_peephole2
+  [(set (match_operand:SI 0 "register_operand" "")
+        (match_operand:SI 1 "const_int_operand" ""))
+   (set (match_dup 0)
+        (minus:SI (match_dup 0)
+                  (const_int 1)))
+   (set (reg:CC 33)
+        (leu:CC (match_operand:SI 3 "register_operand" "")
+                (match_dup 0)))
+   (set (pc)
+        (if_then_else (ne (reg:CC 33) (const_int 0))
+                      (label_ref (match_operand 4 "" ""))
+                      (pc)))]
+  "(INTVAL (operands[1])) != 0"
+  [(set (match_dup 0)
+        (match_dup 1))
+   (set (reg:CC 33)
+        (leu:CC (match_dup 0) (match_dup 3)))
+   (set (pc)
+        (if_then_else (eq (reg:CC 33) (const_int 0))
+                      (label_ref (match_dup 4))
+                      (pc)))]
+)
+
+(define_expand "doloop_begin"
+ [(use (match_operand 0 "register_operand" ""))        ; loop pseudo
+  (use (match_operand 1 "" ""))]                       ; doloop_end pattern
+  "CSKY_ISA_FEATURE(dspv2) && flag_csky_doloop"
+  {
+    rtx const1 = GEN_INT (1);
+    emit_insn (gen_addsi3 (operands[0], operands[0], const1));
+    DONE;
+  }
+)
+
+(define_expand "doloop_end"
+ [(use (match_operand 0 "" ""))        ; loop pseudo
+  (use (match_operand 1 "" ""))]       ; label
+  "CSKY_ISA_FEATURE(dspv2) && flag_csky_doloop"
+  {
+    if (GET_MODE (operands[0]) != SImode)
+      FAIL;
+    emit_jump_insn (gen_doloop_end_internal_loop (operands[0], operands[1]));
+    DONE;
+  }
+)
+
+(define_insn "doloop_end_internal_loop"
+ [(set (pc)
+       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r")
+			 (const_int 0))
+		     (label_ref (match_operand 1 "" ""))
+		     (pc)))
+  (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
+	(unspec [(const_int 0)] UNSPEC_DOLOOP)]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "bloop\t%0, %1"
 )
 
 ;;TODO emit decgt.

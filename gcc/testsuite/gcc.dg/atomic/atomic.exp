@@ -17,6 +17,9 @@
 # <http://www.gnu.org/licenses/>.
 
 # GCC testsuite that uses the `dg.exp' driver.
+if { [istarget csky*-*-*]} then {
+  return
+}
 
 # Load support procs.
 load_lib gcc-dg.exp

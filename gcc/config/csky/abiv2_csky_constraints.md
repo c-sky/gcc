@@ -27,6 +27,9 @@
   "memory operands with base register, index regster and short displacement for FPUV2"
   (match_test "get_cskyv2_mem_constraint (\"Q\", op)"))
 
+(define_memory_constraint "W"
+  "memory operands with base register, index regster"
+  (match_test "get_cskyv2_mem_constraint (\"W\", op)"))
 
 (define_constraint "S"
   "Symbol reference"
@@ -177,3 +180,13 @@
   "Constant in range 0-4095"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_O(ival)")))
+
+(define_constraint "Dp"
+  "memory operands whose address only accept post_inc if condition is dspv2"
+  (and (match_code "mem")
+       (match_test "CSKY_ISA_FEATURE(dspv2) && GET_CODE (XEXP (op, 0)) == POST_INC")))
+
+(define_constraint "Dm"
+  "memory operands whose address do not accept post_inc if condition is dspv2"
+  (and (match_code "mem")
+       (match_test "!CSKY_ISA_FEATURE(dspv2) || GET_CODE (XEXP (op, 0)) != POST_INC")))

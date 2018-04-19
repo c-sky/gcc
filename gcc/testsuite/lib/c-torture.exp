@@ -20,6 +20,8 @@ load_lib target-supports.exp
 load_lib file-format.exp
 load_lib target-libpath.exp
 load_lib target-utils.exp
+load_lib gcc-gdb-test.exp
+load_lib gcc-qemu-test.exp
 
 global GCC_UNDER_TEST
 if ![info exists GCC_UNDER_TEST] {
@@ -80,6 +82,14 @@ if [info exists ADDITIONAL_TORTURE_OPTIONS] {
 	[concat $C_TORTURE_OPTIONS $ADDITIONAL_TORTURE_OPTIONS]
 }
 
+if [ istarget csky* ] {
+        set CSKY_TORTURE_OPTIONS [list \
+        { -mno-div } \
+        { -mno-multiple-stld } \
+        { -mmultiple-stld } ]
+       set C_TORTURE_OPTIONS \
+             [concat $C_TORTURE_OPTIONS $CSKY_TORTURE_OPTIONS]
+}
 #
 # c-torture-compile -- runs the Tege C-torture test
 #
@@ -134,6 +144,23 @@ proc c-torture-execute { sources args } {
     } else {
 	set additional_flags ""
     }
+    # set csky elf
+    set CPU [board_info target CPU]
+    set SOC [board_info target SOC]
+    if { [ istarget csky*elf* ] && [board_info target exists GDB] }  {
+       if ![ file exists .gdbinit ] {
+              file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/board/gdbinit .gdbinit
+	}
+       if ![ file exists csky.ld ] {
+             file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/board/csky.ld csky.ld 
+        }
+    }
+    if { [ istarget csky*elf* ] && [board_info target exists QEMU] }  {
+       if ![ file exists csky.ld ] {
+             file copy $srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/csky.ld csky.ld
+        }
+    }
+
     # Check for alternate driver.
     if [file exists [file rootname $src].x] {
 	verbose "Using alternate driver [file rootname [file tail $src]].x" 2
@@ -193,6 +220,22 @@ proc c-torture-execute { sources args } {
 	if { $additional_flags != "" } {
 	    lappend options "additional_flags=$additional_flags"
 	}
+
+	# set for csky elf
+        #if { [ istarget "csky*elf*" ] && [board_info target exists GDB] && ![ file exists crt0.o ]}  
+        if { [ istarget "csky*elf*" ] && [ board_info target exists GDB ] && ![ file exists crt0.o ] }  {
+            set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/board/crt0.S" "crt0.o" object  $options ]
+            set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/board/uart.c" "uart.o" object  $options ]
+        }
+        if { [ istarget "csky*elf*" ] && [ board_info target exists GDB ] && [ istarget "ck802sign" ] }  {
+            set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/board/first.c" "first.o" object  $options ]
+        }
+        #if {[ istarget "csky*elf*" ] && [board_info target exists QEMU] && ![ file exists crt0.o ] } 
+        if {[ istarget "csky*elf*" ] && [ board_info target exists QEMU ] && ![ file exists crt0.o ] } {
+            set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/crt0.S" "crt0.o" object  $options ]
+            set comp_output [ gcc_target_compile "$srcdir/gcc.target/csky/arch/$SOC/$CPU/qemu/uart.c" "uart.o" object  $options ]
+	}
+
 	set comp_output [gcc_target_compile "$sources" "${execname}" executable $options]
 
 	if ![gcc_check_compile "$testcase compilation" $option $execname $comp_output] {
@@ -232,22 +275,53 @@ proc c-torture-execute { sources args } {
 	# Do not do this for native testing since the cost to load/execute
 	# the test is fairly small and the comparison step actually slows
 	# the entire process down because it usually does not "hit".
-	set skip 0
-	if { ![isnative] && [info exists oldexec] } {
-	    if { [file_on_host cmp $oldexec $execname] == 0 } {
-		set skip 1
-	    }
+
+	if { ![board_info target  exists COMPILE_TESTS_ONLY] } {
+		set skip 0
+		if { ![isnative] && [info exists oldexec] } {
+		    if { [file_on_host cmp $oldexec $execname] == 0 } {
+			set skip 1
+		    }
+		}
+		if { $skip == 0 } {
+		    #set result [gcc_load "$execname" "" ""]
+		    #set status [lindex $result 0]
+		    #set output [lindex $result 1]
+			#set GDB [board_info target GDB]
+			#verbose "GDB= $GDB"
+		    if { ![board_info target  exists GDB] && ![board_info target  exists QEMU]} {
+		        set myoutput [getenv LD_LIBRARY_PATH]
+			set result [gcc_load "$execname" "" ""]
+	                setenv LD_LIBRARY_PATH "$myoutput"
+		        set status [lindex $result 0]
+		        set output [lindex $result 1]
+	            }  else  {
+	                if { [board_info target  exists GDB] } {
+	                    set GDB [board_info target GDB]
+	                    verbose "GDB= $GDB"
+	                    set result [gcc_gdb_run "$execname" "" ""]
+			    set status [lindex $result 0]
+	                    set output [lindex $result 1]
+	                } else {
+	                    set QEMU [board_info target QEMU]
+	                    verbose "QEMU= $QEMU"
+	                    set result [gcc_qemu_run "$execname" "" ""]
+	                    set status [lindex $result 0]
+	                    set output [lindex $result 1]     
+	                }
+	                
+	
+	            }
+		}
+        	if { $oldstatus == "pass" } {
+		    file_on_host delete $oldexec
+        	}
+		$status "$testcase execution, $option"
+		set oldstatus $status
+	} else {
+	    untested  "$testcase execution, $option"
+            set oldstatus "untested"	
 	}
-	if { $skip == 0 } {
-	    set result [gcc_load "$execname" "" ""]
-	    set status [lindex $result 0]
-	    set output [lindex $result 1]
-	}
-        if { $oldstatus == "pass" } {
-	    file_on_host delete $oldexec
-        }
-	$status "$testcase execution, $option"
-	set oldstatus $status
     }
     if [info exists status] {
 	if { $status == "pass" } {

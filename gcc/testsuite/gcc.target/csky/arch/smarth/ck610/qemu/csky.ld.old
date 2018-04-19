@@ -1,0 +1,107 @@
+/********************* memory map *********************************************
+ * --------|------|--------------------|-------------------|-------------------|
+ *
+ * 0x8000000    0x8200000          0x8400000            0x8600000      0x87ffff8
+ * __mem_start  __heap_start       __heap_end           __FIQ_sp    __initial_sp
+ *       code_start(0x8100000)  
+ ******************************************************************************/
+
+MEMORY
+{
+	CODEMEM : ORIGIN = 0x8000000 , LENGTH = 0x100000
+	DATAMEM : ORIGIN = 0x8100000 , LENGTH = 0x700000
+}
+
+PROVIDE (__mem_start = 0x8000000);
+PROVIDE (__heap_start = 0x8200000);
+PROVIDE (__heap_end = 0x8400000);
+PROVIDE (__FIQ_sp = 0x8600000);
+PROVIDE (__initial_sp = 0x8800000 - 8);
+ENTRY(__start)
+
+SECTIONS
+{
+          .init : {
+              KEEP (*(.init))
+          } > CODEMEM 
+	.text : {
+        _start_text = .;
+            *(.text)
+            *(.text*)
+            *(.text.*)
+            . = ALIGN(4) ;
+        _end_text = .;
+    } > CODEMEM
+       .fini :  {
+           KEEP (*(.fini))
+     } > CODEMEM
+     .eh_frame_hdr BLOCK (0x4): {
+        *(.eh_frame_hdr)
+    } > CODEMEM
+
+    .rodata BLOCK (0x4): {
+        *(.rodata)
+        *(.rodata.str1.4)
+        *(.rodata.cst4)
+        *(.rodata.cst8)
+        *(.rodata*)
+        *(.rdata)
+        *(.rdata*)
+        *(.rdata1)
+        *(.rdata.*)
+    } > CODEMEM
+	. = ALIGN(4);
+	_end_read = .;
+
+    .eh_frame : {
+         KEEP (*(.eh_frame))
+    } > DATAMEM
+
+    .data  :  {
+        _start_data = .;
+	    *(.got.plt)
+            *(.got)
+            *(.shdata)
+            *(.sdata)
+            *(.sdata.*)
+            *(.data)
+            *(.gcc_exc);
+            *(.gcc_except_table)   
+            *(.data*)
+            *(.data.*)
+        _end_data = .;
+     } > DATAMEM
+
+     .bss  BLOCK (0x4): {
+         __bss_start__ = ALIGN(0x4) ;
+         __bss_start__ = . ;
+             *(.dynsbss)
+             *(.sbss)
+             *(.sbss.*)
+             *(.scommon)
+             *(.dynbss)
+             *(.bss)
+             *(.bss.*)
+             *(COMMON)
+
+             . = ALIGN(0x10) ;
+          __bss_end__ = . ;
+          __end = . ;
+          end = . ;
+    } > DATAMEM
+	
+	.junk 0 : { *(.rel*) *(.rela*) }
+	/* Stabs debugging sections.    */
+	.stab 0 : { *(.stab) }
+	.stabstr 0 : { *(.stabstr) }
+	.stab.excl 0 : { *(.stab.excl) }
+	.stab.exclstr 0 : { *(.stab.exclstr) }
+	.stab.index 0 : { *(.stab.index) }
+	.stab.indexstr 0 : { *(.stab.indexstr) }
+	.comment 0 : { *(.comment) }
+	.debug_abbrev 0 : { *(.debug_abbrev) }
+	.debug_info 0 : { *(.debug_info) }
+	.debug_line 0 : { *(.debug_line) }
+	.debug_pubnames 0 : { *(.debug_pubnames) }
+	.debug_aranges 0 : { *(.debug_aranges) }
+}

@@ -1,0 +1,281 @@
+/*
+ * crt0.S -- startup codes for CKCORE.
+ *
+ * Define a exception vector table
+ *
+ * Initial PSR register.
+ * Initial VBR register.
+ * Initial sp(stack pointer) register.
+ * Initial MGU (for ckcore having MGU)
+ * Initial Cache.
+ * Initial SPM (for ckcore having SPM).
+ * Initial BSS section to "0"
+ * Then goto "start_main".
+ *
+ * Copyright (C) 2008  Hangzhou C-SKY Microsystems Co., Ltd
+ */
+
+#include "ckconfig.h"
+
+.file "crt0.S"
+
+/*
+ * From "ckconfig.h"
+ */
+	/* MGU & CACHE */
+/* CONFIG_CK510_MGU_BLOCKS	---- MGU block priority setting value */
+/* CONFIG_CK510_MGU_REGION(1-4)	---- MGU (1-4) block base address and size. */
+/* CONFIG_CK510_ICACHE		---- Instruction cache enable */
+/* CONFIG_CK510_DCACHE		---- Data cache enable */
+	/* SPM  */
+/* CONFIG_CKCORE_SPM		---- CKCORE having SPM ? */
+/* CONFIG_CKCORE_SPM_ENABLE	---- SPM Enable */
+/* CONFIG_CKCORE_ISPM_MODE	---- Instruction SPM Mode(cache/local memory) */
+/* CONFIG_CKCORE_DSPM_MODE	---- Data SPM Mode (cache/local memory) */
+/* CONFIG_CKCORE_ISPM_ADDRESS	---- Instruction SPM external memory base address,
+				     Just for Local Memory Mode */
+/* CONFIG_CKCORE_DSPM_ADDRESS	---- Data SPM external memory base address, Just
+				     for Local Memory Mode */
+/* CONFIG_CKCORE_ISPM_TRANSFER	---- The content in Instruction SPM must be 
+				     initialed, Just for Local Memory Mode */
+/* CONFIG_CKCORE_DSPM_TRANSFER	---- The content in Data SPM must be initialed,
+				     Just for Local Memory Mode */
+
+/*
+ * For importing variable or functions from script file "ckcore.ld".
+ */
+.import __stack		/* The stack pointer from linking script file */
+.import	__sbss		/* The end of bss from linking script file */
+.import __ebss		/* The end of bss from linking script file */
+/*
+ * For importing variable or functions from other c or assemble files.
+ */
+.import start_main	/* The c codes entry */
+.import spm_init        /* Initial ckcore SPM */
+
+
+/* For exporting varialbe or functions */
+.export	__vbrbase	/* Vector table base address. */
+.export __start		/* The system entry. */
+
+
+.text
+/* Vector table space. */
+.align 10
+__vbrbase:
+.rept 128
+.long __default_exception_handler
+.endr
+
+/* The ckcore startup codes. */
+.text
+	/*
+	 *	
+	 * This is the codes first entry point. This is where it all
+	 * begins...
+	 */
+#if CONFIG_SYS_SPARK
+.long	__start
+#endif
+__start:
+	/* Init psr value */
+    movi    r7, 0
+    bseti   r7, 31
+    bseti   r7, 8
+
+	mtcr	r7, psr
+	
+	/*
+	 * Setup initial vector base table for interrupts and exceptions
+	 */
+	lrw	r1, __vbrbase
+	mtcr	r1, vbr
+	
+	/* Initialize the stack pointer from the linker definition. */
+	lrw	r7, __stack
+	mov	sp, r7 
+
+	/*
+	 * Initial CK510 MGU Module
+	 */
+	/*
+	 * Disable MGU & Cache.
+	 */
+	mfcr	r7, cr18
+	bclri	r7, 0
+	bclri	r7, 1
+	bclri	r7, 2
+	bclri	r7, 3
+	bclri	r7, 6
+	mtcr	r7, cr18
+	/* priority setting, ff -- read and write */
+	lrw	r7, CONFIG_CK510_MGU_BLOCKS
+	mtcr	r7, cr19
+
+   	/* The first block */
+	movi	r10, 0
+	mtcr	r10, cr21
+#ifdef CONFIG_CK510_MGU_REGION1
+	lrw	r7, CONFIG_CK510_MGU_REGION1
+	mtcr	r7, cr20
+#else
+	mtcr	r10, cr20
+	
+#endif
+	/* The second block */
+	movi	r10, 1
+	mtcr	r10, cr21
+#ifdef 	CONFIG_CK510_MGU_REGION2
+	lrw	r7, CONFIG_CK510_MGU_REGION2
+	mtcr	r7, cr20
+#else
+	movi	r7, 0
+	mtcr	r7, cr20
+#endif
+	/* The third block */
+	movi	r10, 2
+	mtcr	r10, cr21
+#ifdef CONFIG_CK510_MGU_REGION3
+	lrw	r7, CONFIG_CK510_MGU_REGION3
+	mtcr	r7, cr20
+#else
+	movi	r7, 0
+	mtcr	r7, cr20
+#endif
+	/* The forth block */
+	movi	r10, 3
+	mtcr	r10, cr21
+#ifdef CONFIG_CK510_MGU_REGION4
+	lrw	r7, CONFIG_CK510_MGU_REGION4
+	mtcr	r7, cr20
+#else
+	movi	r7, 0
+	mtcr	r7, cr20
+#endif
+	/* Enable MGU */
+	mfcr	r7, cr18
+	bseti	r7, 0
+	bclri	r7, 1
+	mtcr	r7, cr18
+	/* Enable jumping predict. */
+	mfcr	r7, cr18
+	bseti	r7, 6
+	bseti	r7, 5
+	bseti	r7, 4
+	mtcr	r7, cr18
+
+	/*
+	 * Set CPU internal cache.
+	 */
+	/* Set instruction cache */
+#if CONFIG_CK510_ICACHE
+	/* Enable instruction cache */
+	mfcr	r7, cr17
+	bseti	r7, 0
+	bclri	r7, 1
+	bclri	r7, 2
+	bseti	r7, 4
+	mtcr	r7, cr17		/* Invalid Instruction cache content */
+	mfcr	r7, cr18
+	bseti	r7, 2
+	mtcr	r7, cr18
+#else
+	/* Disable instruction cache */
+	mfcr	r7, cr18
+	bclri	r7, 2
+	mtcr	r7, cr18
+#endif /* #if CONFIG_CK510_ICACHE */
+
+	/* 
+	 * Set Data cache 
+	 */
+#if CONFIG_CK510_DCACHE
+	/* Enable Data cache */
+	mfcr	r7, cr17
+	bclri	r7, 0
+	bseti	r7, 1
+	bclri	r7, 2
+	bseti	r7, 4
+	mtcr	r7, cr17		/* Invalid Data cache content */
+	mfcr	r7, cr18
+	bseti	r7, 3
+	mtcr	r7, cr18
+#else
+	/* Disable Data cache */
+	mfcr	r7, cr18
+	bclri	r7, 3
+	mtcr	r7, cr18
+#endif /* #if CONFIG_CK510_DCACHE */
+
+/*
+ *  Initial CKCORE SPM.
+ */
+#if CONFIG_CKCORE_SPM
+	movi    r2, 0
+	jsri    spm_enable_instruction
+	movi    r2, 0
+	jsri    spm_enable_data
+#if CONFIG_CKCORE_SPM_ENABLE
+	lrw	r2, CONFIG_CKCORE_ISPM_MODE	
+	lrw	r3, CONFIG_CKCORE_DSPM_MODE	
+	lrw	r4, CONFIG_CKCORE_ISPM_ADDRESS
+	lrw	r5, CONFIG_CKCORE_DSPM_ADDRESS
+	/* Instruction SPM must be transfered? */
+	lrw	r6, CONFIG_CKCORE_ISPM_TRANSFER
+	/* Data SPM must be transfered */
+	lrw	r7, CONFIG_CKCORE_DSPM_TRANSFER
+	jsri	spm_init
+	cmpnei	r2, 0  /* Error?  when transfer to spm. */
+	bt	1f
+
+	movi	r2, 1
+	jsri	spm_enable_instruction
+	movi	r2, 1
+	jsri	spm_enable_data
+1:
+#endif  /* CONFIG_CKCORE_SPM_ENABLE */
+#endif  /* CONFIG_CKCORE_SPM */
+
+	/*
+	 * Zero out the bss region.
+	 */
+	lrw	r1, __sbss	/* Get start of bss from linking script file */
+	lrw	r2, __ebss	/* Get end of bss from linking script file */
+	subu	r2, r1		/* Calculate size of bss */
+	lsri	r2, r2, 2		/* Size of whole words */
+	cmpnei	r2, 0
+	bf	__goto_c
+	movi	r3, 0		/* Set zero value to write */
+__clear_bss:
+	stw	r3, (r1)	/* Zero next word */
+	addi	r1, 4		/* Increase bss pointer */
+#	decne	r2		/* Decrease counter */
+    subi r2, 1
+    cmpnei r2, 0
+	bt	__clear_bss	/* Repeat for all bss */
+
+	
+	/*
+	 * Assember start up done, start code proper.
+	 * C codes start here!
+	 */
+__goto_c:
+	jbsr	firstc
+	
+	/* Should never get here. */
+__exit:
+//#if CONFIG_SYS_SPARK
+	lrw	r4, 0x10002000
+	//lrw	r5, 0x2002
+	mov	r5, a0
+	stw	r5, (r4, 0)
+	stw	r5, (r4, 0)
+//#else
+//    bkpt
+//#endif
+	br	__exit
+
+__default_exception_handler:
+    bkpt
+	br	__default_exception_handler
+	rte

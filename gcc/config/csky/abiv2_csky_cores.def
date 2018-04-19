@@ -9,11 +9,12 @@
    detailed architectural capabilities of the core.  */
 
 #ifdef CSKY_ARCH
-CSKY_ARCH("ck801",  ck801,  CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801))
-CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart))
-CSKY_ARCH("ck803",  ck803,  CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803))
-CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_DSP))
-CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(CSKY_ISA_DSP))
+CSKY_ARCH("ck801",  ck801,  CK801,  CSKY_ISA_FEAT(CSKY_ISA_CK801) CSKY_ISA_FEAT(isa_bit_isr))
+CSKY_ARCH("ck802",  ck802,  CK802,  CSKY_ISA_FEAT(CSKY_ISA_CK802) CSKY_ISA_FEAT(isa_bit_smart) CSKY_ISA_FEAT(isa_bit_isr))
+CSKY_ARCH("ck803",  ck803,  CK803,  CSKY_ISA_FEAT(CSKY_ISA_CK803) CSKY_ISA_FEAT(isa_bit_isr))
+CSKY_ARCH("ck807",  ck807,  CK807,  CSKY_ISA_FEAT(CSKY_ISA_CK807) CSKY_ISA_FEAT(CSKY_ISA_DSP) CSKY_ISA_FEAT(isa_bit_hreg))
+CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(CSKY_ISA_DSP) CSKY_ISA_FEAT(isa_bit_hreg))
+CSKY_ARCH("ck860",  ck860,  CK860,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(isa_bit_hreg))
 #endif
 
 
@@ -29,6 +30,8 @@ CSKY_ARCH("ck810",  ck810,  CK810,  CSKY_ISA_FEAT(CSKY_ISA_CK810) CSKY_ISA_FEAT(
 #ifdef CSKY_OPTION
 CSKY_OPTION(MASK_DSP, CSKY_ISA_FEAT(CSKY_ISA_DSP))
 CSKY_OPTION(MASK_DIV, CSKY_ISA_FEAT(isa_bit_div))
+CSKY_OPTION(MASK_HIGH_REGISTERS, CSKY_ISA_FEAT(isa_bit_hreg))
+CSKY_OPTION(MASK_ATTRIBUTE_ISR, CSKY_ISA_FEAT(isa_bit_isr))
 #endif
 
 
@@ -79,15 +82,15 @@ CSKY_CORE("ck803tr1",   ck803tr1,   ck803tr1,   CK803,    CSKY_ISA_FEAT(isa_bit_
 CSKY_CORE("ck803htr1",  ck803htr1,  ck803htr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803fr1",   ck803fr1,   ck803fr1,   CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803fhr1",  ck803fhr1,  ck803fhr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803er1",   ck803er1,   ck803er1,   CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803ehr1",  ck803ehr1,  ck803ehr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803etr1",  ck803etr1,  ck803etr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803ehtr1", ck803ehtr1, ck803ehtr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803efr1",  ck803efr1,  ck803efr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803efhr1", ck803efhr1, ck803efhr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803er1",   ck803er1,   ck803er1,   CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803ehr1",  ck803ehr1,  ck803ehr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803etr1",  ck803etr1,  ck803etr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803ehtr1", ck803ehtr1, ck803ehtr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803efr1",  ck803efr1,  ck803efr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803efhr1", ck803efhr1, ck803efhr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
 CSKY_CORE("ck803ftr1",  ck803ftr1,  ck803ftr1,  CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803eftr1", ck803eftr1, ck803eftr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
-CSKY_CORE("ck803efhtr1", ck803efhtr1, ck803efhtr1, CK803, CSKY_ISA_FEAT(isa_bit_3E3r1), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803eftr1", ck803eftr1, ck803eftr1, CK803,    CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
+CSKY_CORE("ck803efhtr1", ck803efhtr1, ck803efhtr1, CK803, CSKY_ISA_FEAT(isa_bit_3E3r1) CSKY_ISA_FEAT(isa_bit_hreg) CSKY_ISA_FEAT(CSKY_ISA_DSPV2), CSKY_TUNE_GET(generic))
 
 /* ck803s Architecture Processors */
 CSKY_CORE("ck803s",   ck803s,   ck803s,   CK803,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
@@ -116,6 +119,9 @@ CSKY_CORE("ck810fv",  ck810fv,  ck810fv,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_
 CSKY_CORE("ck810tv",  ck810tv,  ck810tv,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck810ft",  ck810ff,  ck810ft,  CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck810ftv", ck810ftv, ck810ftv, CK810,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+
+/* ck860 Architecture Processors */
+CSKY_CORE("ck860",    ck860,    ck860,    CK860,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 #endif
 
 

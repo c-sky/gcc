@@ -93,6 +93,8 @@ extern void abort (void);
 /* No pic register.  */
 #elif defined(__m32c__)
 /* No pic register.  */
+#elif defined(__csky__)
+/* PIC register is $14, but is used even without -fpic.  */
 #elif defined(__SPU__)
 #  define PIC_REG  "126"
 #elif defined (__frv__)

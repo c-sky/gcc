@@ -49,3 +49,10 @@ lost+found
 # ignore ./contrib/gcc_update output
 LAST_UPDATED
 REVISION
+
+.vscode/
+ChangeLog.csky
+.tags
+.tags_sorted_by_file
+gcc/config/csky/abiv2_csky_tables.opt
+*.gv

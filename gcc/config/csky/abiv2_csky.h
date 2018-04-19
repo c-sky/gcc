@@ -10,12 +10,18 @@
 #endif
 
 #define TARGET_DEFAULT      \
-  (  MASK_HIGH_REGISTERS    \
-   | MASK_PUSHPOP           \
+  (  MASK_PUSHPOP           \
    | MASK_STRICT_ALIGNMENT  \
    | MASK_CONSTANT_POOL     \
    | MASK_DOUBLE_FLOAT      \
    | MASK_FDIVDU )
+
+/* Run-time Target Specification.  */
+#define TARGET_SOFT_FLOAT		(csky_float_abi == CSKY_FLOAT_ABI_SOFT)
+/* Use hardware floating point instructions. */
+#define TARGET_HARD_FLOAT		(csky_float_abi != CSKY_FLOAT_ABI_SOFT)
+/* Use hardware floating point calling convention.  */
+#define TARGET_HARD_FLOAT_ABI		(csky_float_abi == CSKY_FLOAT_ABI_HARD)
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
@@ -267,7 +273,14 @@ machine_function;
 
 /* A C type for declaring a variable that is used as the first argument of
    TARGET_ FUNCTION_ARG and other related values.  */
-#define CUMULATIVE_ARGS  int
+#if !defined (USED_FOR_TARGET)
+typedef struct
+{
+  int reg;
+  int freg;
+  bool is_stdarg;
+} CUMULATIVE_ARGS;
+#endif
 
 /* Initialize a variable CUM of type CUMULATIVE_ARGS
    for a call to a function whose data type is FNTYPE.
@@ -276,13 +289,16 @@ machine_function;
    On CSKY, the offset always starts at 0: the first parm reg is always
    the same reg.  */
 #define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS) \
-  ((CUM) = 0)
+  csky_init_cumulative_args (&(CUM), (FNTYPE), (LIBNAME), (INDIRECT))
 
 /* 1 if N is a possible register number for function argument passing.
    On the CSKY, r0-r3 are used to pass args.  */
 #define FUNCTION_ARG_REGNO_P(REGNO)         \
-  (((REGNO) >= CSKY_FIRST_PARM_REG) &&      \
-   ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG)))
+  ((((REGNO) >= CSKY_FIRST_PARM_REG) &&      \
+   ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))) \
+   || (TARGET_HARD_FLOAT_ABI \
+       && IN_RANGE ((REGNO), CSKY_FIRST_VFP_REGNUM, CSKY_FIRST_VFP_REGNUM + 3)) \
+  )
 
 
 /* How Large Values Are Returned  */
@@ -362,7 +378,7 @@ machine_function;
  /* vr0   vr1   vr2   vr3   vr4   vr5   vr6   vr7 */                    \
      1,    1,    1,    1,    1,    1,    1,    1,                       \
  /* vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */                   \
-     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     0,    0,    0,    0,    0,    0,    0,    0,                       \
  /* reserved */                                                         \
      1,    1,                                                           \
  /* epc */                                                              \
@@ -393,7 +409,7 @@ machine_function;
  /* vr0   vr1   vr2   vr3   vr4   vr5   vr6   vr7 */                    \
      1,    1,    1,    1,    1,    1,    1,    1,                       \
  /* vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */                   \
-     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     0,    0,    0,    0,    0,    0,    0,    0,                       \
  /* reserved */                                                         \
      1,    1,                                                           \
  /* epc */                                                              \
@@ -412,14 +428,14 @@ machine_function;
   "c",                                                                  \
   /* DSP instruction register: 34, 35 */                                \
   "hi", "lo",                                                           \
-  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
-  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
-  "reserverd", "reserverd", "reserverd", "reserverd", "reserverd",      \
-  "reserverd",                                                          \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
   /* V reigsters: 52~67 */                                              \
   "vr0", "vr1", "vr2",  "vr3",  "vr4",  "vr5",  "vr6",  "vr7",          \
   "vr8", "vr9", "vr10", "vr11", "vr12", "vr13", "vr14", "vr15",         \
-  "reserverd" ,"reserverd",                                             \
+  "reserved" ,"reserved",                                               \
   "epc"                                                                 \
 }
 
@@ -521,6 +537,7 @@ enum reg_class
   LO_REGS,
   HILO_REGS,
   V_REGS,
+  GV_REGS,
   OTHER_REGS,
   RESERVE_REGS,
   ALL_REGS,
@@ -542,6 +559,7 @@ enum reg_class
   "LO_REGS",            \
   "HILO_REGS",          \
   "V_REGS",             \
+  "GV_REGS",            \
   "OTHER_REGS",         \
   "RESERVE_REGS",       \
   "ALL_REGS",           \
@@ -561,6 +579,7 @@ enum reg_class
   {0x00000000, 0x00000008, 0x00000000 },  /* LO_REG            */    \
   {0x00000000, 0x0000000c, 0x00000000 },  /* HILO_REGS         */    \
   {0x00000000, 0xFFF00000, 0x0000000F },  /* V_REGS            */    \
+  {0xFFFFFFFF, 0xFFF00000, 0x0000000F },  /* GV_REGS           */    \
   {0x00000000, 0x00000000, 0x00000040 },  /* OTHER_REGS        */    \
   {0x00000000, 0x0FF00001, 0x00000030 },  /* RESERVE_REGS      */    \
   {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F },  /* ALL_REGS          */    \
@@ -639,6 +658,9 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    addresses.  */
 #define TARGET_UNSUPPORT_NEGATIVE_INDEX 1
 
+/* Addressing modes, and classification of registers for them.  */
+#define HAVE_POST_INCREMENT   1
+
 /******************************************************************
  *                        Run-time Target                         *
  ******************************************************************/
@@ -716,6 +738,10 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
         {                                             \
             builtin_define ("__csky_hard_float__");   \
             builtin_define ("__CSKY_HARD_FLOAT__");   \
+            if (TARGET_HARD_FLOAT_ABI)                \
+              builtin_define ("__CSKY_HARD_FLOAT_ABI__"); \
+            if (csky_fpu_index == TARGET_FPU_fpv2_sf) \
+              builtin_define ("__CSKY_HARD_FLOAT_FPU_SF__"); \
         }                                             \
         else                                          \
         {                                             \
@@ -863,7 +889,7 @@ while (0)
    specially when using MULTILIB_OPTIONS.  */
 #undef MULTILIB_DEFAULTS
 #define MULTILIB_DEFAULTS    \
-    {"mlittle-endian", "mcpu=ck810f", " msoft-float"}
+    {"mlittle-endian", "mcpu=ck810f", " mfloat-abi=soft"}
 
 /* Support for a compile-time default CPU, et cetera.  The rules are:
    --with-arch is ignored if -march or -mcpu are specified.
@@ -873,7 +899,7 @@ while (0)
   {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" }, \
   {"cpu", "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" }, \
   {"endian", "%{!mbig-endian:%{!mlittle-endian:-m%(VALUE)-endian}}" }, \
-  {"float", "%{!msoft-float:%{!mhard-float:-m%(VALUE)-float}}" },
+  {"float", "%{!mfloat-abi=*:-mfloat-abi=%(VALUE)}" },
 
 
 /******************************************************************
@@ -972,16 +998,18 @@ extern const int csky_dbx_regno[];
 
 /* Return the preferred mode for and addr_diff_vec when the mininum
    and maximum offset are known.  */
-#define CASE_VECTOR_SHORTEN_MODE(min, max, body)                    \
-  (min >= 0 && max < 512                                            \
-   ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, QImode)       \
-   : min >= -256 && max < 256                                       \
-     ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, QImode)     \
-     : min >= 0 && max < 8192                                       \
-       ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, HImode)   \
-       : min >= -4096 && max < 4096                                 \
-         ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, HImode) \
-         : SImode)
+#define CASE_VECTOR_SHORTEN_MODE(min, max, body)                       \
+  (!(flag_pic && !CASE_VECTOR_PC_RELATIVE)                             \
+   ? (min >= 0 && max < 512                                            \
+      ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, QImode)       \
+      : min >= -256 && max < 256                                       \
+        ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, QImode)     \
+        : min >= 0 && max < 8192                                       \
+          ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 1, HImode)   \
+          : min >= -4096 && max < 4096                                 \
+            ? (ADDR_DIFF_VEC_FLAGS (body).offset_unsigned = 0, HImode) \
+            : SImode)                                                  \
+    : SImode)
 
 /* This is how to output an element of a case-vector that is relative.  */
 #define ASM_OUTPUT_ADDR_DIFF_ELT(STREAM, BODY, VALUE, REL)          \

@@ -17,6 +17,7 @@ CSKY_ISA(div,    "divide insns")
 
 /* Extended insns */
 CSKY_ISA(dsp,   "Extended insns for DSP")
+CSKY_ISA(dspv2, "Extended insns for DSP v2.0")
 CSKY_ISA(java,  "Extended insns for Java")
 
 CSKY_ISA(fpv2_sf,    "Single precision operations supported")
@@ -29,6 +30,10 @@ CSKY_ISA(security, "Do nothing, just forward to as")
 CSKY_ISA(tls,      "Support thread-local storage")
 CSKY_ISA(casesi,   "Switch case optimize")
 
+/* Borrow ISA flag to indicate other functions */
+CSKY_ISA(hreg,     "Enable 16-31 registers.")
+CSKY_ISA(isr,      "Enable interrput attribute.")
+
 
 #ifdef  CSKY_ISA_MACRO
 #define CSKY_ISA_CK801      CSKY_ISA_FEATURE_GET(E1)
@@ -40,6 +45,7 @@ CSKY_ISA(casesi,   "Switch case optimize")
 #define CSKY_ISA_CK810      CSKY_ISA_CK807, CSKY_ISA_FEATURE_GET(7E10)
 
 #define CSKY_ISA_DSP        CSKY_ISA_FEATURE_GET(dsp)
+#define CSKY_ISA_DSPV2      CSKY_ISA_FEATURE_GET(dspv2)
 
 #define CSKY_ISA_FPv2_SF    CSKY_ISA_FEATURE_GET(fpv2_sf)
 #define CSKY_ISA_FPv2       CSKY_ISA_FPv2_SF, CSKY_ISA_FEATURE_GET(fpv2_df)

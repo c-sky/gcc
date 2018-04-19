@@ -524,7 +524,7 @@
 
 (define_insn "*fpuv2_movsf"
   [(set (match_operand:SF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v,v")
-        (match_operand:SF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v,m"))]
+        (match_operand:SF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v,Dm"))]
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "* return output_csky_move(insn, operands, SFmode);"
 )
@@ -543,8 +543,8 @@
 ")
 
 (define_insn "*fpuv2_movdf"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=r,r,v,r,m,r,Q,v,v,v")
-        (match_operand:DF 1 "general_operand"      "r, F,r,v,r,m,v,Q,v,m"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "=r,r,v,?r,m,r,Q,v,v,v")
+        (match_operand:DF 1 "general_operand"      "r, F,?r,v,r,m,v,Q,v,m"))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "* return output_csky_movedouble(operands, DFmode);"
 )

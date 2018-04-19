@@ -28,6 +28,10 @@
 # with the compiler under test and using that compiler's runtime support.
 
 # The including .exp file must define these callback procedures.
+
+load_lib gcc-gdb-test.exp
+load_lib gcc-qemu-test.exp
+
 if [string match "" [info procs "compat-use-alt-compiler"]] then {
     error "Proc compat-use-alt-compiler is not defined."
 }
@@ -141,12 +145,41 @@ proc compat-run { testname objlist dest optall optfile optstr } {
     if ![string match "*/*" $dest] then {
 	set dest "./$dest"
     }
-    set result [${tool}_load $dest "" ""]
-    set status [lindex $result 0]
-    if { $status == "pass" } then {
-	file_on_host delete $dest
+    if { ![board_info target  exists COMPILE_TESTS_ONLY] } {
+        if { ![board_info target  exists GDB] && ![board_info target  exists QEMU]} {
+            set result [${tool}_load $dest "" ""]
+        } else {
+            if { [board_info target exists GDB] } {
+                set result [ gcc_gdb_run $dest "" "" ]
+            } else {
+                set result [ gcc_qemu_run $dest "" "" ]
+            }
+        }
+ 
+        # if { [ istarget csky* ] && [board_info target  exists GDB] && [board_info target  exists QEMU] } {
+        #    if { [board_info target exists GDB] } {
+        #        set result [ gcc_gdb_run $dest "" "" ]
+        #    } else {
+        #        set result [ gcc_qemu_run $dest "" "" ]
+        #    }
+        # } else { 
+        #	set result [${tool}_load $dest "" ""]
+        # }
+        set status [lindex $result 0]
+        if { $status == "pass" } then {
+            file_on_host delete $dest
+        }
+        $status "$testcase $testname execute $optstr"
+    } else {
+        untested  "$testcase execution"
+        set result "untested"
     }
-    $status "$testcase $testname execute $optstr"
+    #set result [${tool}_load $dest "" ""]
+    #set status [lindex $result 0]
+    #if { $status == "pass" } then {
+    #    file_on_host delete $dest
+    #}
+    #$status "$testcase $testname execute $optstr"
 }
 
 #

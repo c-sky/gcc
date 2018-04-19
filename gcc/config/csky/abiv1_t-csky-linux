@@ -24,11 +24,11 @@ MULTILIB_MATCHES	 = mlittle-endian=EL
 MULTILIB_MATCHES	 = mbig-endian=EB
 MULTILIB_EXCEPTIONS	 =
 
-CSKY_MULTILIB_OSDIRNAMES = mbig-endian=/big mlittle-endian=/. mhard-float=/hard-fp msoft-float=/.  mstm=/stm mno-stm=/. fpic=/pic
+CSKY_MULTILIB_OSDIRNAMES = mbig-endian=/big mlittle-endian=/. mfloat-abi.hard=/hard-fp mfloat-abi.soft=/.  mstm=/stm mno-stm=/. fpic=/pic
 
 
 # For option -msoft-float/-mhard-float
-MULTILIB_OPTIONS   += msoft-float/mhard-float
+MULTILIB_OPTIONS   += mfloat-abi=soft/mfloat-abi=hard
 MULTILIB_DIRNAMES  += soft-fp hard-fp
 
 ## For option -mmultiple-stld

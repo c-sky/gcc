@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-optimized" } */
+/* { dg-additional-options "-mbranch-cost=2" { target csky*-*-* } } */
 
 int
 foo (int a, int b, int c)

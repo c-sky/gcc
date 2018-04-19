@@ -1,0 +1,18 @@
+tar jtag jtag://192.168.0.207:1025
+
+#------abiv1-------
+reset
+#set *0x10001000=0x68310000
+set *0x10001000=0x3168
+set $gcr=0x8
+
+#-------abiv2 ck802 ck803 --------
+
+#-------abiv2 ck810--------
+#set $cr18=0x1
+
+lo
+run
+#i r r0
+i r r2
+quit

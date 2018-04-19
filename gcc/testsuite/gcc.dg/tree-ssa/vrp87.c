@@ -3,6 +3,7 @@
 /* { dg-do compile { target { ! { logical_op_short_circuit || { m68k*-*-* mmix*-*-* mep*-*-* bfin*-*-* v850*-*-* moxie*-*-* cris*-*-* m32c*-*-* fr30*-*-* mcore*-*-* powerpc*-*-* xtensa*-*-* hppa*-*-* } } } } } */
 
 /* { dg-options "-O2 -fdump-tree-fre1-details" } */
+/* { dg-additional-options "-mbranch-cost=2" { target csky*-*-* } } */
 
 struct bitmap_head_def;
 typedef struct bitmap_head_def *bitmap;

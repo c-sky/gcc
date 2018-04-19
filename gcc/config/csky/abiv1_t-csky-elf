@@ -26,9 +26,9 @@ MULTILIB_MATCHES	 = mbig-endian=EB
 MULTILIB_EXCEPTIONS	 =
 
 # For option -msoft-float/-mhard-float
-MULTILIB_OPTIONS     += msoft-float/mhard-float
+MULTILIB_OPTIONS     += mfloat-abi=soft/mfloat-abi=hard
 MULTILIB_DIRNAMES    += soft-fp hard-fp
-MULTILIB_EXCEPTIONS  += mhard-float/mno-stm
+#MULTILIB_EXCEPTIONS  += mfloat-abi=hard/mno-stm
 #
 ## For option -mmultiple-stld
 MULTILIB_OPTIONS	 += mno-stm/mstm

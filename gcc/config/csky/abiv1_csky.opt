@@ -2,6 +2,9 @@
 ;; m4align m8align mslow-bytes mmmu 4byte-functions lsim
 
 
+HeaderInclude
+config/csky/abiv1_csky_opts.h
+
 march=
 Target RejectNegative Joined Report Var(csky_arch_string)
 Specify the name of the target architecture.
@@ -68,13 +71,10 @@ Target Report Mask(RELAX_IMM)
 Use arbitrary sized immediates in bit operations.
 
 mhard-float
-Target Report RejectNegative Mask(HARD_FLOAT)
-Use hardware floating point instructions (ck6××f/ck8××f).
-
+Target RejectNegative Alias(mfloat-abi=, hard) Undocumented
 
 msoft-float
-Target Report RejectNegative InverseMask(HARD_FLOAT)
-Use library calls to perform FP operations, default.
+Target RejectNegative Alias(mfloat-abi=, soft) Undocumented
 
 mmultiple-stld
 Target Report Mask(MULTIPLE_STLD)
@@ -115,3 +115,18 @@ Use lra to do register allocation instead of reload.
 mpp
 Target Report Var(flag_preload_protect) Undocumented
 Open preload protect.
+
+mfloat-abi=
+Target RejectNegative Joined Enum(float_abi_type) Var(csky_float_abi) Init(CSKY_FLOAT_ABI_SOFT)
+Specify if floating point hardware should be used.
+
+Enum
+Name(float_abi_type) Type(enum float_abi_type)
+Known floating-point ABIs (for use with the -mfloat-abi= option):
+
+EnumValue
+Enum(float_abi_type) String(soft) Value(CSKY_FLOAT_ABI_SOFT)
+
+EnumValue
+Enum(float_abi_type) String(hard) Value(CSKY_FLOAT_ABI_HARD)
+

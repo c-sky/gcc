@@ -39,6 +39,21 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define yl r3
 #endif
 
+#ifdef __CSKY_HARD_FLOAT_ABI__
+#ifdef __CSKY_HARD_FLOAT_FPU_SF__
+#ifndef __CSKYBE__
+#define vxl vr0
+#define vxh vr1
+#define vyl vr2
+#define vyh vr3
+#else
+#define vxh vr0
+#define vxl vr1
+#define vyh vr2
+#define vyl vr3
+#endif
+#endif
+#endif
 
 #ifdef __ELF__
 #define TYPE(x) .type SYM (x),@function

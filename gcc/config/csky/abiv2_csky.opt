@@ -83,12 +83,16 @@ Target Report Mask(W_FIELD)
 Always treat bitfields as int-sized.
 
 mhard-float
-Target Report RejectNegative Mask(HARD_FLOAT)
-Use hardware floating point instructions.
+Target RejectNegative Alias(mfloat-abi=, hard) Undocumented
 
 msoft-float
-Target Report RejectNegative InverseMask(HARD_FLOAT)
-Use library calls to perform FP operations, default.
+Target RejectNegative Alias(mfloat-abi=, soft) Undocumented
+
+mfloat-abi=v2
+Target RejectNegative Alias(mfloat-abi=, hard) Undocumented
+
+mfloat-abi=v1
+Target RejectNegative Alias(mfloat-abi=, softfp) Undocumented
 
 mmultiple-stld
 Target Report Mask(MULTIPLE_STLD)
@@ -164,4 +168,25 @@ Allow common condition code set expression elimination.
 fsched-prolog
 Common Report Var(flag_sched_prolog) Undocumented
 Permit scheduling of a function's prologue sequence.
+
+mfloat-abi=
+Target RejectNegative Joined Enum(float_abi_type) Var(csky_float_abi) Init(CSKY_FLOAT_ABI_SOFT)
+Specify if floating point hardware should be used.
+
+Enum
+Name(float_abi_type) Type(enum float_abi_type)
+Known floating-point ABIs (for use with the -mfloat-abi= option):
+
+EnumValue
+Enum(float_abi_type) String(soft) Value(CSKY_FLOAT_ABI_SOFT)
+
+EnumValue
+Enum(float_abi_type) String(softfp) Value(CSKY_FLOAT_ABI_SOFTFP)
+
+EnumValue
+Enum(float_abi_type) String(hard) Value(CSKY_FLOAT_ABI_HARD)
+
+mdoloop
+Target Report Var(flag_csky_doloop) Init(1) Undocumented
+Use Csky DSP V2.0 instructions bloop.
 

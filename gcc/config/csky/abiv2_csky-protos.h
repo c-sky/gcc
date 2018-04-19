@@ -9,8 +9,11 @@
 #define CSKY_FIRST_PARM_REG           0
 #define CSKY_NGPR_REGS                32
 #define CSKY_FIRST_RET_REG            0
+#define CSKY_NPARM_FREGS              4
 #define CSKY_FIRST_VFP_REGNUM         52
 #define CSKY_LAST_VFP_REGNUM          67
+#define CSKY_FIRST_PERESERVED_VFP     60
+#define CSKY_LAST_PERESERVED_VFP      67
 #define CSKY_NVFP_REGS                16
 #define CSKY_FIRST_HIGH_REGNUM        16
 #define CSKY_LAST_HIGH_REGNUM         (CSKY_NGPR_REGS - 1)
@@ -137,7 +140,9 @@ typedef struct GTY(()) csky_stack_frame
 {
   int arg_size;       /* stdarg spills (bytes) */
   int reg_size;       /* non-volatile reg saves (bytes) */
-  int reg_mask;       /* non-volatile reg saves */
+  int freg_size;      /* Non-volatile float reg saves (bytes).  */
+  int reg_mask;       /* non-volatile general reg saves */
+  int freg_mask;      /* non-volatile float reg saves */
   int local_size;     /* locals */
   int outbound_size;  /* arg overflow on calls out */
 
@@ -163,7 +168,7 @@ csky_stack_frame;
 
 struct csky_address
 {
-  rtx base, index, symbol, label, disp;
+  rtx base, index, symbol, label, disp, post_inc_reg;
   HOST_WIDE_INT scale;
 };
 
@@ -212,6 +217,10 @@ extern int get_cskyv2_mem_constraint (const char *, rtx);
 #ifdef RTX_CODE
 extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
 extern bool gen_csky_compare_float (enum rtx_code, rtx, rtx);
+extern int csky_split_constant (enum rtx_code, machine_mode, rtx,
+                                HOST_WIDE_INT, rtx, rtx, int);
+extern bool csky_can_split_constant (enum rtx_code, rtx,
+                                     HOST_WIDE_INT);
 #endif /* RTX_CODE */
 
 extern int csky_hard_regno_mode_ok (unsigned int regno, enum machine_mode mode);
@@ -235,6 +244,10 @@ extern rtx legitimize_tls_address (rtx x, rtx reg);
 
 extern const char *csky_output_casesi (rtx *operands);
 extern int get_csky_pushpop_length (rtx*);
+
+extern void csky_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx, tree);
+extern int const_ok_for_cskyv2 (HOST_WIDE_INT);
+
 /* The following are used in the .md file as equivalents to bits.  */
 #include "abiv2_csky_isa.h"
 extern int csky_arch_isa_features[];
