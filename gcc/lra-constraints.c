@@ -1094,12 +1094,37 @@ emit_spill_move (bool to_p, rtx mem_pseudo, rtx val)
 	 rare cases it can be less as it can be defined by target
 	 dependent macro HARD_REGNO_CALLER_SAVE_MODE.  */
       if (! MEM_P (val))
-	{
-	  val = gen_rtx_SUBREG (GET_MODE (mem_pseudo),
-				GET_CODE (val) == SUBREG ? SUBREG_REG (val) : val,
-				0);
-	  LRA_SUBREG_P (val) = 1;
-	}
+      {
+           /* Add this macro to control if following code used be incorporated into
+             compilation pipeline.
+             Note that following code placed here just intend to handle the situation
+             that moving a 64 bit value to 32 bit value. Because of following code
+             absence, moving between different length data would trigger a gcc_assert
+             in function emit_move_multi_word of file expr.c line 3453.
+             Commented by JianPing Zeng on 3 Jan 2018.  */
+#ifdef FORCE_SAME_LENGTH_ON_MOVE_MULTIPLE_WORDS
+            unsigned int val_size = GET_MODE_SIZE(GET_MODE(val));
+            unsigned int mem_size = GET_MODE_SIZE(GET_MODE(mem_pseudo));
+            bool subreg_on_val = mem_size < val_size;
+            if (subreg_on_val || val_size < UNITS_PER_WORD)
+            {
+#endif
+                val = gen_rtx_SUBREG (GET_MODE (mem_pseudo),
+                                                            GET_CODE (val) == SUBREG
+                                                            ? SUBREG_REG (val) : val,
+                                                            0);
+                                      LRA_SUBREG_P (val) = 1;
+#ifdef FORCE_SAME_LENGTH_ON_MOVE_MULTIPLE_WORDS
+            }
+            else
+            {
+                mem_pseudo = gen_rtx_SUBREG(GET_MODE(val),
+                                                          GET_CODE(mem_pseudo) == SUBREG
+                                                          ? SUBREG_REG(mem_pseudo) : mem_pseudo, 0);
+                                      LRA_SUBREG_P(mem_pseudo) = 1;
+            }
+#endif
+         }
       else
 	{
 	  mem_pseudo = gen_lowpart_SUBREG (GET_MODE (val), mem_pseudo);

@@ -2353,7 +2353,7 @@ split_complex_args (vec<tree> *args)
    the hidden struct return argument, and (abi willing) complex args.
    Return the new parameter list.  */
 
-static vec<tree> 
+static vec<tree>
 assign_parms_augmented_arg_list (struct assign_parm_data_all *all)
 {
   tree fndecl = current_function_decl;
@@ -3156,6 +3156,16 @@ assign_parm_setup_reg (struct assign_parm_data_all *all, tree parm,
   need_conversion = (data->nominal_mode != data->passed_mode
 		     || promoted_nominal_mode != data->promoted_mode);
   moved = false;
+
+  #ifdef TARGET_FUNCTION_ARG_MODE_COMPATIBLE
+  if (TARGET_FUNCTION_ARG_MODE_COMPATIBLE
+      && need_conversion
+      && GET_MODE_CLASS (data->nominal_mode) == MODE_INT
+      && data->promoted_mode == data->passed_mode
+      && data->promoted_mode == GET_MODE (data->entry_parm)
+      && HARD_REGISTER_P (data->entry_parm))
+    need_conversion = false;
+  #endif
 
   if (need_conversion
       && GET_MODE_CLASS (data->nominal_mode) == MODE_INT
@@ -5150,7 +5160,7 @@ expand_function_start (tree subr)
   else if (DECL_MODE (res) == VOIDmode)
     /* If return mode is void, this decl rtl should not be used.  */
     set_parm_rtl (res, NULL_RTX);
-  else 
+  else
     {
       /* Compute the return values into a pseudo reg, which we will copy
 	 into the true return register after the cleanups are done.  */

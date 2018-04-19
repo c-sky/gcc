@@ -35,20 +35,35 @@ MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ft
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803eft
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efht
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803r1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803r2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fhr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fhr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803hr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803hr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803tr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803tr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803htr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803htr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803er1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803er2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803etr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803etr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehtr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehtr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ftr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ftr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803eftr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803eftr2
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhtr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhtr2
 
 # For arch ck803s
 MULTILIB_MATCHES     += mcpu?ck803f=march?ck803s
@@ -68,7 +83,7 @@ MULTILIB_MATCHES     += mcpu?ck810f=march?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810v
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810t
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vf
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810fv
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810tv
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ft
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ftv

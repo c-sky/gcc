@@ -94,6 +94,51 @@
     return 0;
   })
 
+(define_predicate "csky_arith_J_operand"
+  (match_code "reg,subreg,const_int")
+  {
+    if (register_operand (op, mode))
+      return 1;
+
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_J (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_arith_Ut_operand"
+  (match_code "reg,subreg,const_int")
+  {
+    if (register_operand (op, mode))
+      return 1;
+
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_Ut (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_literal_Ut_operand"
+  (match_code "const_int")
+  {
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_Ut (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
+(define_predicate "csky_arith_Uu_operand"
+  (match_code "reg,subreg,const_int")
+  {
+    if (register_operand (op, mode))
+      return 1;
+
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_Uu (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
 (define_predicate "csky_literal_K_operand"
   (match_code "const_int")
   {
@@ -386,3 +431,51 @@
 (define_special_predicate "csky_float_comparison_operator"
   (match_code "eq,ne,le,lt,ge,gt,geu,gtu,leu,ltu,
                unordered,ordered"))
+
+(define_special_predicate "cc_register"
+  (and (match_code "reg")
+       (and (match_test "REGNO (op) == CSKY_CC_REGNUM")
+            (ior (match_test "mode == GET_MODE (op)")
+                 (match_test "mode == VOIDmode && GET_MODE_CLASS (GET_MODE (op)) == MODE_CC")))))
+
+(define_predicate "const_0_to_3_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 3)")))
+
+(define_predicate "const_0_to_7_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
+
+(define_predicate "const_0_to_15_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 15)")))
+
+(define_predicate "const_1_to_16_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 1, 16)")))
+
+(define_predicate "const_0_to_31_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 31)")))
+
+(define_predicate "imm_or_reg_vdsp_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "const_0_to_15_operand")))
+
+(define_predicate "zero_operand"
+  (and (match_code "const_int,const_vector")
+       (match_test "op == CONST0_RTX (mode)")))
+
+;; Match a register, or zero in the appropriate mode.
+(define_predicate "reg_or_zero_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "zero_operand")))
+
+(define_predicate "csky_scond_operator"
+  (match_code "ne, ge, lt"))
+
+(define_predicate "csky_ucond_operator"
+  (match_code "ne, geu, ltu"))
+
+(define_special_predicate "csky_vect_comparison_operator"
+  (match_code "ne,lt,ge"))

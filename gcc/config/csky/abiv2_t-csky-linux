@@ -21,10 +21,10 @@ MULTILIB_MATCHES     += mcpu?ck810f=march?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810v
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810t
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vt
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vf
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810tv
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810fv
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ft
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810vft
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ftv
 
 
 # For option -mfloat-abi=

@@ -978,5 +978,12 @@ extern const enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define NATIVE_SYSTEM_HEADER_DIR "/usr/include"
 #endif
 
+#define FUNCTION_ARG_PADDING(MODE, TYPE) \
+  (csky_pad_arg_upward (MODE, TYPE) ? upward : downward)
+
+#define BLOCK_REG_PADDING(MODE, TYPE, FIRST) \
+  (csky_pad_reg_upward (MODE, TYPE, FIRST) ? upward : downward)
+
+#define PAD_VARARGS_DOWN (BYTES_BIG_ENDIAN && INTEGRAL_TYPE_P (type))
 
 #endif /* ! GCC_ABIV1_CSKY_H */

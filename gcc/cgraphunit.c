@@ -204,6 +204,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-chkp.h"
 #include "lto-section-names.h"
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+bool csky_is_last_func = false;
+bool csky_will_change_section = false;
+#include "common/common-target.h"
+#endif
+
 /* Queue of cgraph nodes scheduled to be added into cgraph.  This is a
    secondary queue used during optimization to accommodate passes that
    may generate new functions that need to be optimized and expanded.  */
@@ -2068,6 +2074,29 @@ node_cmp (const void *pa, const void *pb)
 	 : b->order - a->order;
 }
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+/* decides whether the function is switching section or not */
+static section *old_section;
+static bool
+function_is_switching_section(tree decl)
+{
+  if (targetm_common.have_named_sections
+      && (flag_function_sections || DECL_ONE_ONLY(decl)))
+    return true;
+
+  section *new_section = function_section (decl);
+  if (old_section != new_section)
+    {
+      if (new_section->common.flags & SECTION_FORGET)
+        old_section = NULL;
+      else
+        old_section = new_section;
+      return true;
+    }
+  return false;
+}
+#endif
+
 /* Expand all functions that must be output.
 
    Attempt to topologically sort the nodes so function is output when
@@ -2091,6 +2120,12 @@ expand_all_functions (void)
   order_pos = ipa_reverse_postorder (order);
   gcc_assert (order_pos == symtab->cgraph_count);
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+  int *node_process_list = NULL;
+  int pre_func_no = 0;
+  node_process_list = XCNEWVEC (int, order_pos);
+#endif
+
   /* Garbage collector may remove inline clones we eliminate during
      optimization.  So we must be sure to not reference them.  */
   for (i = 0; i < order_pos; i++)
@@ -2100,24 +2135,97 @@ expand_all_functions (void)
   if (flag_profile_reorder_functions)
     qsort (order, new_order_pos, sizeof (cgraph_node *), node_cmp);
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+  if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
+    {
+      // node_process_list[i] is 3
+      // indicates next function will switch section.
+      pre_func_no = -1;
+      for (i = new_order_pos - 1; i >= 0; i--)
+        {
+          node = order[i];
+          node_process_list[i] = 0;
+          if (node->process)
+            {
+              node->process = 0;
+              node_process_list[i] = 1;
+              if (pre_func_no == -1)
+                {
+                  pre_func_no = i;
+                  continue;
+                }
+              if (function_is_switching_section(node->decl))
+                {
+                  node_process_list[pre_func_no] = 3;
+                }
+              pre_func_no = i;
+            }
+        }
+
+      for (i = new_order_pos - 1; i >= 0; i--)
+        {
+          csky_is_last_func = false;
+          csky_will_change_section = false;
+          node = order[i];
+
+          if (node_process_list[i] > 0)
+            {
+              if (i == pre_func_no) csky_is_last_func = true;
+              if (node_process_list[i] == 3) csky_will_change_section = true;
+
+              expanded_func_count++;
+              if(node->tp_first_run)
+                profiled_func_count++;
+
+              if (symtab->dump_file)
+                fprintf (symtab->dump_file,
+                         "Time profile order in expand_all_functions:%s:%d\n",
+                         node->asm_name (), node->tp_first_run);
+              node->expand ();
+            }
+        }
+    }
+  else
+    {
+      for (i = new_order_pos - 1; i >= 0; i--)
+        {
+          node = order[i];
+
+          if (node->process)
+            {
+              expanded_func_count++;
+              if(node->tp_first_run)
+                profiled_func_count++;
+
+              if (symtab->dump_file)
+                fprintf (symtab->dump_file,
+                   "Time profile order in expand_all_functions:%s:%d\n",
+                   node->asm_name (), node->tp_first_run);
+              node->process = 0;
+              node->expand ();
+            }
+        }
+    }
+#else
   for (i = new_order_pos - 1; i >= 0; i--)
     {
       node = order[i];
 
       if (node->process)
-	{
-	  expanded_func_count++;
-	  if(node->tp_first_run)
-	    profiled_func_count++;
+        {
+          expanded_func_count++;
+          if(node->tp_first_run)
+            profiled_func_count++;
 
-	  if (symtab->dump_file)
-	    fprintf (symtab->dump_file,
-		     "Time profile order in expand_all_functions:%s:%d\n",
-		     node->asm_name (), node->tp_first_run);
-	  node->process = 0;
-	  node->expand ();
-	}
+          if (symtab->dump_file)
+            fprintf (symtab->dump_file,
+               "Time profile order in expand_all_functions:%s:%d\n",
+               node->asm_name (), node->tp_first_run);
+          node->process = 0;
+          node->expand ();
+        }
     }
+#endif
 
     if (dump_file)
       fprintf (dump_file, "Expanded functions with time profile (%s):%u/%u\n",
@@ -2173,6 +2281,12 @@ output_in_order (bool no_reorder)
   max = symtab->order;
   nodes = XCNEWVEC (cgraph_order_sort, max);
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+  int last_func_idx = -1;
+  char *section_will_change_flag = XCNEWVEC (char, max);
+  int pre_func_no = -1;
+#endif
+
   FOR_EACH_DEFINED_FUNCTION (pf)
     {
       if (pf->process && !pf->thunk.thunk_p && !pf->alias)
@@ -2183,6 +2297,11 @@ output_in_order (bool no_reorder)
 	  gcc_assert (nodes[i].kind == ORDER_UNDEFINED);
 	  nodes[i].kind = ORDER_FUNCTION;
 	  nodes[i].u.f = pf;
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+    if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
+      if (i > last_func_idx)
+        last_func_idx = i;
+#endif
 	}
     }
 
@@ -2211,11 +2330,51 @@ output_in_order (bool no_reorder)
     if (nodes[i].kind == ORDER_VAR)
       nodes[i].u.v->finalize_named_section_flags ();
 
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+  // section_will_change_flag[i] is 1
+  // indicates next function will change section.
+  if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
+    {
+      pre_func_no = -1;
+      for (i = 0; i < max; ++i)
+        {
+          section_will_change_flag[i] = 0;
+          if (nodes[i].kind == ORDER_FUNCTION)
+            {
+              if (pre_func_no == -1)
+                {
+                  pre_func_no = i;
+                  continue;
+                }
+              if (function_is_switching_section(nodes[i].u.f->decl))
+                {
+                  section_will_change_flag[pre_func_no] = 1;
+                }
+              pre_func_no = i;
+            }
+        }
+    }
+#endif
+
   for (i = 0; i < max; ++i)
     {
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+      if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
+        {
+          csky_is_last_func = false;
+          csky_will_change_section = false;
+        }
+#endif
       switch (nodes[i].kind)
 	{
 	case ORDER_FUNCTION:
+#ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
+    if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
+      {
+        if (i == last_func_idx) csky_is_last_func = true;
+        if (section_will_change_flag[i] == 1) csky_will_change_section = true;
+      }
+#endif
 	  nodes[i].u.f->process = 0;
 	  nodes[i].u.f->expand ();
 	  break;

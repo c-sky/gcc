@@ -1,0 +1,11 @@
+
+/* Vector modes.  */
+VECTOR_MODES (INT, 4);        /* V4QI   V2HI             */
+VECTOR_MODES (INT, 8);        /* V8QI   V4HI V2SI        */
+VECTOR_MODES (INT, 16);       /* V16QI  V8HI V4SI (V2DI) */
+VECTOR_MODES (FRACT, 4);      /* V4QQ   V2HQ */
+VECTOR_MODES (FRACT, 8);      /* V8QQ   V4HQ V2SQ */
+VECTOR_MODES (FRACT, 16);     /* V16QQ  V8HQ V4SQ */
+VECTOR_MODES (UFRACT, 4);     /* V4UQQ  V2UHQ */
+VECTOR_MODES (UFRACT, 8);     /* V8UQQ  V4UHQ V2USQ */
+VECTOR_MODES (UFRACT, 16);    /* V16UQQ  V8UHQ V4USQ */

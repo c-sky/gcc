@@ -14,14 +14,17 @@
    | MASK_STRICT_ALIGNMENT  \
    | MASK_CONSTANT_POOL     \
    | MASK_DOUBLE_FLOAT      \
-   | MASK_FDIVDU )
+   | MASK_FDIVDU            \
+   | MASK_STACK_SIZE )
 
 /* Run-time Target Specification.  */
 #define TARGET_SOFT_FLOAT		(csky_float_abi == CSKY_FLOAT_ABI_SOFT)
 /* Use hardware floating point instructions. */
 #define TARGET_HARD_FLOAT		(csky_float_abi != CSKY_FLOAT_ABI_SOFT)
 /* Use hardware floating point calling convention.  */
-#define TARGET_HARD_FLOAT_ABI		(csky_float_abi == CSKY_FLOAT_ABI_HARD)
+#define TARGET_HARD_FLOAT_ABI   (csky_float_abi == CSKY_FLOAT_ABI_HARD)
+/* Use hardware vector register.  */
+#define TARGET_SUPPORT_VREGS    (TARGET_HARD_FLOAT || CSKY_ISA_FEATURE(vdsp))
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
@@ -49,6 +52,8 @@ typedef struct GTY(()) machine_function
 {
   /* Records if LR has to be saved for far jumps.  */
   int far_jump_used;
+  /* Records if ARG_POINTER was ever live.  */
+  int arg_pointer_live;
   /* Records the type of the current function.  */
   unsigned long func_type;
   /* Record if the function has a variable argument list.  */
@@ -95,6 +100,8 @@ machine_function;
 
 /* Boundary (in *bits*) on which stack pointer should be aligned.  */
 #define STACK_BOUNDARY  32
+
+#define TARGET_FUNCTION_ARG_MODE_COMPATIBLE flag_arg_mode_compatible
 
 /* Make strings word-aligned so strcpy from constants will be faster.  */
 #define CONSTANT_ALIGNMENT(EXP, ALIGN)      \
@@ -224,8 +231,18 @@ machine_function;
 /* Register to use for pushing function arguments.  */
 #define STACK_POINTER_REGNUM  CSKY_SP_REGNUM
 
-/* Base register for access to local variables of the function.  */
-#define FRAME_POINTER_REGNUM  8
+/* Base register for access to local variables of the function.
+   Change it's value from 8(physical register) to 36(reserved virtual register)
+   according to abiv1-csky. This alternation is used for fix bug at
+   lra-elimination on lra enable. The case of set(reg:SI/f 8 l4) would
+   set the value of frame-point-register-needed as 1 which triggers the
+   gcc_assert in dwarf2out.c:12304 eventually.
+
+   Added by JianPing Zeng according to csky-abiv1 on 2018/1/4.  */
+#define FRAME_POINTER_REGNUM  36
+
+/* Added by JianPing Zeng according to csky-abiv1 on 2018/1/4.  */
+#define HARD_FRAME_POINTER_REGNUM 8
 
 /* Base register for access to arguments of the function.  */
 #define ARG_POINTER_REGNUM    32
@@ -248,10 +265,18 @@ machine_function;
    arg pointer register can often be eliminated in favor of the stack
    pointer register.  Secondly, the pseudo frame pointer register can always
    be eliminated; it is replaced with the stack pointer.  */
-#define ELIMINABLE_REGS           \
-{{ ARG_POINTER_REGNUM,        STACK_POINTER_REGNUM            },\
- { ARG_POINTER_REGNUM,        FRAME_POINTER_REGNUM            },\
- { FRAME_POINTER_REGNUM,      STACK_POINTER_REGNUM            }}
+
+/* Adjusted by JianPing Zeng according to abiv1-csky to fix bug of gcc_assert in
+   file dwarf2out.c at line 12304.  */
+#define ELIMINABLE_REGS    \
+{{ ARG_POINTER_REGNUM,   STACK_POINTER_REGNUM      }, \
+ { ARG_POINTER_REGNUM,   FRAME_POINTER_REGNUM      }, \
+ { ARG_POINTER_REGNUM,   HARD_FRAME_POINTER_REGNUM }, \
+ { FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM      }, \
+ { FRAME_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM }}
+
+#define HARD_FRAME_POINTER_IS_FRAME_POINTER 0
+#define HARD_FRAME_POINTER_IS_ARG_POINTER 0
 
 /* Define the offset between two registers, one to be eliminated, and the
    other its replacement, at the start of a routine.  */
@@ -423,7 +448,7 @@ typedef struct
   "l8",  "l9",  "t2",  "t3",  "t4",  "t5",  "t6",  "t7",                \
   "t8",  "t9",  "r26", "r27", "gb",  "r29", "svbr","r31",               \
   /* reserved */                                                        \
-  "reserved",                                                           \
+  "vap",                                                                \
   /* CC register: 33 */                                                 \
   "c",                                                                  \
   /* DSP instruction register: 34, 35 */                                \
@@ -573,7 +598,8 @@ enum reg_class
   {0x000000FF, 0x00000000, 0x00000000 },  /* MINI_REGS         */    \
   {0x00004000, 0x00000000, 0x00000000 },  /* SP_REGS           */    \
   {0x0000FFFF, 0x00000000, 0x00000000 },  /* LOW_REGS          */    \
-  {0xFFFFFFFF, 0x00000000, 0x00000000 },  /* GENERAL_REGS      */    \
+  /* Add reg 32 and 36 into GeneralReg class JianPingZeng      */    \
+  {0xFFFFFFFF, 0x00000011, 0x00000000 },  /* GENERAL_REGS      */    \
   {0x00000000, 0x00000002, 0x00000000 },  /* C_REGS            */    \
   {0x00000000, 0x00000004, 0x00000000 },  /* HI_REG            */    \
   {0x00000000, 0x00000008, 0x00000000 },  /* LO_REG            */    \
@@ -707,6 +733,21 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
             builtin_define ("__csky_dsp__");          \
             builtin_define ("__CSKY_DSP__");          \
         }                                             \
+        if (CSKY_ISA_FEATURE(dspv2))                  \
+        {                                             \
+            builtin_define ("__csky_dspv2__");        \
+            builtin_define ("__CSKY_DSPV2__");        \
+        }                                             \
+        if (CSKY_ISA_FEATURE(vdsp64))                 \
+        {                                             \
+            builtin_define ("__csky_vdsp64__");       \
+            builtin_define ("__CSKY_VDSP64__");       \
+        }                                             \
+        if (CSKY_ISA_FEATURE(vdsp128))                \
+        {                                             \
+            builtin_define ("__csky_vdsp128__");      \
+            builtin_define ("__CSKY_VDSP128__");      \
+        }                                             \
         if (CSKY_ISA_FEATURE(fpv2_sf))                \
         {                                             \
             builtin_define ("__csky_fpuv2__");        \
@@ -782,6 +823,9 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
 #define JUMP_TABLES_IN_TEXT_SECTION \
   (optimize_size && TARGET_CONSTANT_POOL \
    && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
+
+#define TARGET_FUNCS_SHARE_CONSTANT_POOL (TARGET_CONSTANT_POOL \
+                                          && (CSKY_TARGET_ARCH(CK802) || CSKY_TARGET_ARCH(CK801)))
 
 
 /******************************************************************
@@ -1116,5 +1160,67 @@ extern const int csky_dbx_regno[];
 
 
 #define FUNCTION_PROFILER(FILE, LABELNO)
+
+
+/* Check if specified Register operand is eliminable later or not.
+   Return true if eliminable. Otherwise return false.  */
+int csky_eliminable_register(rtx op);
+
+/******************************************************************
+ * Output SCE instructions for conditionally executed instructions.*
+ ******************************************************************/
+
+typedef enum csky_cond_code
+{
+  CSKY_EQ = 0, CSKY_NE, CSKY_GE, CSKY_LT, CSKY_GT, CSKY_LE,
+  CSKY_GEU, CSKY_LTU, CSKY_GTU, CSKY_LEU, CSKY_NV
+}
+csky_cc;
+
+#define FORBBID_TRAP_AND_CONVERT_TO_CONDITION
+
+#define CSKY_INVERSE_CONDITION_CODE(X)  ((csky_cc) (((int)X) ^ 1))
+
+#define ASM_OUTPUT_OPCODE(STREAM, PTR)              \
+        csky_asm_output_opcode (STREAM)
+
+#define FINAL_PRESCAN_INSN(INSN, OPVEC, NOPERANDS)   \
+        csky_final_prescan_insn (INSN)
+
+#define FIXED_CONDITIONAL_EXECUTE                       \
+        csky_fixed_conditional_execute ()
+
+#undef MAX_CONDITIONAL_EXECUTE
+#define MAX_CONDITIONAL_EXECUTE csky_max_conditional_execute ()
+
+
+/* This macro defined here just used for providing an interface to
+   tell GCC Optimizer based on RTL if we should force same data length
+   when moving a data of length 64bits to one of 32 bits.
+   JianPing Zeng comment here on 3 Feb 2018.  */
+#undef FORCE_SAME_LENGTH_ON_MOVE_MULTIPLE_WORDS
+#define FORCE_SAME_LENGTH_ON_MOVE_MULTIPLE_WORDS
+
+/* Define this macro to prevent some optimization in match.pd
+   because some architecture may not have some vector operators.
+   Csky vdsp donot have vetcor not operator.  */
+#undef TARGET_EXCLUDE_VECTOR_OPERATOR
+#define TARGET_EXCLUDE_VECTOR_OPERATOR \
+  ((TREE_TARGET_OPTION (target_option_default_node)) -> x_vdsp_noisa & BIT_NOT_EXPR)
+
+/* Sized for fixed-point types.  */
+
+#define SHORT_FRACT_TYPE_SIZE 8
+#define FRACT_TYPE_SIZE 16
+#define LONG_FRACT_TYPE_SIZE 32
+#define LONG_LONG_FRACT_TYPE_SIZE 64
+
+#define SHORT_ACCUM_TYPE_SIZE 16
+#define ACCUM_TYPE_SIZE 32
+#define LONG_ACCUM_TYPE_SIZE 64
+#define LONG_LONG_ACCUM_TYPE_SIZE 64
+
+#define MAX_FIXED_MODE_SIZE 64
+
 
 #endif /* GCC_CSKY_H */

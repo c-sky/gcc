@@ -9,3 +9,14 @@ $(srcdir)/config/csky/abiv2_csky_tables.opt: $(srcdir)/config/csky/abiv2_csky_ge
   $(srcdir)/config/csky/abiv2_csky_cores.def
 	$(SHELL) $(srcdir)/config/csky/abiv2_csky_genopt.sh $(srcdir)/config/csky > \
 		$(srcdir)/config/csky/abiv2_csky_tables.opt
+
+
+csky-builtins.o: $(srcdir)/config/csky/csky-builtins.c $(CONFIG_H) \
+  $(SYSTEM_H) coretypes.h $(TM_H) \
+  $(RTL_H) $(TREE_H) expr.h $(TM_P_H) $(RECOG_H) langhooks.h \
+  $(DIAGNOSTIC_CORE_H) $(OPTABS_H) \
+  $(srcdir)/config/csky/abiv2_csky-protos.h \
+  $(srcdir)/config/csky/csky-simd-builtin-types.def \
+  $(srcdir)/config/csky/csky_builtins.def
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+                $(srcdir)/config/csky/csky-builtins.c

@@ -4,12 +4,14 @@
 ;; -------------------------------------------------------------------------
 
 (define_insn "abssf2"
-  [(set (match_operand:SF         0 "register_operand" "=v,r")
-        (abs:SF (match_operand:SF 1 "register_operand" "v, r")))]
+  [(set (match_operand:SF         0 "register_operand" "=v,a,r")
+        (abs:SF (match_operand:SF 1 "register_operand" "v, 0,r")))]
   "CSKY_ISA_FEATURE(fpv2_sf)"
   "@
     fabss\t%0, %1
-    bclri\t%0, %1, 31")
+    bclri\t%0, %1, 31
+    bclri\t%0, %1, 31"
+  [(set_attr "length" "4,2,4")])
 
 (define_insn "absdf2"
   [(set (match_operand:DF         0 "register_operand" "=v")
@@ -547,6 +549,8 @@
         (match_operand:DF 1 "general_operand"      "r, F,?r,v,r,m,v,Q,v,m"))]
   "CSKY_ISA_FEATURE(fpv2_df)"
   "* return output_csky_movedouble(operands, DFmode);"
+  [(set (attr "length")
+        (symbol_ref "get_output_csky_movedouble_length (operands)"))]
 )
 
 ;; cstore SF

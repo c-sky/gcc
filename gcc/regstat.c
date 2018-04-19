@@ -160,7 +160,10 @@ regstat_bb_compute_ri (unsigned int bb_index,
       while (link)
 	{
 	  if (REG_NOTE_KIND (link) == REG_DEAD)
-	    REG_N_DEATHS (REGNO (XEXP (link, 0)))++;
+	    {
+	      gcc_assert(REGNO (XEXP (link, 0)) < reg_info_p_size);
+	      REG_N_DEATHS (REGNO (XEXP (link, 0)))++;
+	    }
 	  link = XEXP (link, 1);
 	}
 

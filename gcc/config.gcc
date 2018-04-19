@@ -1991,7 +1991,7 @@ csky-*)
     fi
     if test x${with_float} != x; then
         case ${with_float} in
-        soft | hard) ;;
+        soft | hard | softfp) ;;
         *)  echo "Unknown floating point type used in --with-float=$with_float" 1>&2
             exit 1
             ;;
@@ -2004,6 +2004,9 @@ csky-*)
       csky_abi=abiv2
       extra_options="${extra_options} csky/${csky_abi}_csky_tables.opt"
       tmake_file="${tmake_file} csky/${csky_abi}_t-csky"
+      extra_objs="${extra_objs} csky-builtins.o"
+      target_gtfiles="${target_gtfiles} \$(srcdir)/config/csky/csky-builtins.c"
+      extra_headers="csky_vdsp.h"
       ;;
     *)
       csky_abi=abiv1
@@ -2014,7 +2017,7 @@ csky-*)
     *linux-gnu*)
       with_cskylibc=glibc
       ;;
-    *linux-uclibc*)
+    *linux-uclibc)
       with_cskylibc=uclibc
       ;;
   esac
@@ -2024,29 +2027,31 @@ csky-*)
   out_file="csky/${csky_abi}_csky.c"
   tm_p_file="${tm_p_file} csky/${csky_abi}_csky-protos.h"
   extra_options="${extra_options} csky/${csky_abi}_csky.opt"
+  common_out_file="csky/csky-${csky_abi}-common.c"
 
   case ${target} in
-    csky-*-elf*)
+    csky*-elf*)
       tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/${csky_abi}_csky_elf.h"
       tmake_file="${tmake_file} csky/${csky_abi}_t-csky-elf"
       inhibit_libc=true
       csky_elf_libgcov=true
       default_use_cxa_atexit=no
+      use_gcc_stdint=wrap
       ;;
-    csky-*-ecos*)
+    csky*-ecos*)
       tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"
       tmake_file="${tmake_file} csky/${csky_abi}_t-csky-elf"
       inhibit_libc=true
       default_use_cxa_atexit=no
       ;;
-    csky-*-uclinux*)
+    csky*-uclinux*)
       tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-uclinux-elf.h"
       extra_options="${extra_options} linux.opt"
       tmake_file="${tmake_file} csky/${csky_abi}_t-csky-uclinux"
       tm_defines="${tm_defines} DEFAULT_LIBC=LIBC_UCLIBC"
       default_use_cxa_atexit=no
       ;;
-    csky-*-linux*)
+    csky*-linux*)
       tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} csky/csky-${csky_abi}-linux-elf.h"
       tmake_file="$tmake_file csky/${csky_abi}_t-csky-linux"
       extra_options="${extra_options} linux.opt"

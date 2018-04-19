@@ -3414,4 +3414,50 @@ csky_init_libfuncs(void)
     init_sync_libfuncs (UNITS_PER_WORD);
 }
 
+/* For use by FUNCTION_ARG_PADDING (MODE, TYPE).
+   Return true if an argument passed on the stack should be padded upwards,
+   i.e. if the least-significant byte has useful data. */
+
+bool
+csky_pad_arg_upward (machine_mode mode ATTRIBUTE_UNUSED, const_tree type)
+{
+  if (type && BYTES_BIG_ENDIAN && INTEGRAL_TYPE_P (type))
+    return false;
+
+  return true;
+}
+
+/* Similarly, for use by BLOCK_REG_PADDING (MODE, TYPE, FIRST).
+   Return !BYTES_BIG_ENDIAN if the least significant byte of the
+   register has useful data, and return the opposite if the most
+   significant byte does.  */
+
+bool
+csky_pad_reg_upward (machine_mode mode,
+                    tree type, int first ATTRIBUTE_UNUSED)
+{
+  if (BYTES_BIG_ENDIAN)
+    {
+      /* Small aggregates, small fixed-point types,
+         and small complex types are always padded upwards.  */
+      if (type)
+        {
+          if ((AGGREGATE_TYPE_P (type)
+               || TREE_CODE (type) == COMPLEX_TYPE
+               || FIXED_POINT_TYPE_P (type))
+              && int_size_in_bytes (type) <= 4)
+            return true;
+        }
+      else
+        {
+          if ((COMPLEX_MODE_P (mode) || ALL_FIXED_POINT_MODE_P (mode))
+              && GET_MODE_SIZE (mode) <= 4)
+            return true;
+        }
+    }
+
+  /* Otherwise, use default padding.  */
+  return !BYTES_BIG_ENDIAN;
+}
+
 #include "gt-abiv1-csky.h"

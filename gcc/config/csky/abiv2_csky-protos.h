@@ -19,7 +19,6 @@
 #define CSKY_LAST_HIGH_REGNUM         (CSKY_NGPR_REGS - 1)
 #define CSKY_FIRST_MINI_REGNUM        0
 #define CSKY_LAST_MINI_REGNUM         7
-#define CSKY_CC_REGNUM                33
 #define CSKY_HI_REGNUM                34
 #define CSKY_LO_REGNUM                35
 #define CSKY_LR_REGNUM                15
@@ -29,6 +28,7 @@
 
 #define CSKY_LD16_MAX_OFFSET(MODE)    (31 * GET_MODE_SIZE(MODE))
 #define CSKY_LD32_MAX_OFFSET(MODE)    (4095 * GET_MODE_SIZE(MODE))
+#define CSKY_VLD_MAX_OFFSET(MODE)     (256 * GET_MODE_SIZE(MODE))
 #define CSKY_LD16_OFFSET_MASK(MODE)   (CSKY_LD16_MAX_OFFSET (MODE) \
                                        + GET_MODE_SIZE (MODE) - 1)
 #define CSKY_ADDI16_MAX_IMM           256
@@ -63,6 +63,12 @@
 
 #define CSKY_CONST_OK_FOR_K(VALUE)  \
   (VALUE_BETWEEN(VALUE, 0, 31))
+
+#define CSKY_CONST_OK_FOR_Ut(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 0, 15))
+
+#define CSKY_CONST_OK_FOR_Uu(VALUE)  \
+  (VALUE_BETWEEN(VALUE, 1, 16))
 
 #define CSKY_CONST_OK_FOR_Ub(VALUE)  \
   (exact_log2 (VALUE & 0xFFFFFFFF) >= 0)
@@ -198,8 +204,10 @@ extern int constant_csky_inlinable (HOST_WIDE_INT value);
 extern bool shiftable_csky_imm8_const (unsigned HOST_WIDE_INT val);
 extern const char *output_csky_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                      enum machine_mode mode ATTRIBUTE_UNUSED);
+extern const char *output_csky_move_v (rtx operands[]);
 extern const char *output_csky_movedouble (rtx operands[],
                                            enum machine_mode mode ATTRIBUTE_UNUSED);
+extern const int get_output_csky_movedouble_length(rtx operands[]);
 extern const char *output_ck801_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
                                       enum machine_mode mode ATTRIBUTE_UNUSED);
 extern const char *output_ck801_movedouble (rtx operands[],
@@ -231,6 +239,7 @@ extern void csky_expand_prologue(void);
 extern void csky_expand_epilogue(void);
 extern const char *output_csky_return_instruction(void);
 extern const char *csky_unexpanded_epilogue(void);
+extern const int csky_get_unexpanded_epilogue_length(void);
 extern void set_csky_return_address (rtx source, rtx scratch);
 
 extern int symbol_mentioned_p (rtx x);
@@ -257,9 +266,22 @@ extern int csky_arch_isa_features[];
 
 #define TARGET_SOFT_TP      !TARGET_HARD_TP
 
-#define TARGET_SOFT_FPU     (csky_fpu_index == TARGET_FPU_fpv2_sf)
+#define TARGET_SINGLE_FPU     (csky_fpu_index == TARGET_FPU_fpv2_sf)
+#define TARGET_DOUBLE_FPU     (TARGET_HARD_FLOAT && !TARGET_SINGLE_FPU)
 
 #include "abiv2_csky_internal.h"
 extern const struct tune_params *current_tune;
+
+extern void csky_asm_output_opcode (FILE *);
+extern enum csky_cond_code maybe_get_csky_condition_code (rtx);
+extern void csky_final_prescan_insn (rtx_insn *);
+extern int csky_max_conditional_execute ();
+extern int csky_fixed_conditional_execute ();
+extern void csky_init_simd_builtin_types (void);
+extern bool csky_vector_mode_supported_p (machine_mode);
+extern void csky_init_builtins (void);
+extern tree csky_builtin_decl (unsigned, bool);
+extern rtx csky_expand_builtin (tree, rtx, rtx, machine_mode, int);
+extern void csky_const_bounds (rtx, HOST_WIDE_INT, HOST_WIDE_INT);
 
 #endif /* GCC_CSKY_PROTOS_H */

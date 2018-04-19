@@ -465,6 +465,8 @@ cond_exec_process_if_block (ce_if_block * ce_info,
   rtx_insn *else_start = NULL;	/* first insn in ELSE block or NULL */
   rtx_insn *else_end = NULL;	/* last insn + 1 in ELSE block */
   int max;			/* max # of insns to convert.  */
+  int min;                      /* min # of insns to convert.  */
+  int n_cond;                   /* number of conditional block */
   int then_mod_ok;		/* whether conditional mods are ok in THEN */
   rtx true_expr;		/* test for else block insns */
   rtx false_expr;		/* test for then block insns */
@@ -588,6 +590,21 @@ cond_exec_process_if_block (ce_if_block * ce_info,
 
   if (n_insns > max)
     return FALSE;
+
+#ifdef FIXED_CONDITIONAL_EXECUTE
+  min = FIXED_CONDITIONAL_EXECUTE;
+/* the number of insns must be multiples of the "min" */
+  for (n_cond = 1; n_cond < max/min; n_cond ++)
+    {
+      if (n_insns != min * n_cond)
+        continue;
+      else
+        break;
+    }
+
+  if (n_insns != min * n_cond)
+    return FALSE;
+#endif
 
   /* Map test_expr/test_jump into the appropriate MD tests to use on
      the conditionally executed code.  */
@@ -4179,6 +4196,7 @@ find_if_header (basic_block test_bb, int pass)
       && cond_exec_find_if_block (&ce_info))
     goto success;
 
+#ifndef FORBBID_TRAP_AND_CONVERT_TO_CONDITION
   if (targetm.have_trap ()
       && optab_handler (ctrap_optab, word_mode) != CODE_FOR_nothing
       && find_cond_trap (test_bb, then_edge, else_edge))
@@ -4192,6 +4210,7 @@ find_if_header (basic_block test_bb, int pass)
       if (find_if_case_2 (test_bb, then_edge, else_edge))
 	goto success;
     }
+#endif
 
   return NULL;
 

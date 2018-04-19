@@ -6433,6 +6433,7 @@ prune_ready_list (state_t temp_state, bool first_cycle_insn_p,
           if ((ready.n_ready > 0)
               && (!first_cycle_insn_p || (ready.n_ready != 1))
               && (i < ready.n_ready)
+              && targetm.sched.extra_resource_confilict != NULL
               && targetm.sched.extra_resource_confilict
                    (insn, &cost, last_nondebug_scheduled_insn))
             {

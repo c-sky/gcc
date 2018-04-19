@@ -190,3 +190,23 @@ mdoloop
 Target Report Var(flag_csky_doloop) Init(1) Undocumented
 Use Csky DSP V2.0 instructions bloop.
 
+marg-mode-compatible
+Target Report Var(flag_arg_mode_compatible) Init(0) Undocumented
+Compatible parameters mode size among INT to reduce insns, marg-mode-compatible is default.
+
+mlra
+Target Report Var(flag_lra) Init(1)
+Use lra instead of reload pass to perform cleanup after integrated register allocation.
+
+mvdsp-width=
+Target Report Joined RejectNegative UInteger Var(flag_csky_vdsp_width) Init(128)
+Set the 810 vdsp vector register width, the default is 128.
+
+mvdsp-noisa
+Target Report Joined RejectNegative UInteger Var(vdsp_noisa) Init(0) Save Undocumented
+Set the unsupported vdsp insns, the default is 0.
+
+mcsky-doloop-threshod=
+Target Report Joined RejectNegative Undocumented UInteger Var(flag_csky_doloop_threshod) Init(20)
+Set threshod as 20 by default for number of instructions in loop when performance
+doloop optimization.

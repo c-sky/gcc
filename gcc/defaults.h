@@ -1496,4 +1496,8 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define TARGET_UNSUPPORT_NEGATIVE_INDEX 0
 #endif
 
+#ifndef TARGET_EXCLUDE_VECTOR_OPERATOR
+#define TARGET_EXCLUDE_VECTOR_OPERATOR 0
+#endif
+
 #endif  /* ! GCC_DEFAULTS_H */

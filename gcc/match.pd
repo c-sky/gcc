@@ -527,9 +527,15 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
   { build_zero_cst (type); })
 
 /* Canonicalize X ^ ~0 to ~X.  */
-(simplify
+/* (simplify
   (bit_xor @0 integer_all_onesp@1)
   (bit_not @0))
+*/
+(simplify
+  (bit_xor @0 integer_all_onesp@1)
+  (if (!VECTOR_TYPE_P(type)
+      || !TARGET_EXCLUDE_VECTOR_OPERATOR)
+    (bit_not @0)))
 
 /* x & ~0 -> x  */
 (simplify
@@ -717,7 +723,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
   (if (tree_nop_conversion_p (type, TREE_TYPE (@0))
        && tree_nop_conversion_p (type, TREE_TYPE (@1)))
    (mult (convert @0) (convert (negate @1)))))
- 
+
 /* -(A + B) -> (-B) - A.  */
 (simplify
  (negate (plus:c @0 negate_expr_p@1))
@@ -1835,7 +1841,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
     (if (tree_int_cst_sgn (@1) < 0)
      (scmp @0 @2)
      (cmp @0 @2))))))
- 
+
 /* Simplify comparison of something with itself.  For IEEE
    floating-point, we can only do some of these simplifications.  */
 (for cmp (eq ge le)
@@ -1902,11 +1908,11 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
         }
       tree newtype
         = (TYPE_PRECISION (TREE_TYPE (@0)) > TYPE_PRECISION (type1)
-	   ? TREE_TYPE (@0) : type1); 
+	   ? TREE_TYPE (@0) : type1);
     }
     (if (TYPE_PRECISION (TREE_TYPE (@2)) > TYPE_PRECISION (newtype))
      (cmp (convert:newtype @0) (convert:newtype @1))))))
- 
+
  (simplify
   (cmp @0 REAL_CST@1)
   /* IEEE doesn't distinguish +0 and -0 in comparisons.  */
@@ -2250,7 +2256,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
  (simplify
   (cmp (bit_and@2 @0 integer_pow2p@1) @1)
   (icmp @2 { build_zero_cst (TREE_TYPE (@0)); })))
- 
+
 /* If we have (A & C) != 0 where C is the sign bit of A, convert
    this into A < 0.  Similarly for (A & C) == 0 into A >= 0.  */
 (for cmp (eq ne)
@@ -2401,7 +2407,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
         (if (cmp == LE_EXPR)
 	 (ge (convert:st @0) { build_zero_cst (st); })
 	 (lt (convert:st @0) { build_zero_cst (st); }))))))))))
- 
+
 (for cmp (unordered ordered unlt unle ungt unge uneq ltgt)
  /* If the second operand is NaN, the result is constant.  */
  (simplify
@@ -2939,7 +2945,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
   (if (wi::eq_p (@1, -1))
    (rdiv { build_real (type, dconst1); } @0))))
 
-/* Narrowing of arithmetic and logical operations. 
+/* Narrowing of arithmetic and logical operations.
 
    These are conceptually similar to the transformations performed for
    the C/C++ front-ends by shorten_binary_op and shorten_compare.  Long
@@ -3010,7 +3016,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
      (convert (bit_and (op (convert:utype @0) (convert:utype @1))
 	       (convert:utype @4))))))))
 
-/* Transform (@0 < @1 and @0 < @2) to use min, 
+/* Transform (@0 < @1 and @0 < @2) to use min,
    (@0 > @1 and @0 > @2) to use max */
 (for op (lt le gt ge)
      ext (min min max max)

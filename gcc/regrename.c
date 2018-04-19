@@ -293,7 +293,8 @@ merge_overlapping_regs (HARD_REG_SET *pset, struct du_head *head)
     {
       du_head_p other = regrename_chain_from_id (i);
       unsigned j = other->nregs;
-      gcc_assert (other != head);
+      if (other == head) continue;
+      /* gcc_assert (other != head);  */
       while (j-- > 0)
 	SET_HARD_REG_BIT (*pset, other->regno + j);
     }
