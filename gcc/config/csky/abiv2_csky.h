@@ -15,7 +15,8 @@
    | MASK_CONSTANT_POOL     \
    | MASK_DOUBLE_FLOAT      \
    | MASK_FDIVDU            \
-   | MASK_STACK_SIZE )
+   | MASK_STACK_SIZE        \
+   | MASK_HARD_TP )
 
 /* Run-time Target Specification.  */
 #define TARGET_SOFT_FLOAT		(csky_float_abi == CSKY_FLOAT_ABI_SOFT)

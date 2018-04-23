@@ -8,7 +8,6 @@
 #define CSKY_NPARM_REGS               4
 #define CSKY_FIRST_PARM_REG           0
 #define CSKY_NGPR_REGS                32
-#define CSKY_FIRST_RET_REG            0
 #define CSKY_NPARM_FREGS              4
 #define CSKY_FIRST_VFP_REGNUM         52
 #define CSKY_LAST_VFP_REGNUM          67
@@ -21,9 +20,7 @@
 #define CSKY_LAST_MINI_REGNUM         7
 #define CSKY_HI_REGNUM                34
 #define CSKY_LO_REGNUM                35
-#define CSKY_LR_REGNUM                15
 #define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
-#define CSKY_GB_REGNUM                28
 #define CSKY_TLS_REGNUM               31
 
 #define CSKY_LD16_MAX_OFFSET(MODE)    (31 * GET_MODE_SIZE(MODE))

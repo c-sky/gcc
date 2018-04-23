@@ -28,6 +28,9 @@
    (UNSPEC_CSKY_CASESI     24)
    ; Condition code pseudo register
    (CSKY_CC_REGNUM         33)
+   (CSKY_LR_REGNUM         15)
+   (CSKY_GB_REGNUM         28)
+   (CSKY_FIRST_RET_REG      0)
 ])
 
 (define_constants
@@ -3715,18 +3718,30 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
         (unspec:SI [(const_int 0)] UNSPEC_TLS))]
   "CSKY_ISA_FEATURE(tls) && TARGET_HARD_TP"
-  "mov\t%0, r31"
+  "mov\t%0, tls"
   [(set_attr "length" "2")]
 )
 
 ;; Do not clobber r1-r3, must use r0 for the first operand.
 (define_insn "load_tp_soft"
-  [(set     (reg:SI 0) (unspec:SI [(const_int 0)] UNSPEC_TLS))
-   (clobber (reg:SI 15))
+  [(set     (reg:SI CSKY_FIRST_RET_REG)
+            (unspec:SI [(const_int 0)] UNSPEC_TLS))
+   (clobber (reg:SI CSKY_LR_REGNUM))
    (clobber (reg:CC CSKY_CC_REGNUM))]
   "CSKY_ISA_FEATURE(tls) && TARGET_SOFT_TP"
   "jbsr\t__read_tp"
 )
+
+(define_insn "load_tp_soft_pic"
+  [(set (reg:SI CSKY_FIRST_RET_REG)
+        (unspec:SI [(const_int 0)] UNSPEC_TLS))
+   (use (reg:SI CSKY_GB_REGNUM))
+   (clobber (reg:SI CSKY_LR_REGNUM))
+   (clobber (reg:CC CSKY_CC_REGNUM))]
+  "flag_pic && CSKY_ISA_FEATURE(tls) && TARGET_SOFT_TP"
+  "lrw\tr0, __read_tp@PLT\;addu\tr0, gb\;ld.w\tr0, (r0, 0)\;jsr\tr0"
+)
+
 
 ;; -------------------------------------------------------------
 ;; Misc insns

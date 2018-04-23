@@ -3043,7 +3043,10 @@ csky_load_tp (rtx target)
       /* Always returned in r0.  Immediately copy the result into a pseudo,
          otherwise other uses of r0 (e.g. setting up function arguments) may
          clobber the value.  */
-      emit_insn (gen_load_tp_soft ());
+      if (flag_pic)
+        emit_insn (gen_load_tp_soft_pic ());
+      else
+        emit_insn (gen_load_tp_soft ());
       emit_move_insn (target, gen_rtx_REG (SImode, 0));
     }
   return target;

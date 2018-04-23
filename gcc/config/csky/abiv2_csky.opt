@@ -118,7 +118,7 @@ Target Report Mask(PUSHPOP)
 Generate code with push/pop instruction, -mpushpop is default.
 
 -mhard-tp
-Target RejectNegative Report Mask(HARD_TP)
+Target RejectNegative Report Mask(HARD_TP) Undocumented
 Generate TLS code use TLS register.
 
 mstrict-align
