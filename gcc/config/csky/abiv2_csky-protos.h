@@ -280,5 +280,6 @@ extern void csky_init_builtins (void);
 extern tree csky_builtin_decl (unsigned, bool);
 extern rtx csky_expand_builtin (tree, rtx, rtx, machine_mode, int);
 extern void csky_const_bounds (rtx, HOST_WIDE_INT, HOST_WIDE_INT);
+extern bool csky_legitimate_address_p (machine_mode, rtx, bool);
 
 #endif /* GCC_CSKY_PROTOS_H */

@@ -395,10 +395,25 @@
 ;; Load/Store 32 bit but mode is v4qi/v2hi,
 ;; and insn is still "ld.w/st.w and ldbi.w/stbi.w".
 
-(define_insn "mov<mode>"
+(define_expand "mov<mode>"
+  [(set (match_operand:V32QHI 0 "nonimmediate_operand"  "")
+        (match_operand:V32QHI 1 "nonimmediate_operand"  ""))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  {
+    if (can_create_pseudo_p ())
+      {
+        if (!REG_P (operands[0]))
+          operands[1] = force_reg (<MODE>mode, operands[1]);
+      }
+  }
+)
+
+(define_insn "*dspv2_mov<mode>"
   [(set (match_operand:V32QHI 0 "nonimmediate_operand"  "=r,m,r")
         (match_operand:V32QHI 1 "nonimmediate_operand"  "m,r, r"))]
-  "CSKY_ISA_FEATURE(dspv2)"
+  "CSKY_ISA_FEATURE(dspv2)
+   && (register_operand (operands[0], <MODE>mode)
+       || register_operand (operands[1], <MODE>mode))"
   "* return output_csky_move (insn, operands, <MODE>mode);"
   [(set_attr "length" "4,4,4")
    (set_attr "type" "alu,alu,alu")]
@@ -1426,10 +1441,25 @@
 ;; CK810 Vector DSP insns
 ;; ------------------------------------------------------------
 
-(define_insn "mov<mode>"
+(define_expand "mov<mode>"
+  [(set (match_operand:V128ALL 0 "nonimmediate_operand"  "")
+        (match_operand:V128ALL 1 "nonimmediate_operand"  ""))]
+  "CSKY_ISA_FEATURE(vdsp128)"
+  {
+    if (can_create_pseudo_p ())
+      {
+        if (!REG_P (operands[0]))
+          operands[1] = force_reg (<MODE>mode, operands[1]);
+      }
+  }
+)
+
+(define_insn "*vdsp128_mov<mode>"
   [(set (match_operand:V128ALL 0 "nonimmediate_operand"  "=v,v,m,v,r")
         (match_operand:V128ALL 1 "nonimmediate_operand"  "m,v,v, r,v"))]
-  "CSKY_ISA_FEATURE(vdsp128)"
+  "CSKY_ISA_FEATURE(vdsp128)
+   && (register_operand (operands[0], <MODE>mode)
+       || register_operand (operands[1], <MODE>mode))"
   "* return output_csky_move_v (operands);"
   [(set_attr "length" "4,4,4,4,4")
    (set_attr "type" "alu,alu,alu,alu,alu")]
@@ -2873,10 +2903,25 @@
 ;; CK810 Vector DSP for 64bit
 ;; ------------------------------------------------------------
 
-(define_insn "mov<mode>"
+(define_expand "mov<mode>"
+  [(set (match_operand:V64ALL 0 "nonimmediate_operand"  "")
+        (match_operand:V64ALL 1 "nonimmediate_operand"  ""))]
+  "CSKY_ISA_FEATURE(vdsp64)"
+  {
+    if (can_create_pseudo_p ())
+      {
+        if (!REG_P (operands[0]))
+          operands[1] = force_reg (<MODE>mode, operands[1]);
+      }
+  }
+)
+
+(define_insn "*vdsp64_mov<mode>"
   [(set (match_operand:V64ALL 0 "nonimmediate_operand"  "=v,v,m,v,r,?r")
         (match_operand:V64ALL 1 "nonimmediate_operand"  "m, v,v,r,v,r"))]
-  "CSKY_ISA_FEATURE(vdsp64)"
+  "CSKY_ISA_FEATURE(vdsp64)
+   && (register_operand (operands[0], <MODE>mode)
+       || register_operand (operands[1], <MODE>mode))"
   "* return output_csky_move_v (operands);"
   [(set_attr "length" "4,4,4,4,4,4")
    (set_attr "type" "alu,alu,alu,alu,alu,alu")]

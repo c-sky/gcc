@@ -200,3 +200,13 @@
   "memory operands whose address do not accept post_inc if condition is dspv2"
   (and (match_code "mem")
        (match_test "!CSKY_ISA_FEATURE(dspv2) || GET_CODE (XEXP (op, 0)) != POST_INC")))
+
+(define_memory_constraint "Ds"
+  "memory operands just valid for single float instructions."
+  (and (match_code "mem")
+       (match_test "csky_legitimate_address_p (SFmode, XEXP (op, 0), 0)")))
+
+(define_memory_constraint "Dd"
+  "memory operands just valid for double float instructions."
+  (and (match_code "mem")
+       (match_test "csky_legitimate_address_p (DFmode, XEXP (op, 0), 0)")))

@@ -2747,7 +2747,7 @@ csky_option_override (void)
 
   if (TARGET_HARD_FLOAT)
     {
-      if (TARGET_LIBCCRT)
+      if (TARGET_HARD_FLOAT_ABI && TARGET_LIBCCRT)
         error ("-mccrt and hard float are incompatible");
 
       const struct csky_fpu_desc *csky_selected_fpu = NULL;
@@ -2827,11 +2827,30 @@ csky_option_override (void)
     flag_cse_cc = 1;
   /* enable the option of -fschedule-insns and -fsched-pressure
      by default when target has 32 regs.  */
+  /* FIXME Temporarily close -fschedule-insns because it will
+     cause helix performance to decline, the better way is to
+     use schedule pressure algorithm: SCHED_PRESSURE_MODEL,
+     it can be optimized after completion of the full assessment.  */
+#if 0
   if (!global_options_set.x_flag_schedule_insns && !CSKY_ISA_FEATURE(hreg))
     {
       flag_schedule_insns = 0;
+    }
+  if (!global_options_set.x_flag_sched_pressure && !CSKY_ISA_FEATURE(hreg))
+    {
       flag_sched_pressure = 0;
     }
+#else
+  if (!global_options_set.x_flag_schedule_insns)
+    {
+      flag_schedule_insns = 0;
+    }
+  if (!global_options_set.x_flag_sched_pressure)
+    {
+      flag_sched_pressure = 0;
+    }
+#endif
+
   /* Backtrace need use frame pointer reg */
   if (TARGET_BACKTRACE)
       flag_omit_frame_pointer = 0;
@@ -3356,7 +3375,6 @@ ck810_legitimate_index_p (enum machine_mode mode, rtx index, int strict_p)
   return 0;
 }
 
-
 static int
 csky_legitimate_index_p (machine_mode mode, rtx index, int strict_p)
 {
@@ -3368,7 +3386,6 @@ csky_legitimate_index_p (machine_mode mode, rtx index, int strict_p)
     return ck810_legitimate_index_p (mode, index, strict_p);
 }
 
-
 /* Recognizes RTL expressions that are valid memory addresses for an
    instruction.  The MODE argument is the machine mode for the MEM
    expression that wants to use this address.
@@ -3377,7 +3394,7 @@ csky_legitimate_index_p (machine_mode mode, rtx index, int strict_p)
    convert common non-canonical forms to canonical form so that they will
    be recognized.  */
 
-static bool
+bool
 csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
 {
   enum rtx_code code = GET_CODE (addr);
@@ -3410,6 +3427,7 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
                   && csky_legitimate_index_p (mode, xop0, strict_p)));
     }
   else if (CSKY_ISA_FEATURE(dspv2) && code == POST_INC
+           && GET_MODE_CLASS (mode) == MODE_INT
            && GET_MODE_SIZE (mode) <= 4)
     {
       int regno;
@@ -5201,11 +5219,6 @@ output_csky_return_instruction(void)
 
   if (CSKY_FUNCTION_IS_INTERRUPT(func_type))
     {
-      if (CSKY_ISA_FEATURE(hreg))
-        {
-          asm_fprintf (asm_out_file, "\tldm\tr18-r31, (sp)\n");
-          asm_fprintf (asm_out_file, "\taddi\tsp, 56\n");
-        }
       if (TARGET_SINGLE_FPU)
         {
           asm_fprintf (asm_out_file, "\tfldms\tvr0-vr7, (sp)\n");
@@ -5215,6 +5228,11 @@ output_csky_return_instruction(void)
         {
           asm_fprintf (asm_out_file, "\tfldmd\tvr0-vr7, (sp)\n");
           asm_fprintf (asm_out_file, "\taddi\tsp, 64\n");
+        }
+      if (CSKY_ISA_FEATURE(hreg))
+        {
+          asm_fprintf (asm_out_file, "\tldm\tr18-r31, (sp)\n");
+          asm_fprintf (asm_out_file, "\taddi\tsp, 56\n");
         }
       return "ipop\n\tnir\n";
     }
@@ -8010,10 +8028,6 @@ csky_invalid_within_doloop (const rtx_insn *insn)
      any serial of CK803 CPU with R2 feature but no hreg feature.  */
   if (CSKY_ISA_FEATURE(dspv2) || CSKY_ISA_FEATURE(3E3r2))
     {
-      if ((CSKY_ISA_FEATURE(3E3r2) && !CSKY_ISA_FEATURE(hreg)) || CSKY_ISA_FEATURE(3E3r1))
-          if (num_loop_insns(l) > flag_csky_doloop_threshod)
-            return "Too many insns in this loop.";
-
       if (loop_depth(l) > 5)
         return "Nesting too deeply for this loop.";
     }

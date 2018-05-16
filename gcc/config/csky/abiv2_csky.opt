@@ -205,8 +205,3 @@ Set the 810 vdsp vector register width, the default is 128.
 mvdsp-noisa
 Target Report Joined RejectNegative UInteger Var(vdsp_noisa) Init(0) Save Undocumented
 Set the unsupported vdsp insns, the default is 0.
-
-mcsky-doloop-threshod=
-Target Report Joined RejectNegative Undocumented UInteger Var(flag_csky_doloop_threshod) Init(20)
-Set threshod as 20 by default for number of instructions in loop when performance
-doloop optimization.

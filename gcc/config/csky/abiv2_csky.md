@@ -352,12 +352,12 @@
 )
 
 (define_insn "*cskyv2_movsi"
-  [(set (match_operand:SI 0 "nonimmediate_operand"  "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v")
-        (match_operand:SI 1 "general_operand"       "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v"))]
+  [(set (match_operand:SI 0 "nonimmediate_operand"  "=r,r,r, r, r, r, r,r,m,*y,*r,*v,*r,*v,*v,*Ds")
+        (match_operand:SI 1 "general_operand"       "r, I,Un,Uc,Uo,mi,F,c,r,*r,*y,*r,*v,*v,*Ds,*v"))]
   "CSKY_ISA_FEATURE(E2)"
   "* return output_csky_move (insn, operands, SImode);"
-  [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4")
-   (set_attr "type" "alu,alu,alu,alu,alu,load,alu,alu,store,alu,alu,alu,alu,alu")]
+  [(set_attr "length" "4,4,4,4,8,4,4,4,4,4,4,4,4,4,4,4")
+   (set_attr "type" "alu,alu,alu,alu,alu,load,alu,alu,store,alu,alu,alu,alu,alu,load,store")]
 )
 
 (define_insn "*ck801_movsi"
@@ -617,12 +617,12 @@
 
 
 (define_insn "*csky_movdi"
-  [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,r,r,r,m,*r,*y,*v,*r,*v")
-        (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v"))]
+  [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,r,r,r,m,*r,*y,*v,*r,*v,*v, *Dd")
+        (match_operand:DI 1 "general_operand"       "i, F,r,m,r,*y,*r,*r,*v,*v,*Dd,*v"))]
  "CSKY_ISA_FEATURE(E2)"
  "* return output_csky_movedouble (operands, DImode);"
- [(set_attr "length" "8,8,16,16,16,16,16,16,16,16")
-  (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu,alu")]
+ [(set_attr "length" "8,8,16,16,16,16,16,16,16,4,4,4")
+  (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu,alu,alu,alu")]
 )
 
 (define_insn "*ck801_movdi"
@@ -1039,7 +1039,8 @@
   {
     if (CSKY_ISA_FEATURE(E1) && (GET_CODE (operands[2]) != REG))
         operands[2] = force_reg (DImode, operands[2]);
-    else if (CSKY_ISA_FEATURE (dspv2) && REG_P (operands[2]))
+    else if (CSKY_ISA_FEATURE (dspv2) && (REG_P (operands[2])
+                                          || SUBREG_P (operands[2])))
       {
         emit_insn (gen_dspv2_adddi3 (operands[0], operands[1], operands[2]));
         DONE;
@@ -4264,7 +4265,7 @@
   (use (match_operand 1 "" ""))]                       ; doloop_end pattern
   "(CSKY_ISA_FEATURE(dspv2)||CSKY_ISA_FEATURE(3E3r2)) && flag_csky_doloop"
   {
-    if (CSKY_ISA_FEATURE(dspv2) && !CSKY_ISA_FEATURE(3E3r2))
+    if (CSKY_ISA_FEATURE(dspv2) || CSKY_ISA_FEATURE(3E3r2))
     {
       rtx const1 = GEN_INT (1);
       emit_insn (gen_addsi3 (operands[0], operands[0], const1));
@@ -4278,7 +4279,7 @@
   (use (match_operand 1 "" ""))]       ; label
   "(CSKY_ISA_FEATURE(dspv2) || CSKY_ISA_FEATURE(3E3r2)) && flag_csky_doloop"
   {
-    if (GET_MODE (operands[0]) != SImode)
+    if (GET_MODE (operands[0]) != SImode || GET_CODE (operands[0]) != REG)
       FAIL;
     if (CSKY_ISA_FEATURE(3E3r2))
       emit_jump_insn (gen_fold_short_loop_with_bnezad (operands[0], operands[1]));
@@ -4290,28 +4291,70 @@
 
 (define_insn "doloop_end_internal_loop"
  [(set (pc)
-       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r")
-			 (const_int 0))
-		     (label_ref (match_operand 1 "" ""))
-		     (pc)))
+       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r,!m")
+       (const_int 0))
+         (label_ref (match_operand 1 "" ""))
+         (pc)))
   (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
-	(unspec [(const_int 0)] UNSPEC_DOLOOP)]
-  "CSKY_ISA_FEATURE(dspv2)"
-  "bloop\t%0, %1"
-)
+  (unspec [(const_int 0)] UNSPEC_DOLOOP)
+  (clobber (match_scratch:SI 2 "=X,&r"))
+  (clobber (reg:CC CSKY_CC_REGNUM))]
+  "CSKY_ISA_FEATURE(dspv2) && !CSKY_ISA_FEATURE(3E3r2)"
+  {
+    switch (which_alternative)
+    {
+    case 0:
+      if (get_attr_length (insn) == 4)
+        return "bloop\t%0, %1 #LOOP.1.1";
+
+      return "subi\t%0, %0, 1;\n\tjbnez\t%0, %1 # LOOP.1.1";
+    case 1:
+      return "ld.w\t%2, %0;\n\tsubi\t%2, %2, 1;\n\tst.w\t%2, %0;\n\tjbnez\t%2, %1 # LOOP.2.1";
+    default:
+      gcc_unreachable ();
+    }
+  }
+  ;; FIXME(Jianping Zeng), describe precisely the length attribute.
+  ;; 2018/4/28
+ [(set (attr "length")
+       (if_then_else (lt (abs (minus (match_dup 1) (pc)))
+         (const_int 4095))
+         (const_int 4)
+         (const_int 12)))])
 
 ;; emit bnezad
 (define_insn "fold_short_loop_with_bnezad"
  [(set (pc)
-       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r")
-       (const_int 1))
+       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r,!m")
+       (const_int 0))
          (label_ref (match_operand 1 "" ""))
          (pc)))
   (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
-  (unspec [(const_int 0)] UNSPEC_DOLOOP)]
+  (unspec [(const_int 0)] UNSPEC_DOLOOP)
+  (clobber (match_scratch:SI 2 "=X,&r"))
+  (clobber (reg:CC CSKY_CC_REGNUM))]
   "CSKY_ISA_FEATURE(3E3r2)"
-  "bnezad\t%0, %1"
-)
+  {
+    switch (which_alternative)
+    {
+    case 0:
+      if (get_attr_length (insn) == 4)
+        return "bnezad\t%0, %1 # short loop optimization";
+
+      return "subi\t%0, %0, 1;\n\tjbnez\t%0, %1 # LOOP.1.1";
+    case 1:
+      return "ld.w\t%2, %0;\n\tsubi\t%2, %2, 1;\n\tst.w\t%2, %0;\n\tjbnez\t%2, %1 # LOOP.2.1";
+    default:
+      gcc_unreachable ();
+    }
+  }
+  ;; FIXME(Jianping Zeng), describe precisely the length attribute.
+  ;; 2018/4/28
+ [(set (attr "length")
+       (if_then_else (lt (abs (minus (match_dup 1) (pc)))
+         (const_int 65534))
+         (const_int 4)
+         (const_int 12)))])
 
 ;;TODO emit decgt.
 ;;TODO emit declt.
