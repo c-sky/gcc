@@ -8177,7 +8177,8 @@ static bool
 csky_have_conditional_execution (void)
 {
   return (CSKY_ISA_FEATURE(2E3)
-          && !CSKY_TARGET_ARCH(CK860));
+          && !CSKY_TARGET_ARCH(CK860)
+          && !flag_schedule_insns_after_reload);
 }
 
 int
