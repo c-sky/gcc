@@ -4,7 +4,7 @@
 
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC                                                        \
-  "%{!shared: %{pie:Scrt1.o%s;:crt1.o%s}}                                     \
+  "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}}              \
   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
 
 #undef ENDFILE_SPEC
