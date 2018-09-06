@@ -993,6 +993,9 @@ while (0)
 /* Use r0 and r1 to pass exception handling information.  */
 #define EH_RETURN_DATA_REGNO(N) (((N) < 2) ? N : INVALID_REGNUM)
 
+#define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL) \
+  (((GLOBAL) ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4)
+
 /* How to renumber registers for dbx and gdb.  */
 extern const int csky_dbx_regno[];
 #define DBX_REGISTER_NUMBER(REGNO) ((unsigned int)csky_dbx_regno[REGNO])
