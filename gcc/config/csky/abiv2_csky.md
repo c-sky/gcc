@@ -2085,7 +2085,12 @@
         (div:SI (match_operand:SI 1 "register_operand" "r")
                 (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(div)"
-  "divs\t%0, %1, %2"
+  "*
+  {
+    if (CSKY_TARGET_ARCH(CK810))
+      return \"divs\t%0, %1, %2\n\tmov\t%0, %0\";
+    return \"divs\t%0, %1, %2\";
+  }"
   [(set_attr "predicable" "yes")]
 )
 
@@ -2094,7 +2099,12 @@
         (udiv:SI (match_operand:SI 1 "register_operand" "r")
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(div)"
-  "divu\t%0, %1, %2"
+  "*
+  {
+    if (CSKY_TARGET_ARCH(CK810))
+      return \"divu\t%0, %1, %2\n\tmov\t%0, %0\";
+    return \"divu\t%0, %1, %2\";
+  }"
   [(set_attr "predicable" "yes")]
 )
 
