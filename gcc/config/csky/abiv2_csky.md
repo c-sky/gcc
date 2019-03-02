@@ -4153,8 +4153,8 @@
 
 (define_insn "*cskyv2_indexsi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
-                          (const_int 4))
+        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
+                            (const_int 2))
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
   "ixw\t%0, %2, %1"
@@ -4162,8 +4162,8 @@
 
 (define_insn "*cskyv2_indexhi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
-                          (const_int 2))
+        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
+                            (const_int 1))
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
   "ixh\t%0, %2, %1"
