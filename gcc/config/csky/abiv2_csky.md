@@ -3188,6 +3188,15 @@
   [(set_attr "type" "cmp")]
 )
 
+(define_insn "*cskyv2_tstsi2"
+  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand" "b")
+                                               (match_operand:SI 1 "register_operand" "b"))
+                                       (const_int 0)))]
+  "CSKY_ISA_FEATURE(E2)"
+  "tst\t%0, %1"
+  [(set_attr "length" "2")
+   (set_attr "type" "cmp")]
+)
 
 ;; -------------------------------------------------------------------------
 ;; SImode unsigned integer comparisons
