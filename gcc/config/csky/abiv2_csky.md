@@ -3189,13 +3189,15 @@
 )
 
 (define_insn "*cskyv2_tstsi2"
-  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand" "b")
-                                               (match_operand:SI 1 "register_operand" "b"))
+  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand" "b,r")
+                                               (match_operand:SI 1 "register_operand" "b,r"))
                                        (const_int 0)))]
   "CSKY_ISA_FEATURE(E2)"
-  "tst\t%0, %1"
-  [(set_attr "length" "2")
-   (set_attr "type" "cmp")]
+  "@
+    tst\t%0, %1
+    tst\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "type" "cmp,cmp")]
 )
 
 ;; -------------------------------------------------------------------------
