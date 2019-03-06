@@ -4162,6 +4162,15 @@
 ;; index insns
 ;; ------------------------------------------------------------------------
 
+(define_insn "*cskyv2_indexdi_t"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
+                            (const_int 3))
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "ixd\t%0, %2, %1"
+)
+
 (define_insn "*cskyv2_indexsi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
         (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
