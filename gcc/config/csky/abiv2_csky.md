@@ -2000,6 +2000,16 @@
   [(set_attr "length" "4")]
 )
 
+(define_insn "*cskyv2_norsi3"
+  [(set (match_operand:SI                 0 "register_operand" "=b,r")
+        (not:SI (ior:SI (match_operand:SI 1 "register_operand" "%0,r")
+                        (match_operand:SI 2 "register_operand" "b,r"))))]
+  "CSKY_ISA_FEATURE(E2)"
+  "nor\t%0, %1, %2"
+  [(set_attr "type" "alu,alu")
+   (set_attr "predicable" "yes")
+   (set_attr "length" "2,4")]
+)
 
 ;; -------------------------------------------------------------------------
 ;; Xor instructions
@@ -3193,9 +3203,7 @@
                                                (match_operand:SI 1 "register_operand" "b,r"))
                                        (const_int 0)))]
   "CSKY_ISA_FEATURE(E2)"
-  "@
-    tst\t%0, %1
-    tst\t%0, %1"
+  "tst\t%0, %1"
   [(set_attr "length" "2,4")
    (set_attr "type" "cmp,cmp")]
 )
@@ -4278,6 +4286,19 @@
         (if_then_else (eq (reg:CC CSKY_CC_REGNUM) (const_int 0))
                       (label_ref (match_dup 4))
                       (pc)))]
+)
+
+(define_peephole2
+  [(set (match_operand:SI         0 "register_operand" "")
+        (ior:SI (match_operand:SI 1 "register_operand" "")
+                (match_operand:SI 2 "register_operand" "")))
+   (set (match_operand:SI  3 "register_operand" "")
+        (not:SI (match_dup 0)))
+]
+  "CSKY_ISA_FEATURE(E2)"
+  [(set (match_dup 0)
+        (not:SI (ior:SI (match_dup 1)
+                        (match_dup 2))))]
 )
 
 (define_expand "doloop_begin"
