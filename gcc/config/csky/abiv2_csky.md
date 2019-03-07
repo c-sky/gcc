@@ -786,10 +786,10 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  lsl  %0, %1, %2
-  lsl  %0, %1, %2
-  lsli %0, %1, %2
-  lsli %0, %1, %2"
+  lsl\t%0, %1, %2
+  lsl\t%0, %1, %2
+  lsli\t%0, %1, %2
+  lsli\t%0, %1, %2"
   [(set_attr "predicable" "yes")
    (set_attr "length" "2,4,2,4")]
 )
@@ -800,8 +800,8 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  lsli %0, %1, %2
-  lsl  %0, %1, %2"
+  lsli\t%0, %1, %2
+  lsl\t%0, %1, %2"
 )
 
 
@@ -819,10 +819,10 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  asr  %0, %1, %2
-  asr  %0, %1, %2
-  asri %0, %1, %2
-  asri %0, %1, %2"
+  asr\t%0, %1, %2
+  asr\t%0, %1, %2
+  asri\t%0, %1, %2
+  asri\t%0, %1, %2"
   [(set_attr "type" "alu,alu,alu,alu")
    (set_attr "predicable" "yes")
    (set_attr "length" "2,4,2,4")]
@@ -834,8 +834,8 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  asri %0, %1, %2
-  asr  %0, %1, %2"
+  asri\t%0, %1, %2
+  asr\t%0, %1, %2"
 )
 
 
@@ -853,10 +853,10 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  lsr  %0, %1, %2
-  lsr  %0, %1, %2
-  lsri %0, %1, %2
-  lsri %0, %1, %2"
+  lsr\t%0, %1, %2
+  lsr\t%0, %1, %2
+  lsri\t%0, %1, %2
+  lsri\t%0, %1, %2"
   [(set_attr "predicable" "yes")
    (set_attr "length" "2,4,2,4")]
 )
@@ -867,8 +867,8 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  lsri %0, %1, %2
-  lsr  %0, %1, %2"
+  lsri\t%0, %1, %2
+  lsr\t%0, %1, %2"
 )
 
 
@@ -886,10 +886,10 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  rotl  %0, %1, %2
-  rotl  %0, %1, %2
-  rotli %0, %1, %2
-  rotli %0, %1, %2"
+  rotl\t%0, %1, %2
+  rotl\t%0, %1, %2
+  rotli\t%0, %1, %2
+  rotli\t%0, %1, %2"
   [(set_attr "length" "2,4,2,4")]
 )
 
@@ -898,7 +898,7 @@
         (rotate:SI (match_operand:SI 1 "register_operand"     "0")
                    (match_operand:SI 2 "csky_arith_K_operand" "r")))]
   "CSKY_ISA_FEATURE(E1)"
-  "rotl %0, %1, %2"
+  "rotl\t%0, %1, %2"
 )
 
 
@@ -1611,7 +1611,14 @@
   [(set (match_operand:SI         0 "register_operand" "=r")
         (clz:SI (match_operand:SI 1 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
-  "ff1  %0,%1"
+  "ff1\t%0, %1"
+)
+
+(define_insn "ctzsi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+        (clz:SI (match_operand:SI 1 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "brev\t%0, %1\;ff1\t%0, %0"
 )
 
 ;; -------------------------------------------------------------------------
@@ -1629,7 +1636,7 @@
   [(set (match_operand:SI         0 "register_operand" "=b,r")
         (not:SI (match_operand:SI 1 "register_operand" "0,r")))]
   "CSKY_ISA_FEATURE(E2)"
-  "not %0, %1"
+  "not\t%0, %1"
   [(set_attr "predicable" "yes")
    (set_attr "length" "2,4")]
 )
@@ -1638,7 +1645,7 @@
   [(set (match_operand:SI         0 "register_operand" "=r")
         (not:SI (match_operand:SI 1 "register_operand" "0")))]
   "CSKY_ISA_FEATURE(E1)"
-  "not %0, %1"
+  "not\t%0, %1"
 )
 
 ;; -------------------------------------------------------------------------
@@ -3193,12 +3200,11 @@
                                                (match_operand:SI 1 "register_operand" "b,r"))
                                        (const_int 0)))]
   "CSKY_ISA_FEATURE(E2)"
-  "@
-    tst\t%0, %1
-    tst\t%0, %1"
+  "tst\t%0, %1"
   [(set_attr "length" "2,4")
    (set_attr "type" "cmp,cmp")]
 )
+
 
 ;; -------------------------------------------------------------------------
 ;; SImode unsigned integer comparisons
@@ -4161,6 +4167,15 @@
 ;; ------------------------------------------------------------------------
 ;; index insns
 ;; ------------------------------------------------------------------------
+
+(define_insn "*cskyv2_indexdi_t"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
+                            (const_int 3))
+                 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "ixd\t%0, %2, %1"
+)
 
 (define_insn "*cskyv2_indexsi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
