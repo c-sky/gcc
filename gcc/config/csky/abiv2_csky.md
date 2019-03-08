@@ -3196,13 +3196,22 @@
 )
 
 (define_insn "*cskyv2_tstsi2"
-  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand" "b,r")
-                                               (match_operand:SI 1 "register_operand" "b,r"))
+  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand"      "b,r,a,r")
+                                               (match_operand:SI 1 "csky_arith_Uf_operand" "b,r,Ub,Ub"))
                                        (const_int 0)))]
   "CSKY_ISA_FEATURE(E2)"
-  "tst\t%0, %1"
-  [(set_attr "length" "2,4")
-   (set_attr "type" "cmp,cmp")]
+  "*{
+     switch (which_alternative)
+       {
+       case 0:
+       case 1: return \"tst\t%0, %1\";
+       case 2:
+       case 3: return \"btsti\t%0, %P1\";
+       default: gcc_unreachable ();
+       }
+  }"
+  [(set_attr "length" "2,4,2,4")
+   (set_attr "type" "cmp,cmp,cmp,cmp")]
 )
 
 
@@ -4284,6 +4293,36 @@
         (if_then_else (eq (reg:CC CSKY_CC_REGNUM) (const_int 0))
                       (label_ref (match_dup 4))
                       (pc)))]
+)
+
+;; optimize if and only if the immediate is power of 2
+;;   and	rz, rx, imm
+;;   cmpnei	rz, 0
+;; to
+;;   btsti	rx, log2(imm)
+(define_peephole2
+  [(set (match_operand:SI 0 "register_operand" "")
+        (and:SI (match_operand:SI 1 "register_operand" "")
+                (match_operand:SI 2 "csky_literal_Ub_operand" "")))
+   (set (reg:CC CSKY_CC_REGNUM) (ne:CC (match_dup 0)
+                                       (const_int 0)))]
+   "CSKY_ISA_FEATURE(E2)"
+   [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_dup 1)
+                                                (match_dup 2))
+                                        (const_int 0)))]
+)
+(define_peephole2
+  [(set (match_operand:SI 0 "register_operand" "")
+        (match_operand:SI 1 "csky_literal_Ub_operand" ""))
+   (set (match_operand:SI 2 "register_operand" "")
+        (and:SI (match_operand:SI 3 "register_operand" "")
+                (match_dup 0)))
+   (set (reg:CC CSKY_CC_REGNUM) (ne:CC (match_dup 2)
+                                       (const_int 0)))]
+   "CSKY_ISA_FEATURE(E2)"
+   [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_dup 3)
+                                                (match_dup 1))
+                                        (const_int 0)))]
 )
 
 (define_expand "doloop_begin"
