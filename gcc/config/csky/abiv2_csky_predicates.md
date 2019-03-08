@@ -127,6 +127,15 @@
     return 0;
   })
 
+(define_predicate "csky_literal_Ub_operand"
+  (match_code "const_int")
+  {
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_Ub (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
 (define_predicate "csky_arith_Uu_operand"
   (match_code "reg,subreg,const_int")
   {
