@@ -175,6 +175,15 @@
     return 0;
   })
 
+(define_predicate "csky_literal_Uh_operand"
+  (match_code "const_int")
+  {
+    if (CONST_INT_P (op) && CSKY_CONST_OK_FOR_Uh (INTVAL(op)))
+      return 1;
+
+    return 0;
+  })
+
 ;; Nonzero if OP is a register or constant value of 1
 
 (define_predicate "csky_arith_int1_operand"
