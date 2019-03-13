@@ -1007,8 +1007,6 @@
    (set_attr "length" "2,2,4,2,2,4,2,2,4")]
 )
 
-;; TODO:define insn for addh.s32
-
 (define_insn "*dspv2_addhusi3"
   [(set (match_operand:SI          0 "register_operand"  "=r")
         (udiv:SI (plus:SI (match_operand:SI 1 "register_operand"  "%r")
@@ -1019,6 +1017,16 @@
   [(set_attr "length" "4")]
 )
 
+(define_insn "*dspv2_addhsi3"
+  [(set (match_operand:SI                  0 "register_operand"  "=r")
+        (div:SI (plus:SI (match_operand:SI 1 "register_operand"  "%r")
+                         (match_operand:SI 2 "register_operand"  "r"))
+                (const_int 2)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "addh.s32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
 (define_insn "*dspv2_addhusi3_2"
   [(set (match_operand:SI          0 "register_operand"  "=r")
         (lshiftrt:SI (plus:SI (match_operand:SI 1 "register_operand"  "%r")
@@ -1026,6 +1034,16 @@
                 (const_int 1)))]
   "CSKY_ISA_FEATURE(dspv2)"
   "addh.u32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "*dspv2_addhsi3_2"
+  [(set (match_operand:SI                       0 "register_operand"  "=r")
+        (ashiftrt:SI (plus:SI (match_operand:SI 1 "register_operand"  "%r")
+                              (match_operand:SI 2 "register_operand"  "r"))
+                     (const_int 1)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "addh.s32\t%0, %1, %2"
   [(set_attr "length" "4")]
 )
 
@@ -1205,9 +1223,7 @@
    (set_attr "length" "2,2,4,2,2,4,2,2,4")]
 )
 
-;; TODO:define insn for subh.s32
-
-(define_insn "*dspv2_addhusi3"
+(define_insn "*dspv2_subhusi3"
   [(set (match_operand:SI          0 "register_operand"  "=r")
         (udiv:SI (minus:SI (match_operand:SI 1 "register_operand"  "r")
                            (match_operand:SI 2 "register_operand"  "r"))
@@ -1217,13 +1233,33 @@
   [(set_attr "length" "4")]
 )
 
-(define_insn "*dspv2_addhusi3_2"
+(define_insn "*dspv2_subhsi3"
+  [(set (match_operand:SI                    0 "register_operand"  "=r")
+        (udiv:SI (minus:SI (match_operand:SI 1 "register_operand"  "r")
+                           (match_operand:SI 2 "register_operand"  "r"))
+                 (const_int 2)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "subh.s32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "*dspv2_subhusi3_2"
   [(set (match_operand:SI          0 "register_operand"  "=r")
         (lshiftrt:SI (minus:SI (match_operand:SI 1 "register_operand"  "%r")
                                (match_operand:SI 2 "register_operand"  "r"))
                      (const_int 1)))]
   "CSKY_ISA_FEATURE(dspv2)"
   "subh.u32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "*dspv2_subhsi3_2"
+  [(set (match_operand:SI                        0 "register_operand"  "=r")
+        (ashiftrt:SI (minus:SI (match_operand:SI 1 "register_operand"  "%r")
+                               (match_operand:SI 2 "register_operand"  "r"))
+                     (const_int 1)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "subh.s32\t%0, %1, %2"
   [(set_attr "length" "4")]
 )
 
@@ -4208,6 +4244,15 @@
    (set_attr "isa"    "def,2e3")]
 )
 
+(define_insn "bswaphi2"
+  [(set (match_operand:SI           0 "register_operand" "=b,r")
+        (bswap:SI (match_operand:SI 1 "register_operand" "b, r")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "revh\t%0, %1"
+  [(set_attr "length" "2,4")
+   (set_attr "isa"    "def,2e3")]
+)
+
 ;; ------------------------------------------------------------------------
 ;; max & min insns
 ;; ------------------------------------------------------------------------
@@ -4385,8 +4430,6 @@
 ;;TODO emit decgt.
 ;;TODO emit declt.
 ;;TODO emit decne.
-;;TODO emit dect.
 ;;TODO emit asrc.
-;;TODO emit brev.
-;;TODO emit ixd.
-;;TODO emit revb.
+;;TODO emit lsrc.
+;;TODO emit lslc.
