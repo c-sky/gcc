@@ -109,9 +109,9 @@
 #undef FUNCTION_PROFILER
 #define SAVE_LR     \
   "push\tlr"
-#define FUNCTION_PROFILER(file, labelno)                \
-{                                                       \
-    fprintf(file, "\t%s\n\tjbsr\t_mcount\n", SAVE_LR);  \
+#define FUNCTION_PROFILER(file, labelno)                                  \
+{                                                                         \
+    fprintf(file, "\t%s\n\tjbsr\t_mcount\n\tnop32\n\tnop32\n", SAVE_LR);  \
 }
 #define NO_PROFILE_COUNTERS 1
 /* This flag used to enable or disable the sepical
