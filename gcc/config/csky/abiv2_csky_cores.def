@@ -139,6 +139,7 @@ CSKY_CORE("ck810ftv", ck810ftv, ck810ftv, CK810,  CSKY_ISA_FEAT(CSKY_ISA_VDSP), 
 /* ck860 Architecture Processors */
 CSKY_CORE("ck860",    ck860,    ck860,    CK860,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 CSKY_CORE("ck860f",   ck860f,   ck860f,   CK860,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
+CSKY_CORE("ck860fv",  ck860fv,  ck860fv,  CK860,  CSKY_ISA_FEAT_NONE, CSKY_TUNE_GET(generic))
 #endif
 
 
