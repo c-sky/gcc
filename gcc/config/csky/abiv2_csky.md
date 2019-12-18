@@ -1616,7 +1616,7 @@
 
 (define_insn "ctzsi2"
   [(set (match_operand:SI         0 "register_operand" "=r")
-        (clz:SI (match_operand:SI 1 "register_operand" "r")))]
+        (ctz:SI (match_operand:SI 1 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
   "brev\t%0, %1\;ff1\t%0, %0"
 )
