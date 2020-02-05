@@ -57,6 +57,8 @@
                         ;   subsequent registers are in parallel (use ...)
                         ;   expressions.
   UNSPEC_DOLOOP         ;   Used to emit bloop instruction.
+  UNSPEC_MVC
+  UNSPEC_MVCV
   UNSPEC_PADDH_S
   UNSPEC_PADDH_U
   UNSPEC_PSUBH_S
@@ -716,7 +718,7 @@
 
 (define_insn "mvc"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (ne:SI (reg:CC CSKY_CC_REGNUM) (const_int 0)))]
+        (unspec:SI [(ne:SI (reg:CC CSKY_CC_REGNUM) (const_int 0))] UNSPEC_MVC))]
   "CSKY_ISA_FEATURE(E2)"
   "mvc\t%0"
   [(set_attr "length" "4")]
@@ -724,7 +726,7 @@
 
 (define_insn "mvcv"
   [(set (match_operand:SI 0 "register_operand" "=b,r")
-        (eq:SI (reg:CC CSKY_CC_REGNUM) (const_int 0)))]
+        (unspec:SI [(eq:SI (reg:CC CSKY_CC_REGNUM) (const_int 0))] UNSPEC_MVCV))]
   ""
   "mvcv\t%0"
   [(set_attr "length" "2,4")
