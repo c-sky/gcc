@@ -3,43 +3,11 @@
 ;; Constant
 ;; ------------------------------------------------------------------------
 (define_constants
-  [(PIC_SYMBOL_GOTPC       14)
-   (PIC_SYMBOL_GOTPC_GRS   15)
-   (PIC_SYMBOL_GOTOFF      1)
-   (PIC_SYMBOL_GOT         2)
-   (PIC_SYMBOL_PLT         3)
-   (PIC_SYMBOL_BSR         4)
-   (PIC_SYMBOL_GRS         5)
-
-   (FLAG_PUSH              8)
-   (FLAG_POP               9)
-   (FLAG_EPILOGUE          10)
-
-   (UNSPEC_TLS_BASE        19)
-   (UNSPEC_TLS             20)
-   (UNSPEC_TLS_LABEL       21)
-   (VUNSPEC_EH_RETURN      22)
-   ; this unspec is used to prevent the deletion of
-   ; instructions setting registers for EH handling
-   ; and stack frame generation.  Operand 0 is the
-   ; register to "use"
-   ; As USE insns are not meaningful after reload,
-   (UNSPEC_REGISTER_USE    23)
-   (UNSPEC_CSKY_CASESI     24)
-   ; Condition code pseudo register
+  [; Condition code pseudo register
    (CSKY_CC_REGNUM         33)
    (CSKY_LR_REGNUM         15)
    (CSKY_GB_REGNUM         28)
    (CSKY_FIRST_RET_REG      0)
-])
-
-(define_constants
-  [(VUNSPEC_ALIGN          0)
-   (VUNSPEC_POOL_LABEL     1)
-   (VUNSPEC_POOL_4         2)
-   (VUNSPEC_POOL_8         3)
-   (VUNSPEC_SYMBOL_REF     4)
-   (VUNSPEC_BLOCKAGE       5)
 ])
 
 ;; Supported TLS relocations
@@ -50,6 +18,41 @@
    (TLS_IE32               3)
    (TLS_LE32               4)]
 )
+
+(define_c_enum "unspec" [
+  PIC_SYMBOL_GOTPC
+  PIC_SYMBOL_GOTPC_GRS
+  PIC_SYMBOL_GOTOFF
+  PIC_SYMBOL_GOT
+  PIC_SYMBOL_PLT
+  PIC_SYMBOL_BSR
+  PIC_SYMBOL_GRS
+
+  FLAG_PUSH
+  FLAG_POP
+  FLAG_EPILOGUE
+
+  UNSPEC_TLS_BASE
+  UNSPEC_TLS
+  UNSPEC_TLS_LABEL
+  ; this unspec is used to prevent the deletion of
+  ; instructions setting registers for EH handling
+  ; and stack frame generation.  Operand 0 is the
+  ; register to "use"
+  ; As USE insns are not meaningful after reload,
+  UNSPEC_REGISTER_USE
+  UNSPEC_CSKY_CASESI
+])
+
+(define_c_enum "unspecv" [
+  VUNSPEC_ALIGN
+  VUNSPEC_POOL_LABEL
+  VUNSPEC_POOL_4
+  VUNSPEC_POOL_8
+  VUNSPEC_SYMBOL_REF
+  VUNSPEC_BLOCKAGE
+  VUNSPEC_EH_RETURN
+])
 
 (define_c_enum "unspec" [
   UNSPEC_PUSHPOP_MULT   ;   push or pop multiple' operation:
