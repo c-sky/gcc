@@ -8,12 +8,13 @@
 #if defined(__gnu_linux__)
    .section .init,"ax",@progbits
    ldw     lr, (sp, 0)
+   ldw     gb, (sp, 4)
    addi    sp, 8
    rts
 
    .section .fini,"ax",@progbits
    ldw     lr, (sp, 0)
-   addi    sp, 8
+   addi    sp, 4
    rts
 #else
 
