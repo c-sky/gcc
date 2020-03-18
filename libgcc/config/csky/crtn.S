@@ -8,13 +8,19 @@
 #if defined(__gnu_linux__)
    .section .init,"ax",@progbits
    ldw     lr, (sp, 0)
+#ifdef __CSKYABIV2__
    ldw     gb, (sp, 4)
+#endif
    addi    sp, 8
    rts
 
    .section .fini,"ax",@progbits
    ldw     lr, (sp, 0)
+#ifdef __CSKYABIV2__
    addi    sp, 4
+#else
+   addi    sp, 8
+#endif
    rts
 #else
 

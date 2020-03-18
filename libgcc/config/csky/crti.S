@@ -18,6 +18,31 @@
 #if PREINIT_FUNCTION_WEAK
   .global PREINIT_FUNCTION
   .weak PREINIT_FUNCTION
+#ifndef __CSKYABIV2__
+  .align 4
+  .type call_weak_fn, %function
+call_weak_fn:
+  //push    lr
+  subi    sp, 4
+  stw     lr, (sp)
+#ifdef  __PIC__
+  lrw     a2, PREINIT_FUNCTION@GOT
+  addu    a2, gb
+  ldw     a2, (a2)
+#else
+  lrw     a2, PREINIT_FUNCTION
+#endif
+  cmpnei  a2, 0
+  bf      1f
+  jsr     a2
+1:
+  //pop lr
+  ldw     lr, (sp)
+  addi    sp, 4
+  rts
+
+  .align 4
+#endif
 #else
   .hidden PREINIT_FUNCTION
 #endif
@@ -28,6 +53,7 @@
   .hidden _init
   .type _init, @function
 _init:
+#ifdef __CSKYABIV2__
   subi    sp, 8
   stw     lr, (sp, 0)
   stw     gb, (sp, 4)
@@ -51,6 +77,40 @@ _init:
   .literals
   .align  4
 2:
+#else
+  subi    sp, 8
+  stw     lr, (sp, 0)
+#ifdef __PIC__
+//  stw     gb, (sp, 4)
+  bsr     .Lgetpc
+.Lgetpc:
+  lrw     gb, .Lgetpc@GOTPC
+  add     gb, lr
+#endif
+#if PREINIT_FUNCTION_WEAK
+#ifdef __PIC__
+  lrw     a2, call_weak_fn@GOTOFF
+  add     a2, gb
+  jsr     a2
+#else
+  jsri    call_weak_fn
+#endif
+#else
+#ifdef  __PIC__
+  lrw     a2, PREINIT_FUNCTION@PLT
+  addu    a2, gb
+  ldw     a2, (a2)
+  jsr     a2
+#else
+  jsri    PREINIT_FUNCTION
+#endif
+
+#endif
+  br      2f
+  .literals
+  .align  4
+2:
+#endif
 
   .section .fini,"ax",@progbits
   .align 4
@@ -58,7 +118,11 @@ _init:
   .hidden _fini
   .type _fini, @function
 _fini:
-  subi    sp,4
+#ifdef __CSKYABIV2__
+  subi    sp, 4
+#else
+  subi    sp, 8
+#endif
   stw     lr, (sp, 0)
   br      2f
   .literals
