@@ -3414,7 +3414,15 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
     return 1;
   /* It is a pc-relative load, may be generated for constpool.  */
   else if (GET_CODE (addr) == LABEL_REF)
-    return 1;
+    {
+      rtx x = XEXP (addr, 0);
+      if (x != NULL
+          && GET_CODE (x) == UNSPEC_VOLATILE
+          && XINT (x, 1) == VUNSPEC_POOL_LABEL)
+        return 1;
+      else
+        return 0;
+    }
 
   if (code == PLUS)
     {
@@ -3661,6 +3669,7 @@ csky_output_constpool_label (FILE * stream, rtx x)
                                    INTVAL (XVECEXP (x, 0, 0)));
       assemble_name (stream, buf);
     }
+
 }
 
 
