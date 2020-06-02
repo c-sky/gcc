@@ -271,6 +271,14 @@ const enum reg_class riscv_regno_to_class[FIRST_PSEUDO_REGISTER] = {
   FP_REGS,	FP_REGS,	FP_REGS,	FP_REGS,
   FP_REGS,	FP_REGS,	FP_REGS,	FP_REGS,
   FRAME_REGS,	FRAME_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
+  V_REGS,       V_REGS,         V_REGS,         V_REGS,
 };
 
 /* Costs to use when optimizing for rocket.  */
@@ -353,6 +361,168 @@ riscv_parse_cpu (const char *cpu_string)
 
   error ("unknown cpu %qs for %<-mtune%>", cpu_string);
   return riscv_cpu_info_table;
+}
+
+static void *
+riscv_vector_vmode_supported_p(machine_mode mode, int *sew, int *lmul,
+                               bool enabled)
+{
+  typedef struct {
+    int lmul;
+    int sew;
+    machine_mode mode;
+    int enabled;
+  } vmode_t;
+
+  static vmode_t vmode[] = {
+    { -1, RVV_E8,  V8QImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E8,  V16QImode , TARGET_VECTOR },
+    { -1, RVV_E8,  V32QImode , TARGET_VECTOR },
+    { -1, RVV_E8,  V64QImode , TARGET_VECTOR },
+    { -1, RVV_E8,  V128QImode, TARGET_VECTOR },
+
+    { -1, RVV_E16, V4HImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E16, V8HImode  , TARGET_VECTOR },
+    { -1, RVV_E16, V16HImode , TARGET_VECTOR },
+    { -1, RVV_E16, V32HImode , TARGET_VECTOR },
+    { -1, RVV_E16, V64HImode , TARGET_VECTOR },
+
+    { -1, RVV_E32, V2SImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E32, V4SImode  , TARGET_VECTOR },
+    { -1, RVV_E32, V8SImode  , TARGET_VECTOR },
+    { -1, RVV_E32, V16SImode , TARGET_VECTOR },
+    { -1, RVV_E32, V32SImode , TARGET_VECTOR },
+
+    { -1, RVV_E64, V1DImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E64, V2DImode  , TARGET_VECTOR },
+    { -1, RVV_E64, V4DImode  , TARGET_VECTOR },
+    { -1, RVV_E64, V8DImode  , TARGET_VECTOR },
+    { -1, RVV_E64, V16DImode , TARGET_VECTOR },
+
+    { -1, -1, V1TImode , 0 },
+    { -1, -1, V2TImode , 0 },
+    { -1, -1, V4TImode , 0 },
+    { -1, -1, V8TImode , 0 },
+
+    { -1, RVV_E16, V4HFmode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E16, V8HFmode  , TARGET_VECTOR },
+    { -1, RVV_E16, V16HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V32HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V64HFmode , TARGET_VECTOR },
+
+    { -1, RVV_E32, V2SFmode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E32, V4SFmode  , TARGET_VECTOR },
+    { -1, RVV_E32, V8SFmode  , TARGET_VECTOR },
+    { -1, RVV_E32, V16SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V32SFmode , TARGET_VECTOR },
+
+    { -1, RVV_E64, V1DFmode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E64, V2DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V4DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V8DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V16DFmode , TARGET_VECTOR },
+
+    { 8, -1, ZI8mode , TARGET_VECTOR },
+    { 7, -1, WI7mode , TARGET_VECTOR },
+    { 3, -1, EI3mode , TARGET_VECTOR_VLEN(64) },
+    { 2, -1, ZI2mode , TARGET_VECTOR },
+    { 5, -1, FI5mode , TARGET_VECTOR_VLEN(64) },
+    { 7, -1, RI7mode , TARGET_VECTOR_VLEN(64) },
+    { 4, -1, ZI4mode , TARGET_VECTOR },
+    { 2, -1, TI2mode , TARGET_VECTOR_VLEN(64) },
+    { 3, -1, CI3mode , TARGET_VECTOR },
+    { 2, -1, XI2mode , TARGET_VECTOR },
+    { 6, -1, YI6mode , TARGET_VECTOR },
+    { 4, -1, XI4mode , TARGET_VECTOR },
+    { 6, -1, CI6mode , TARGET_VECTOR_VLEN(64) },
+    { 3, -1, YI3mode , TARGET_VECTOR },
+    { 5, -1, VI5mode , TARGET_VECTOR },
+    { 8, -1, XI8mode , TARGET_VECTOR_VLEN(64) },
+    { 4, -1, OI4mode , TARGET_VECTOR_VLEN(64) },
+    { 2, -1, OI2mode , TARGET_VECTOR },
+
+    { -1, RVV_E8, V24QImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E8, V40QImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E8, V48QImode  , TARGET_VECTOR },
+    { -1, RVV_E8, V56QImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E8, V80QImode  , TARGET_VECTOR },
+    { -1, RVV_E8, V96QImode  , TARGET_VECTOR },
+    { -1, RVV_E8, V112QImode , TARGET_VECTOR },
+
+    { -1, RVV_E16, V12HImode , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E16, V20HImode , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E16, V24HImode , TARGET_VECTOR },
+    { -1, RVV_E16, V28HImode , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E16, V40HImode , TARGET_VECTOR },
+    { -1, RVV_E16, V48HImode , TARGET_VECTOR },
+    { -1, RVV_E16, V56HImode , TARGET_VECTOR },
+
+    { -1, RVV_E32, V6SImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E32, V10SImode , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E32, V12SImode , TARGET_VECTOR },
+    { -1, RVV_E32, V14SImode , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E32, V20SImode , TARGET_VECTOR },
+    { -1, RVV_E32, V24SImode , TARGET_VECTOR },
+    { -1, RVV_E32, V28SImode , TARGET_VECTOR },
+
+    { -1, RVV_E64, V3DImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E64, V5DImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E64, V6DImode  , TARGET_VECTOR },
+    { -1, RVV_E64, V7DImode  , TARGET_VECTOR_VLEN(64) },
+    { -1, RVV_E64, V10DImode , TARGET_VECTOR },
+    { -1, RVV_E64, V12DImode , TARGET_VECTOR },
+    { -1, RVV_E64, V14DImode , TARGET_VECTOR },
+
+    { -1, RVV_E16, V12HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V20HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V24HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V28HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V40HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V48HFmode , TARGET_VECTOR },
+    { -1, RVV_E16, V56HFmode , TARGET_VECTOR },
+
+    { -1, RVV_E32, V6SFmode  , TARGET_VECTOR },
+    { -1, RVV_E32, V10SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V12SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V14SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V20SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V24SFmode , TARGET_VECTOR },
+    { -1, RVV_E32, V28SFmode , TARGET_VECTOR },
+
+    { -1, RVV_E64, V3DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V5DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V6DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V7DFmode  , TARGET_VECTOR },
+    { -1, RVV_E64, V10DFmode , TARGET_VECTOR },
+    { -1, RVV_E64, V12DFmode , TARGET_VECTOR },
+    { -1, RVV_E64, V14DFmode , TARGET_VECTOR },
+  };
+
+  if (!(TARGET_VECTOR || enabled))
+    return NULL;
+
+  for (int i = 0; i < ARRAY_SIZE(vmode); i++)
+    {
+      if (!(vmode[i].enabled || enabled))
+        continue;
+      if (vmode[i].mode != mode)
+        continue;
+      if (sew)
+        *sew = vmode[i].sew;
+      if (lmul)
+        *lmul = vmode[i].lmul;
+      return &vmode[i];
+    }
+
+  return NULL;
+}
+
+static bool
+riscv_vector_mode_supported_p (machine_mode mode)
+{
+  if (riscv_vector_vmode_supported_p(mode, NULL, NULL, false) != NULL)
+    return true;
+  return false;
 }
 
 /* Helper function for riscv_build_integer; arguments are as for
@@ -785,6 +955,41 @@ riscv_valid_lo_sum_p (enum riscv_symbol_type sym_type, machine_mode mode,
   return true;
 }
 
+/* Return true if address is a valid vector.  If it is, fill in INFO
+   appropriately.  STRICT_P is true if REG_OK_STRICT is in effect.  */
+
+static bool
+riscv_classify_address_vector (struct riscv_address_info *info, rtx x,
+  machine_mode mode, bool strict_p)
+{
+  if (reload_completed
+      && (GET_CODE (x) == LABEL_REF
+          || (GET_CODE (x) == CONST
+              && GET_CODE (XEXP (x, 0)) == PLUS
+              && GET_CODE (XEXP (XEXP (x, 0), 0)) == LABEL_REF
+              && CONST_INT_P (XEXP (XEXP (x, 0), 1)))))
+    return true;
+
+  switch (GET_CODE (x))
+    {
+    case REG:
+    case SUBREG:
+      info->type = ADDRESS_REG;
+      info->reg = x;
+      info->offset = const0_rtx;
+      return riscv_valid_base_register_p(x, mode, strict_p);
+
+    case PLUS:
+      info->type = ADDRESS_REG;
+      info->reg = XEXP (x, 0);
+      info->offset = XEXP (x, 1);
+      return INTVAL(info->offset) == 0;
+
+    default:
+      return false;
+    }
+}
+
 /* Return true if X is a valid address for machine mode MODE.  If it is,
    fill in INFO appropriately.  STRICT_P is true if REG_OK_STRICT is in
    effect.  */
@@ -793,6 +998,10 @@ static bool
 riscv_classify_address (struct riscv_address_info *info, rtx x,
 			machine_mode mode, bool strict_p)
 {
+  if (riscv_vector_mode_supported_p(mode)
+      && !riscv_classify_address_vector(info, x, mode, strict_p))
+    return false;
+
   switch (GET_CODE (x))
     {
     case REG:
@@ -908,6 +1117,8 @@ riscv_const_insns (rtx x)
 
     case CONST_DOUBLE:
     case CONST_VECTOR:
+      if (GET_CODE (x) == CONST_VECTOR && TARGET_VECTOR)
+        return 0;
       /* We can use x0 to load floating-point zero.  */
       return x == CONST0_RTX (GET_MODE (x)) ? 1 : 0;
 
@@ -1305,6 +1516,33 @@ riscv_force_address (rtx x, machine_mode mode)
   return x;
 }
 
+static rtx
+riscv_legitimize_vector_address (rtx x, machine_mode mode)
+{
+  rtx addr;
+
+  /* Handle BASE + OFFSET.  */
+  if (GET_CODE (x) == PLUS && CONST_INT_P (XEXP (x, 1))
+      && INTVAL (XEXP (x, 1)) != 0)
+    {
+      rtx base = XEXP (x, 0);
+      HOST_WIDE_INT offset = INTVAL (XEXP (x, 1));
+
+      if (!riscv_valid_base_register_p (base, mode, false))
+        base = copy_to_mode_reg (Pmode, base);
+
+        rtx base_reg = gen_reg_rtx (Pmode);
+        rtx val = force_operand (plus_constant (Pmode, base, offset), NULL_RTX);
+        emit_move_insn (base_reg, val);
+        base = base_reg;
+        offset = 0;
+
+      addr = riscv_add_offset (NULL, base, offset);
+      return riscv_force_address (addr, mode);
+    }
+  return x;
+}
+
 /* This function is used to implement LEGITIMIZE_ADDRESS.  If X can
    be legitimized in a way that the generic machinery might not expect,
    return a new address, otherwise return NULL.  MODE is the mode of
@@ -1315,6 +1553,9 @@ riscv_legitimize_address (rtx x, rtx oldx ATTRIBUTE_UNUSED,
 			  machine_mode mode)
 {
   rtx addr;
+
+  if (riscv_vector_mode_supported_p(mode))
+    return riscv_legitimize_vector_address(x, mode);
 
   if (riscv_tls_symbol_p (x))
     return riscv_legitimize_tls_address (x);
@@ -1865,6 +2106,17 @@ riscv_split_doubleword_move (rtx dest, rtx src)
        riscv_emit_move (riscv_subword (dest, true), riscv_subword (src, true));
      }
 }
+
+/* Return TRUE if X is a legitimate address vector.  */
+
+bool
+riscv_legitimize_address_vector_p (rtx x, machine_mode mode)
+{
+  struct riscv_address_info addr;
+  return riscv_vector_mode_supported_p(mode)
+         && riscv_classify_address_vector(&addr, x, mode, false);
+}
+
 
 /* Return the appropriate instructions to move SRC into DEST.  Assume
    that SRC is operand 1 and DEST is operand 0.  */
@@ -2635,6 +2887,9 @@ riscv_get_arg_info (struct riscv_arg_info *info, const CUMULATIVE_ARGS *cum,
 	}
     }
 
+  if (riscv_vector_mode_supported_p(mode))
+    return NULL_RTX;
+
   /* Work out the size of the argument.  */
   num_bytes = type ? int_size_in_bytes (type) : GET_MODE_SIZE (mode);
   num_words = (num_bytes + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
@@ -2745,6 +3000,9 @@ riscv_pass_by_reference (cumulative_args_t cum_v, machine_mode mode,
       if (info.num_fprs)
 	return false;
     }
+
+  if (riscv_vector_mode_supported_p(mode))
+    return true;
 
   /* Pass by reference if the data do not fit in two integer registers.  */
   return !IN_RANGE (size, 0, 2 * UNITS_PER_WORD);
@@ -4227,6 +4485,22 @@ static bool
 riscv_secondary_memory_needed (machine_mode mode, reg_class_t class1,
 			       reg_class_t class2)
 {
+  if (riscv_vector_mode_supported_p(mode))
+    {
+      if (class1 == class2 && class1 == V_REGS)
+        return false;
+
+      if (class1 == V_REGS && class2 == GR_REGS)
+        return true;
+      if (class1 == GR_REGS && class2 == V_REGS)
+        return true;
+
+      if (class1 == V_REGS && class2 == FP_REGS)
+        return true;
+      if (class1 == FP_REGS && class2 == V_REGS)
+        return true;
+    }
+
   return (GET_MODE_SIZE (mode) > UNITS_PER_WORD
 	  && (class1 == FP_REGS) != (class2 == FP_REGS));
 }
@@ -4248,6 +4522,9 @@ riscv_hard_regno_nregs (unsigned int regno, machine_mode mode)
   if (FP_REG_P (regno))
     return (GET_MODE_SIZE (mode) + UNITS_PER_FP_REG - 1) / UNITS_PER_FP_REG;
 
+  if (VR_REG_P (regno))
+    return (GET_MODE_SIZE (mode) + UNITS_PER_VR_REG - 1) / UNITS_PER_VR_REG;
+
   /* All other registers are word-sized.  */
   return (GET_MODE_SIZE (mode) + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
 }
@@ -4263,11 +4540,23 @@ riscv_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
     {
       if (!GP_REG_P (regno + nregs - 1))
 	return false;
+
+      if (TARGET_VECTOR)
+        {
+          if (riscv_vector_mode_supported_p(mode))
+            return false;
+        }
     }
   else if (FP_REG_P (regno))
     {
       if (!FP_REG_P (regno + nregs - 1))
 	return false;
+
+      if (TARGET_VECTOR)
+        {
+          if (riscv_vector_mode_supported_p(mode))
+            return false;
+        }
 
       if (GET_MODE_CLASS (mode) != MODE_FLOAT
 	  && GET_MODE_CLASS (mode) != MODE_COMPLEX_FLOAT)
@@ -4279,6 +4568,20 @@ riscv_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
 	  || (!call_used_regs[regno]
 	      && GET_MODE_UNIT_SIZE (mode) > UNITS_PER_FP_ARG))
 	return false;
+    }
+  else if (VR_REG_P (regno))
+    {
+      int sew = 0;
+      int mul = 0;
+      if (riscv_vector_mode_supported_p(mode)
+          && VR_REG_P (regno + nregs - 1)
+          && (!((regno - V_REG_FIRST) % nregs)
+              || (riscv_vector_vmode_supported_p(mode, &sew, &mul, false)
+                  && sew < 0
+                  && mul > 0
+                  && !((regno - V_REG_FIRST) % (nregs / mul)))))
+        return true;
+      return false;
     }
   else
     return false;
@@ -4314,6 +4617,9 @@ riscv_class_max_nregs (reg_class_t rclass, machine_mode mode)
 
   if (reg_class_subset_p (GR_REGS, rclass))
     return riscv_hard_regno_nregs (GP_REG_FIRST, mode);
+
+  if (reg_class_subset_p (V_REGS, rclass))
+    return riscv_hard_regno_nregs (V_REG_FIRST, mode);
 
   return 0;
 }
@@ -4579,6 +4885,12 @@ riscv_conditional_register_usage (void)
     {
       for (int regno = FP_REG_FIRST; regno <= FP_REG_LAST; regno++)
 	call_used_regs[regno] = 1;
+    }
+
+  if (!TARGET_VECTOR)
+    {
+      for (int regno = V_REG_FIRST; regno <= V_REG_LAST; regno++)
+        fixed_regs[regno] = call_used_regs[regno] = 1;
     }
 }
 
@@ -4865,8 +5177,11 @@ riscv_slow_unaligned_access (machine_mode, unsigned int)
 /* Implement TARGET_CAN_CHANGE_MODE_CLASS.  */
 
 static bool
-riscv_can_change_mode_class (machine_mode, machine_mode, reg_class_t rclass)
+riscv_can_change_mode_class (machine_mode from, machine_mode to, reg_class_t rclass)
 {
+  if (riscv_vector_mode_supported_p(from) && !riscv_vector_mode_supported_p(to))
+    return false;
+
   return !reg_classes_intersect_p (FP_REGS, rclass);
 }
 
@@ -4918,6 +5233,122 @@ riscv_hard_regno_rename_ok (unsigned from_regno ATTRIBUTE_UNUSED,
      saved by the prologue, even if they would normally be
      call-clobbered.  */
   return !cfun->machine->interrupt_handler_p || df_regs_ever_live_p (to_regno);
+}
+
+/* Implement TARGET_MANGLE_TYPE.  */
+
+extern const char *riscv_mangle_builtin_type (const_tree type);
+static const char *
+riscv_mangle_type (const_tree type)
+{
+  /* Mangle riscv-specific internal types.  TYPE_NAME is non-NULL_TREE for
+    builtin types.  */
+  if (TYPE_NAME (type) != NULL)
+    return riscv_mangle_builtin_type (type);
+
+  /* Use the default mangling.  */
+  return NULL;
+}
+
+rtx
+riscv_emit_vsetvli_base(machine_mode mode, rtx gvl, rtx avl, rtx nf)
+{
+  int isew = -1;
+  riscv_vector_vmode_supported_p(mode, &isew, NULL, false);
+  gcc_assert(isew != -1);
+  rtx sew = gen_rtx_CONST_INT(VOIDmode, isew);
+
+  int mul = (GET_MODE_SIZE (mode) + UNITS_PER_VR_REG - 1) / UNITS_PER_VR_REG;
+
+  if (nf)
+    {
+      int nf_value = INTVAL (nf);
+      mul /= nf_value;
+    }
+
+  gcc_assert(exact_log2(mul) != -1);
+  rtx lmul = gen_rtx_CONST_INT(VOIDmode, exact_log2(mul));
+
+  if (avl == NULL_RTX
+      || (REG_P(avl) && REGNO(avl) == 0))
+    emit_insn(gen_riscv_vsetvli_max(gvl, sew, lmul));
+  else
+    emit_insn(gen_riscv_vsetvli(gvl, avl, sew, lmul));
+  return gvl;
+}
+
+rtx
+riscv_emit_vsetvli(machine_mode mode, rtx gvl, rtx avl)
+{
+  return riscv_emit_vsetvli_base(mode, gvl, avl, NULL);
+}
+
+rtx
+riscv_emit_vsetvli_max(machine_mode mode)
+{
+  rtx gvl = gen_rtx_REG(SImode, 0);
+  return riscv_emit_vsetvli(mode, gvl, NULL_RTX);
+}
+
+const char *
+riscv_output_vector_sew(int index)
+{
+  const char *sew[] = {"e8", "e16", "e32", "e64"};
+  return sew[index];
+}
+
+const char *
+riscv_output_vector_lmul(int index)
+{
+  const char *lmul[] = {"m1", "m2", "m4", "m8"};
+  return lmul[index];
+}
+
+const char *
+riscv_output_vector_insn(machine_mode mode, const char *insn)
+{
+  return insn;
+}
+
+/* Scheduling pass is now finished.  */
+int sched_finish_global = 0;
+static void
+riscv_sched_finish_global (FILE *dump ATTRIBUTE_UNUSED,
+                           int sched_verbose ATTRIBUTE_UNUSED)
+{
+  if (reload_completed)
+    sched_finish_global = 1;
+}
+
+static void
+riscv_asm_function_prologue(FILE *)
+{
+  sched_finish_global = 0;
+}
+
+static bool
+riscv_array_mode_supported_p (machine_mode mode,
+                              unsigned HOST_WIDE_INT nelems)
+{
+  if (riscv_vector_mode_supported_p(mode))
+    return true;
+  return false;
+}
+
+/* Implement TARGET_SCALAR_MODE_SUPPORTED_P - return FALSE
+   if MODE is Vector mode, and punt to the generic implementation otherwise.  */
+
+static bool
+riscv_scalar_mode_supported_p (scalar_mode mode)
+{
+  int sew = 0;
+  int mul = 0;
+  if (riscv_vector_vmode_supported_p(mode, &sew, &mul, true)
+      && sew < 0
+      && mul > 0)
+    return false;
+
+  return default_scalar_mode_supported_p (mode);
 }
 
 /* Initialize the GCC target structure.  */
@@ -5093,6 +5524,26 @@ riscv_hard_regno_rename_ok (unsigned from_regno ATTRIBUTE_UNUSED,
 /* The low bit is ignored by jump instructions so is safe to use.  */
 #undef TARGET_CUSTOM_FUNCTION_DESCRIPTORS
 #define TARGET_CUSTOM_FUNCTION_DESCRIPTORS 1
+
+
+#undef TARGET_SCALAR_MODE_SUPPORTED_P
+#define TARGET_SCALAR_MODE_SUPPORTED_P riscv_scalar_mode_supported_p
+
+#undef TARGET_VECTOR_MODE_SUPPORTED_P
+#define TARGET_VECTOR_MODE_SUPPORTED_P riscv_vector_mode_supported_p
+
+
+#undef TARGET_MANGLE_TYPE
+#define TARGET_MANGLE_TYPE riscv_mangle_type
+
+#undef TARGET_ARRAY_MODE_SUPPORTED_P
+#define TARGET_ARRAY_MODE_SUPPORTED_P riscv_array_mode_supported_p
+
+#undef TARGET_SCHED_FINISH_GLOBAL
+#define TARGET_SCHED_FINISH_GLOBAL riscv_sched_finish_global
+
+#undef  TARGET_ASM_FUNCTION_PROLOGUE
+#define TARGET_ASM_FUNCTION_PROLOGUE riscv_asm_function_prologue
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

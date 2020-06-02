@@ -514,6 +514,7 @@ riscv*)
 	cpu_type=riscv
 	extra_objs="riscv-builtins.o riscv-c.o"
 	d_target_objs="riscv-d.o"
+	extra_headers="riscv-vector.h"
 	;;
 rs6000*-*-*)
 	extra_options="${extra_options} g.opt fused-madd.opt rs6000/rs6000-tables.opt"

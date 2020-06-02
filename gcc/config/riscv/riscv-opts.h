@@ -46,4 +46,10 @@ enum riscv_microarchitecture_type {
 };
 extern enum riscv_microarchitecture_type riscv_microarchitecture;
 
+enum riscv_vlen_bits {
+  VLEN_64 = 64,
+  VLEN_128 = 128
+};
+extern enum riscv_vlen_bits riscv_vlen;
+
 #endif /* ! GCC_RISCV_OPTS_H */

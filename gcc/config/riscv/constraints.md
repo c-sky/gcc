@@ -27,6 +27,15 @@
 (define_register_constraint "j" "SIBCALL_REGS"
   "@internal")
 
+(define_register_constraint "v" "TARGET_VECTOR ? V_REGS : NO_REGS"
+  "v0 - v31")
+
+(define_register_constraint "u" "TARGET_VECTOR ? V_NOMASK_REGS : NO_REGS"
+  "v1 - v31")
+
+(define_register_constraint "w" "TARGET_VECTOR ? VMASK_REGS : NO_REGS"
+  "vector mask register v0.")
+
 ;; Avoid using register t0 for JALR's argument, because for some
 ;; microarchitectures that is a return-address stack hint.
 (define_register_constraint "l" "JALR_REGS"
@@ -76,3 +85,9 @@
    A constant @code{move_operand}."
   (and (match_operand 0 "move_operand")
        (match_test "CONSTANT_P (op)")))
+
+(define_memory_constraint "Qmv"
+ "@internal
+  An address valid for vector instructions."
+ (and (match_code "mem")
+      (match_test "riscv_legitimize_address_vector_p (XEXP(op, 0), GET_MODE(op))")))

@@ -27,6 +27,14 @@
   (ior (match_operand 0 "const_arith_operand")
        (match_operand 0 "register_operand")))
 
+(define_predicate "const_K_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) >= 0 && INTVAL (op) <= 31")))
+
+(define_predicate "const_M_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) >= -16 && INTVAL (op) <= 15")))
+
 (define_predicate "const_csr_operand"
   (and (match_code "const_int")
        (match_test "IN_RANGE (INTVAL (op), 0, 31)")))
@@ -198,3 +206,19 @@
 
 (define_predicate "fp_branch_comparison"
   (match_code "unordered,ordered,unlt,unge,unle,ungt,uneq,ltgt,ne,eq,lt,le,gt,ge"))
+
+(define_predicate "vmask_mode_register_operand"
+  (match_operand 0 "register_operand")
+  {
+     if (TARGET_VECTOR_VLEN(64))
+       return GET_MODE (op) == V8QImode;
+     else if (TARGET_VECTOR_VLEN(128))
+       return GET_MODE (op) == V16QImode;
+     else
+       gcc_unreachable ();
+  }
+)
+
+(define_predicate "riscv_vector_mem_operand"
+  (and (match_code "mem")
+       (match_test "riscv_legitimize_address_vector_p (XEXP(op, 0), GET_MODE(op))")))

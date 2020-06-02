@@ -83,6 +83,7 @@
 
 (include "predicates.md")
 (include "constraints.md")
+(include "iterators.md")
 
 ;; ....................
 ;;
@@ -2463,3 +2464,6 @@
 (include "pic.md")
 (include "generic.md")
 (include "sifive-7.md")
+
+(include "riscv-v.md")
+(include "riscv-v-float.md")

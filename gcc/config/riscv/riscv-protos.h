@@ -59,6 +59,15 @@ extern const char *riscv_output_return ();
 extern void riscv_expand_int_scc (rtx, enum rtx_code, rtx, rtx);
 extern void riscv_expand_float_scc (rtx, enum rtx_code, rtx, rtx);
 extern void riscv_expand_conditional_branch (rtx, enum rtx_code, rtx, rtx);
+extern bool riscv_legitimize_address_vector_p (rtx, machine_mode);
+extern rtx riscv_emit_vsetvli_max(machine_mode);
+extern rtx riscv_emit_vsetvli(machine_mode, rtx, rtx);
+extern rtx riscv_emit_vsetvli_base(machine_mode, rtx, rtx, rtx);
+#define riscv_output_vector_str(x) (#x)
+extern const char *riscv_output_vector_insn(machine_mode, const char *);
+extern const char *riscv_output_vector_sew(int);
+extern const char *riscv_output_vector_lmul(int);
+extern int sched_finish_global;
 #endif
 extern rtx riscv_legitimize_call_address (rtx);
 extern void riscv_set_return_address (rtx, rtx);

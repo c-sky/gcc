@@ -24,6 +24,8 @@ along with GCC; see the file COPYING3.  If not see
 
 #include "config/riscv/riscv-opts.h"
 
+#include "riscv-v.h"
+
 /* Target CPU builtins.  */
 #define TARGET_CPU_CPP_BUILTINS() riscv_cpu_cpp_builtins (pfile)
 
@@ -232,9 +234,10 @@ along with GCC; see the file COPYING3.  If not see
    - 32 floating point registers
    - 2 fake registers:
 	- ARG_POINTER_REGNUM
-	- FRAME_POINTER_REGNUM */
+	- FRAME_POINTER_REGNUM
+   - 32 vector registers */
 
-#define FIRST_PSEUDO_REGISTER 66
+#define FIRST_PSEUDO_REGISTER 98
 
 /* x0, sp, gp, and tp are fixed.  */
 
@@ -246,7 +249,10 @@ along with GCC; see the file COPYING3.  If not see
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
   /* Others.  */							\
-  1, 1									\
+  1, 1,									\
+  /* Vector registers.  */					        \
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
 }
 
 /* a0-a7, t0-t6, fa0-fa7, and ft0-ft11 are volatile across calls.
@@ -260,7 +266,10 @@ along with GCC; see the file COPYING3.  If not see
   1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,			\
   1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,			\
   /* Others.  */							\
-  1, 1									\
+  1, 1,									\
+  /* Vector registers.  */	             				\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
 }
 
 /* Internal macros to classify an ISA register's type.  */
@@ -358,6 +367,9 @@ enum reg_class
   GR_REGS,			/* integer registers */
   FP_REGS,			/* floating-point registers */
   FRAME_REGS,			/* arg pointer and frame pointer */
+  VMASK_REGS,                   /* vector mask register */
+  V_NOMASK_REGS,                /* Vector registers except vector mask register */
+  V_REGS,                       /* Vector registers */
   ALL_REGS,			/* all registers */
   LIM_REG_CLASSES		/* max value + 1 */
 };
@@ -378,6 +390,9 @@ enum reg_class
   "GR_REGS",								\
   "FP_REGS",								\
   "FRAME_REGS",								\
+  "VMASK_REGS",                                                         \
+  "V_NOMASK_REGS",                                                      \
+  "V_REGS",                                                             \
   "ALL_REGS"								\
 }
 
@@ -394,13 +409,16 @@ enum reg_class
 
 #define REG_CLASS_CONTENTS						\
 {									\
-  { 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
-  { 0xf00000c0, 0x00000000, 0x00000000 },	/* SIBCALL_REGS */	\
-  { 0xffffffc0, 0x00000000, 0x00000000 },	/* JALR_REGS */		\
-  { 0xffffffff, 0x00000000, 0x00000000 },	/* GR_REGS */		\
-  { 0x00000000, 0xffffffff, 0x00000000 },	/* FP_REGS */		\
-  { 0x00000000, 0x00000000, 0x00000003 },	/* FRAME_REGS */	\
-  { 0xffffffff, 0xffffffff, 0x00000003 }	/* ALL_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
+  { 0xf00000c0, 0x00000000, 0x00000000, 0x00000000 },	/* SIBCALL_REGS */	\
+  { 0xffffffc0, 0x00000000, 0x00000000, 0x00000000 },	/* JALR_REGS */		\
+  { 0xffffffff, 0x00000000, 0x00000000, 0x00000000 },	/* GR_REGS */		\
+  { 0x00000000, 0xffffffff, 0x00000000, 0x00000000 },	/* FP_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000003, 0x00000000 },	/* FRAME_REGS */	\
+  { 0x00000000, 0x00000000, 0x00000004, 0x00000000 },   /* VMASK_REGS */        \
+  { 0x00000000, 0x00000000, 0xfffffff8, 0x00000003 },   /* V_NOMASK_REGS */     \
+  { 0x00000000, 0x00000000, 0xfffffffc, 0x00000003 },	/* V_REGS */	        \
+  { 0xffffffff, 0xffffffff, 0xffffffff, 0x00000003 },	/* ALL_REGS */		\
 }
 
 /* A C expression whose value is a register class containing hard
@@ -442,7 +460,10 @@ enum reg_class
   40, 41, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,			\
   /* None of the remaining classes have defined call-saved		\
      registers.  */							\
-  64, 65								\
+  64, 65,								\
+  /* Call-clobbered VRs.  */                                            \
+  74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,       \
+  90, 91, 92, 93, 94, 95, 96, 97, 66, 67, 68, 69, 70, 71, 72, 73,       \
 }
 
 /* True if VALUE is a signed 12-bit number.  */
@@ -689,7 +710,12 @@ typedef struct {
   "fs0", "fs1", "fa0", "fa1", "fa2", "fa3", "fa4", "fa5",	\
   "fa6", "fa7", "fs2", "fs3", "fs4", "fs5", "fs6", "fs7",	\
   "fs8", "fs9", "fs10","fs11","ft8", "ft9", "ft10","ft11",	\
-  "arg", "frame", }
+  "arg", "frame", \
+  "v0",  "v1",  "v2",  "v3",  "v4",  "v5",  "v6",  "v7",  \
+  "v8",  "v9",  "v10", "v11", "v12", "v13", "v14", "v15", \
+  "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23", \
+  "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31", \
+}
 
 #define ADDITIONAL_REGISTER_NAMES					\
 {									\
@@ -757,6 +783,38 @@ typedef struct {
   { "f29",	29 + FP_REG_FIRST },					\
   { "f30",	30 + FP_REG_FIRST },					\
   { "f31",	31 + FP_REG_FIRST },					\
+  { "v0",	 0 + V_REG_FIRST },					\
+  { "v1",	 1 + V_REG_FIRST },					\
+  { "v2",	 2 + V_REG_FIRST },					\
+  { "v3",	 3 + V_REG_FIRST },					\
+  { "v4",	 4 + V_REG_FIRST },					\
+  { "v5",	 5 + V_REG_FIRST },					\
+  { "v6",	 6 + V_REG_FIRST },					\
+  { "v7",	 7 + V_REG_FIRST },					\
+  { "v8",	 8 + V_REG_FIRST },					\
+  { "v9",	 9 + V_REG_FIRST },					\
+  { "v10",	10 + V_REG_FIRST },					\
+  { "v11",	11 + V_REG_FIRST },					\
+  { "v12",	12 + V_REG_FIRST },					\
+  { "v13",	13 + V_REG_FIRST },					\
+  { "v14",	14 + V_REG_FIRST },					\
+  { "v15",	15 + V_REG_FIRST },					\
+  { "v16",	16 + V_REG_FIRST },					\
+  { "v17",	17 + V_REG_FIRST },					\
+  { "v18",	18 + V_REG_FIRST },					\
+  { "v19",	19 + V_REG_FIRST },					\
+  { "v20",	20 + V_REG_FIRST },					\
+  { "v21",	21 + V_REG_FIRST },					\
+  { "v22",	22 + V_REG_FIRST },					\
+  { "v23",	23 + V_REG_FIRST },					\
+  { "v24",	24 + V_REG_FIRST },					\
+  { "v25",	25 + V_REG_FIRST },					\
+  { "v26",	26 + V_REG_FIRST },					\
+  { "v27",	27 + V_REG_FIRST },					\
+  { "v28",	28 + V_REG_FIRST },					\
+  { "v29",	29 + V_REG_FIRST },					\
+  { "v30",	30 + V_REG_FIRST },					\
+  { "v31",	31 + V_REG_FIRST },					\
 }
 
 /* Globalizing directive for a label.  */

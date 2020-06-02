@@ -62,6 +62,20 @@ Enum(abi_type) String(lp64f) Value(ABI_LP64F)
 EnumValue
 Enum(abi_type) String(lp64d) Value(ABI_LP64D)
 
+mvlen=
+Target Report RejectNegative Joined Enum(vlen_bits) Var(riscv_vlen) Init(VLEN_128)
+Specify bits of vector register.
+
+Enum
+Name(vlen_bits) Type(enum riscv_vlen_bits)
+Supported VLEN (for use with the -mvlen= option):
+
+EnumValue
+Enum(vlen_bits) String(64) Value(VLEN_64)
+
+EnumValue
+Enum(vlen_bits) String(128) Value(VLEN_128)
+
 mfdiv
 Target Report Mask(FDIV)
 Use hardware floating-point divide and square root instructions.
@@ -127,6 +141,8 @@ Mask(DOUBLE_FLOAT)
 Mask(RVC)
 
 Mask(RVE)
+
+Mask(VECTOR)
 
 mriscv-attribute
 Target Report Var(riscv_emit_attribute_p) Init(-1)
