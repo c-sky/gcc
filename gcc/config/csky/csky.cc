@@ -350,6 +350,38 @@ static GTY(()) int tls_labelno;
   (CSKY_TARGET_ARCH (CK801) ? 508 : 4096)
 
 
+/* Transform UP into lowercase and write the result to LO.
+   You must provide enough space for LO.  Return LO.  */
+
+static char *
+csky_tolower (char *lo, const char *up)
+{
+  char *lo0 = lo;
+
+  for (; *up; up++, lo++)
+    *lo = TOLOWER (*up);
+
+  *lo = '\0';
+
+  return lo0;
+}
+
+/* Transform LO into uppercase and write the result to UP.
+   You must provide enough space for UP.  Return UP.  */
+
+static char *
+csky_toupper (char *up, const char *lo)
+{
+  char *up0 = up;
+
+  for (; *lo; lo++, up++)
+    *up = TOUPPER (*lo);
+
+  *up = '\0';
+
+  return up0;
+}
+
 /* Implement TARGET_CPU_CPP_BUILTINS.  */
 
 #define builtin_define(MACRO) cpp_define (pfile, MACRO)
@@ -358,9 +390,23 @@ void
 csky_cpu_cpp_builtins (cpp_reader *pfile)
 {
   const char *arch_name = csky_active_target.arch_pp_name;
+  char *arch_name_l = (char *) alloca (1 + strlen (arch_name));
   char *pp_name = (char *) alloca (1 + strlen (arch_name) + 4);
   sprintf (pp_name, "__%s__", arch_name);
   builtin_define (pp_name);
+  sprintf (pp_name, "__%s__", csky_tolower(arch_name_l, arch_name));
+  builtin_define (pp_name);
+
+  const char *core_name = csky_active_target.core_name;
+  if (core_name)
+    {
+      char *core_name_u = (char *) alloca (1 + strlen (core_name));
+      char *cpu_name = (char *) alloca (1 + strlen (core_name) + 4);
+      sprintf (cpu_name, "__%s__", core_name);
+      builtin_define (cpu_name);
+      sprintf (cpu_name, "__%s__", csky_toupper(core_name_u, core_name));
+      builtin_define (cpu_name);
+    }
 
   builtin_define ("__csky__=2");
   builtin_define ("__CSKY__=2");
