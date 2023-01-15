@@ -659,6 +659,11 @@ csky_default_logical_op_non_short_circuit (void)
 #undef	TARGET_CANNOT_COPY_INSN_P
 #define TARGET_CANNOT_COPY_INSN_P csky_cannot_copy_insn_p
 
+#undef TARGET_CAN_USE_DOLOOP_P
+#define TARGET_CAN_USE_DOLOOP_P csky_can_use_doloop_p
+
+#undef TARGET_INVALID_WITHIN_DOLOOP
+#define TARGET_INVALID_WITHIN_DOLOOP csky_invalid_within_doloop
 
 /******************************************************************
  *			Assembler Format			  *
@@ -7325,6 +7330,39 @@ csky_mangle_type (const_tree type)
     return "Dh";
 
   /* Use the default mangling.  */
+  return NULL;
+}
+
+/* Implement TARGET_CAN_USE_DOLOOP_P.  */
+
+static bool
+csky_can_use_doloop_p (const widest_int &iterations ATTRIBUTE_UNUSED,
+		       const widest_int & iterations_max ATTRIBUTE_UNUSED,
+		       unsigned int loop_depth, bool entered_at_top)
+{
+  if (!CSKY_ISA_FEATURE(3E3r2))
+    return false;
+
+  /* Considering limitations in the hardware, only use doloop
+     for innermost loops which must be entered from the top.  */
+  if (!entered_at_top || loop_depth > 1)
+      return false;
+
+  return true;
+}
+
+/* NULL if INSN insn is valid within a low-overhead loop.
+   Otherwise return why doloop cannot be applied.  */
+
+static const char *
+csky_invalid_within_doloop (const rtx_insn *insn)
+{
+  if (CALL_P (insn))
+    return "Function call in the loop.";
+
+  if (tablejump_p (insn, NULL, NULL) || computed_jump_p (insn))
+    return "Computed branch in the loop.";
+
   return NULL;
 }
 

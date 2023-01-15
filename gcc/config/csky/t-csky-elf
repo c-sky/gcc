@@ -70,6 +70,21 @@ MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhr1
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ftr1
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803eftr1
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhtr1
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803r2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803fhr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803hr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803tr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803htr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803er2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803etr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ehtr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803ftr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803eftr2
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck803efhtr2
 
 # For arch ck803s.
 MULTILIB_MATCHES     += mcpu?ck803f=march?ck803s

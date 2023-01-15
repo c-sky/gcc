@@ -26,7 +26,8 @@
 CSKY_ISA (E1,	 "Extended insns for arch ck801	 from base")
 CSKY_ISA (E2,	 "Extended insns for arch ck802	 from base")
 CSKY_ISA (2E3,	 "Extended insns for arch ck803	 from ck802")
-CSKY_ISA (3E3r1, "Extended insns for cpu ck803n from ck803")
+CSKY_ISA (3E3r1, "Extended insns for cpu ck803r1 from ck803")
+CSKY_ISA (3E3r2, "Extended insns for cpu ck803r2 from ck803r1")
 CSKY_ISA (3E7,	 "Extended insns for arch ck807	 from ck803")
 CSKY_ISA (7E10,	 "Extended insns for arch ck810	 from ck807")
 

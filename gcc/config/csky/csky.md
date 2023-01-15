@@ -89,6 +89,9 @@
 
    ; casesi dispatch table.
    UNSPEC_CSKY_CASESI
+
+   ; Use bnezad to implement doloop
+   UNSPEC_DOLOOP
   ])
 
 
@@ -3833,3 +3836,61 @@
   "CSKY_ISA_FEATURE (E2)"
   "revb\t%0, %1"
 )
+
+;; ------------------------------------------------------------------------
+;; doloop insns
+;; ------------------------------------------------------------------------
+
+(define_expand "doloop_begin"
+ [(use (match_operand 0 "register_operand" ""))	; loop pseudo
+  (use (match_operand 1 "" ""))]		; doloop_end pattern
+  "CSKY_ISA_FEATURE(3E3r2)"
+  {
+    rtx const1 = GEN_INT (1);
+    emit_insn (gen_addsi3 (operands[0], operands[0], const1));
+    DONE;
+  }
+)
+
+(define_expand "doloop_end"
+ [(use (match_operand 0 "" ""))		; loop pseudo
+  (use (match_operand 1 "" ""))]	; label
+  "CSKY_ISA_FEATURE(3E3r2)"
+  {
+    if (GET_MODE (operands[0]) != SImode || GET_CODE (operands[0]) != REG)
+      FAIL;
+    emit_jump_insn (gen_fold_short_loop_with_bnezad (operands[0], operands[1]));
+    DONE;
+  }
+)
+
+(define_insn "fold_short_loop_with_bnezad"
+ [(set (pc) (if_then_else (ne (match_operand:SI 0 "nonimmediate_operand" "+r,!m")
+			      (const_int 0))
+			  (label_ref (match_operand 1 "" ""))
+			  (pc)))
+  (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
+  (unspec [(const_int 0)] UNSPEC_DOLOOP)
+  (clobber (match_scratch:SI 2 "=X,&r"))
+  (clobber (reg:CC CSKY_CC_REGNUM))]
+  "CSKY_ISA_FEATURE(3E3r2)"
+  {
+    switch (which_alternative)
+    {
+    case 0:
+      if (get_attr_length (insn) == 4)
+        return "bnezad\t%0, %1 # short loop optimization";
+
+      return "subi\t%0, %0, 1;\n\tjbnez\t%0, %1 # LOOP.1.1";
+    case 1:
+      return "ld.w\t%2, %0;\n\tsubi\t%2, %2, 1;\n\tst.w\t%2, %0;\n\tjbnez\t%2, %1 # LOOP.2.1";
+    default:
+      gcc_unreachable ();
+    }
+  }
+ [(set (attr "length")
+       (if_then_else (lt (abs (minus (match_dup 1) (pc)))
+			 (const_int 65534))
+		     (const_int 4)
+		     (const_int 12)))
+   (set_attr "type" "branch_jmp")])

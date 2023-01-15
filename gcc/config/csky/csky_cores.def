@@ -133,6 +133,36 @@ CSKY_CORE ("ck803eftr1", ck803eftr1, ck803eftr1, CK803,
 	   CSKY_ISA_FEAT (isa_bit_3E3r1))
 CSKY_CORE ("ck803efhtr1", ck803efhtr1, ck803efhtr1, CK803,
 	   CSKY_ISA_FEAT (isa_bit_3E3r1))
+CSKY_CORE ("ck803r2",	 ck803r2,    ck803r2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803hr2",	 ck803hr2,   ck803hr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803tr2",	 ck803tr2,   ck803tr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803htr2",	 ck803htr2,  ck803htr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803fr2",	 ck803fr2,   ck803fr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803fhr2",	 ck803fhr2,  ck803fhr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803er2",	 ck803er2,   ck803er2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803ehr2",	 ck803ehr2,  ck803ehr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803etr2",	 ck803etr2,  ck803etr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803ehtr2", ck803ehtr2, ck803ehtr2, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803efr2",	 ck803efr2,  ck803efr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803efhr2", ck803efhr2, ck803efhr2, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803ftr2",	 ck803ftr2,  ck803ftr2,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803eftr2", ck803eftr2, ck803eftr2, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck803efhtr2", ck803efhtr2, ck803efhtr2, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
 
 /* ck803s Architecture Processors */
 CSKY_CORE ("ck803s",   ck803s,	 ck803s,   CK803,
