@@ -195,3 +195,81 @@
   "mula.32.l\t%0, %1, %2"
   [(set_attr "type" "alu")
    (set_attr "length" "4")])
+
+;; ------------------------------------------------------------
+;; DSPV2 insns
+;; ------------------------------------------------------------
+
+(define_insn "dspv2_adddi3"
+  [(set (match_operand:DI          0 "register_operand" "=r")
+	(plus:DI (match_operand:DI 1 "register_operand" "%r")
+		 (match_operand:DI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "add.64\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "dspv2_subdi3"
+  [(set (match_operand:DI          0 "register_operand" "=r")
+        (minus:DI (match_operand:DI 1 "register_operand" "r")
+                  (match_operand:DI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "sub.64\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "*dspv2_addhusi3"
+  [(set (match_operand:SI			0 "register_operand"  "=r")
+	(lshiftrt:SI (plus:SI (match_operand:SI 1 "register_operand"  "%r")
+			      (match_operand:SI 2 "register_operand"  "r"))
+		     (const_int 1)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "addh.u32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "*dspv2_subhusi3"
+  [(set (match_operand:SI			 0 "register_operand"  "=r")
+	(lshiftrt:SI (minus:SI (match_operand:SI 1 "register_operand"  "%r")
+			       (match_operand:SI 2 "register_operand"  "r"))
+		     (const_int 1)))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "subh.u32\t%0, %1, %2"
+  [(set_attr "length" "4")]
+)
+
+(define_insn "smaxsi3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(smax:SI (match_operand:SI 1 "register_operand" "r")
+		 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "max.s32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "umaxsi3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(umax:SI (match_operand:SI 1 "register_operand" "r")
+		 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "max.u32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "sminsi3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(smin:SI (match_operand:SI 1 "register_operand" "r")
+		 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "min.s32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "uminsi3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(umin:SI (match_operand:SI 1 "register_operand" "r")
+		 (match_operand:SI 2 "register_operand" "r")))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "min.u32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])

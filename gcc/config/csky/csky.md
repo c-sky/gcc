@@ -839,6 +839,12 @@
   "
   if (CSKY_ISA_FEATURE (E1) && (GET_CODE (operands[2]) != REG))
       operands[2] = force_reg (DImode, operands[2]);
+  else if (CSKY_ISA_FEATURE (dspv2) && (REG_P (operands[2])
+					|| SUBREG_P (operands[2])))
+    {
+      emit_insn (gen_dspv2_adddi3 (operands[0], operands[1], operands[2]));
+      DONE;
+    }
   "
 )
 
@@ -851,7 +857,7 @@
 	(plus:DI (match_operand:DI 1 "register_operand" "%0,r")
 		 (match_operand:DI 2 "register_operand" "b, r")))
    (clobber (reg:CC CSKY_CC_REGNUM))]
-  "CSKY_ISA_FEATURE (E2)"
+  "CSKY_ISA_FEATURE (E2) && !CSKY_ISA_FEATURE(dspv2)"
   "#"
   "reload_completed"
   [(const_int 0)]
@@ -1037,7 +1043,13 @@
 			    (match_operand:DI 2 "register_operand" "")))
 	      (clobber (reg:CC CSKY_CC_REGNUM))])]
   ""
-  ""
+  "
+    if (CSKY_ISA_FEATURE (dspv2))
+      {
+	emit_insn (gen_dspv2_subdi3 (operands[0], operands[1], operands[2]));
+	DONE;
+      }
+  "
 )
 
 /* Note that the csky subc instruction both reads and writes the C bit.
@@ -1049,7 +1061,7 @@
 	(minus:DI (match_operand:DI 1 "register_operand" "0, r")
 		  (match_operand:DI 2 "register_operand" "b, r")))
    (clobber (reg:CC CSKY_CC_REGNUM))]
-  "CSKY_ISA_FEATURE (E2)"
+  "CSKY_ISA_FEATURE (E2) && !CSKY_ISA_FEATURE(dspv2)"
   "#"
   "reload_completed"
   [(const_int 0)]
