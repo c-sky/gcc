@@ -174,6 +174,51 @@ EnumValue
 Enum(csky_processor_type) String(ck803efhtr2) Value( TARGET_CPU_ck803efhtr2)
 
 EnumValue
+Enum(csky_processor_type) String(ck803r3) Value( TARGET_CPU_ck803r3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803hr3) Value( TARGET_CPU_ck803hr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803tr3) Value( TARGET_CPU_ck803tr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803htr3) Value( TARGET_CPU_ck803htr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803fr3) Value( TARGET_CPU_ck803fr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803fhr3) Value( TARGET_CPU_ck803fhr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803er3) Value( TARGET_CPU_ck803er3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803ehr3) Value( TARGET_CPU_ck803ehr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803etr3) Value( TARGET_CPU_ck803etr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803ehtr3) Value( TARGET_CPU_ck803ehtr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803efr3) Value( TARGET_CPU_ck803efr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803efhr3) Value( TARGET_CPU_ck803efhr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803ftr3) Value( TARGET_CPU_ck803ftr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803eftr3) Value( TARGET_CPU_ck803eftr3)
+
+EnumValue
+Enum(csky_processor_type) String(ck803efhtr3) Value( TARGET_CPU_ck803efhtr3)
+
+EnumValue
 Enum(csky_processor_type) String(ck803s) Value( TARGET_CPU_ck803s)
 
 EnumValue
