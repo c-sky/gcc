@@ -193,6 +193,36 @@ CSKY_CORE ("ck803eftr3", ck803eftr3, ck803eftr3, CK803,
 	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
 CSKY_CORE ("ck803efhtr3", ck803efhtr3, ck803efhtr3, CK803,
 	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804",	 ck804,    ck804,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804h",	 ck804h,   ck804h,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804t",	 ck804t,   ck804t,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804ht",	 ck804ht,  ck804ht,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804f",	 ck804f,   ck804f,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804fh",	 ck804fh,  ck804fh,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2))
+CSKY_CORE ("ck804e",	 ck804e,   ck804e,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804eh",	 ck804eh,  ck804eh,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804et",	 ck804et,  ck804et,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804eht", ck804eht, ck804eht, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804ef",	 ck804ef,  ck804ef,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804efh", ck804efh, ck804efh, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804ft",	 ck804ft,  ck804ft,	 CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804eft", ck804eft, ck804eft, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
+CSKY_CORE ("ck804efht", ck804efht, ck804efht, CK803,
+	   CSKY_ISA_FEAT (isa_bit_3E3r1) CSKY_ISA_FEAT (isa_bit_3E3r2) CSKY_ISA_FEAT(CSKY_ISA_DSPV2))
 
 /* ck803s Architecture Processors */
 CSKY_CORE ("ck803s",   ck803s,	 ck803s,   CK803,
