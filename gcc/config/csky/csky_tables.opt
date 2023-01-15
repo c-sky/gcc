@@ -30,6 +30,9 @@ EnumValue
 Enum(csky_processor_type) String(ck801t) Value( TARGET_CPU_ck801t)
 
 EnumValue
+Enum(csky_processor_type) String(e801) Value( TARGET_CPU_e801)
+
+EnumValue
 Enum(csky_processor_type) String(ck802) Value( TARGET_CPU_ck802)
 
 EnumValue
@@ -37,6 +40,12 @@ Enum(csky_processor_type) String(ck802t) Value( TARGET_CPU_ck802t)
 
 EnumValue
 Enum(csky_processor_type) String(ck802j) Value( TARGET_CPU_ck802j)
+
+EnumValue
+Enum(csky_processor_type) String(e802) Value( TARGET_CPU_e802)
+
+EnumValue
+Enum(csky_processor_type) String(e802t) Value( TARGET_CPU_e802t)
 
 EnumValue
 Enum(csky_processor_type) String(ck803) Value( TARGET_CPU_ck803)
@@ -262,6 +271,30 @@ Enum(csky_processor_type) String(ck804eft) Value( TARGET_CPU_ck804eft)
 
 EnumValue
 Enum(csky_processor_type) String(ck804efht) Value( TARGET_CPU_ck804efht)
+
+EnumValue
+Enum(csky_processor_type) String(e803) Value( TARGET_CPU_e803)
+
+EnumValue
+Enum(csky_processor_type) String(e803t) Value( TARGET_CPU_e803t)
+
+EnumValue
+Enum(csky_processor_type) String(e804f) Value( TARGET_CPU_e804f)
+
+EnumValue
+Enum(csky_processor_type) String(e804ft) Value( TARGET_CPU_e804ft)
+
+EnumValue
+Enum(csky_processor_type) String(e804d) Value( TARGET_CPU_e804d)
+
+EnumValue
+Enum(csky_processor_type) String(e804df) Value( TARGET_CPU_e804df)
+
+EnumValue
+Enum(csky_processor_type) String(e804dt) Value( TARGET_CPU_e804dt)
+
+EnumValue
+Enum(csky_processor_type) String(e804dft) Value( TARGET_CPU_e804dft)
 
 EnumValue
 Enum(csky_processor_type) String(ck803s) Value( TARGET_CPU_ck803s)
