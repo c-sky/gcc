@@ -135,6 +135,9 @@
 #define TARGET_TLS \
   (CSKY_TARGET_ARCH (CK807) || CSKY_TARGET_ARCH (CK810) || CSKY_TARGET_ARCH (CK860))
 
+/* CK803 use low 16 registers expect when dspv2 enabled.  */
+#define TARGET_CK803_LREG (CSKY_TARGET_ARCH (CK803) && !CSKY_ISA_FEATURE(dspv2))
+
 /* Run-time Target Specification.  */
 #define TARGET_SOFT_FLOAT       (csky_float_abi == CSKY_FLOAT_ABI_SOFT)
 /* Use hardware floating point instructions. */

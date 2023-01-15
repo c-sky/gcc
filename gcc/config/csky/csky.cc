@@ -475,6 +475,11 @@ csky_cpu_cpp_builtins (cpp_reader *pfile)
       builtin_define ("__csky_vdsp__");
       builtin_define ("__CSKY_VDSP__");
     }
+  if (CSKY_ISA_FEATURE(dspv2))
+    {
+      builtin_define ("__csky_dspv2__");
+      builtin_define ("__CSKY_DSPV2__");
+    }
 }
 
 
@@ -1747,7 +1752,8 @@ get_csky_live_regs (int *count)
 	continue;
       if ((CSKY_TARGET_ARCH (CK801)
 	   || CSKY_TARGET_ARCH (CK802)
-	   || CSKY_TARGET_ARCH (CK803))
+	   || TARGET_CK803_LREG
+	   || !TARGET_HIGH_REGISTERS)
 	  && reg > 15)
 	break;
 
@@ -2236,7 +2242,7 @@ csky_conditional_register_usage (void)
      CPUs other than ck801/ck802/ck803 use high registers
      depending on -mhigh-registers option.  */
   else if (CSKY_TARGET_ARCH (CK802)
-	   || CSKY_TARGET_ARCH (CK803)
+	   || TARGET_CK803_LREG
 	   || !TARGET_HIGH_REGISTERS)
    {
       int i;
@@ -2338,7 +2344,7 @@ csky_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
       else if (TARGET_MINI_REGISTERS)
 	return (regno < CSKY_LAST_MINI_REGNUM);
       else if (CSKY_TARGET_ARCH (CK802)
-	       || CSKY_TARGET_ARCH (CK803)
+	       || TARGET_CK803_LREG
 	       || !TARGET_HIGH_REGISTERS)
 	/* Without high register, r15 cannot hold doubleword data.  */
 	return (regno < (CSKY_SP_REGNUM - 1));
@@ -2730,7 +2736,7 @@ csky_option_override (void)
     error ("%<-msmart%> is incompatible with %<-mhigh-registers%>");
   else if (CSKY_TARGET_ARCH (CK801)
 	   || CSKY_TARGET_ARCH (CK802)
-	   || CSKY_TARGET_ARCH (CK803))
+	   || TARGET_CK803_LREG)
     {
       if (CSKY_TARGET_ARCH (CK801)
 	  || (CSKY_TARGET_ARCH (CK802) && TARGET_MINI_REGISTERS == -1))
