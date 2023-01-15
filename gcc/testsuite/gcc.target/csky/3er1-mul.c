@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-csky-options "-mcpu=ck803r1 -O2" } */
+/* { dg-csky-options "-mcpu=ck803fr1 -O2" } */
 
 long long mul(int b, int c)
 {

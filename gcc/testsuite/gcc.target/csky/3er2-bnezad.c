@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-csky-options "-mcpu=ck803r2 -O2 -fno-unroll-loops" } */
+/* { dg-csky-options "-mcpu=ck803fr2 -O2 -fno-unroll-loops" } */
 
 unsigned int
 foo (unsigned int l, int *a)

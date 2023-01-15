@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-csky-options "-mcpu=ck803er1 -O2" } */
+/* { dg-csky-options "-mcpu=ck803efr1 -O2" } */
 
 int smax(int a, int b)
 {
