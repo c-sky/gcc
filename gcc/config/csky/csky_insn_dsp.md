@@ -22,15 +22,52 @@
 ;; DSP insns
 ;; ------------------------------------------------------------
 
-(define_insn "mulsidi3"
+(define_expand "mulsidi3"
+  [(set (match_operand:DI			   0 "register_operand" "")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" ""))
+		 (sign_extend:DI (match_operand:SI 2 "register_operand" ""))))]
+  "TARGET_DSP || CSKY_ISA_FEATURE(3E3r1)"
+  ""
+)
+
+(define_insn "*dsp_mulsidi3"
   [(set (match_operand:DI			   0 "register_operand" "=y")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
   "TARGET_DSP"
   "muls\t%1, %2"
+  [(set_attr "type" "alu")
+   (set_attr "length" "4")])
+
+(define_insn "*3er1_mulsidi3"
+  [(set (match_operand:DI			   0 "register_operand" "=r")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
+		 (sign_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "mul.s32\t%0, %1, %2"
+  [(set_attr "type" "alu")
+   (set_attr "length" "4")])
+
+(define_insn "smulsi3_highpart"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(truncate:SI
+	  (lshiftrt:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
+				(sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
+                       (const_int 32))))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "mul.s32.h\t%0, %1, %2"
+  [(set_attr "type" "alu")
+   (set_attr "length" "4")])
+
+(define_expand "umulsidi3"
+  [(set (match_operand:DI			   0 "register_operand" "")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
+		 (zero_extend:DI (match_operand:SI 2 "register_operand" ""))))]
+  "TARGET_DSP || CSKY_ISA_FEATURE(3E3r1)"
+  ""
 )
 
-(define_insn "umulsidi3"
+(define_insn "*dsp_umulsidi3"
   [(set (match_operand:DI			   0 "register_operand" "=y")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "r"))
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
@@ -38,7 +75,25 @@
   "mulu\t%1, %2"
 )
 
-(define_insn "maddsidi4"
+(define_insn "*3er1_umulsidi3"
+  [(set (match_operand:DI			   0 "register_operand" "=r")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		 (zero_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "mul.u32\t%0, %1, %2"
+  [(set_attr "type" "alu")
+   (set_attr "length" "4")])
+
+(define_expand "maddsidi4"
+  [(set (match_operand:DI				    0 "register_operand" "")
+	(plus:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" ""))
+			  (sign_extend:DI (match_operand:SI 2 "register_operand" "")))
+		 (match_operand:DI			    3 "register_operand" "")))]
+  "TARGET_DSP || CSKY_ISA_FEATURE(3E3r1)"
+  ""
+)
+
+(define_insn "*dsp_maddsidi4"
   [(set (match_operand:DI				    0 "register_operand" "=y")
 	(plus:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
 			  (sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
@@ -47,7 +102,35 @@
   "mulsa\t%1, %2"
 )
 
-(define_insn "umaddsidi4"
+(define_insn_and_split "*3e3r1_maddsidi4"
+  [(set (match_operand:DI				    0 "register_operand" "=r,&r")
+	(plus:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r,r"))
+			  (sign_extend:DI (match_operand:SI 2 "register_operand" "r,r")))
+		 (match_operand:DI			    3 "register_operand" "0,r")))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "@
+   mula.s32\t%0, %1, %2
+   #"
+  "reload_completed && !rtx_equal_p (operands[0], operands[3])"
+  [(const_int 0)]
+  {
+    emit_move_insn (operands[0], operands[3]);
+    emit_insn (gen_maddsidi4 (operands[0], operands[1], operands[2], operands[0]));
+    DONE;
+  }
+  [(set_attr "type" "alu,alu")
+   (set_attr "length" "4,6")])
+
+(define_expand "umaddsidi4"
+  [(set (match_operand:DI				    0 "register_operand" "")
+	(plus:DI (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
+			  (zero_extend:DI (match_operand:SI 2 "register_operand" "")))
+		 (match_operand:DI			    3 "register_operand" "")))]
+  "TARGET_DSP || CSKY_ISA_FEATURE(3E3r1)"
+  ""
+)
+
+(define_insn "*dsp_umaddsidi4"
   [(set (match_operand:DI				    0 "register_operand" "=y")
 	(plus:DI (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "r"))
 			  (zero_extend:DI (match_operand:SI 2 "register_operand" "r")))
@@ -55,6 +138,25 @@
   "TARGET_DSP"
   "mulua\t%1, %2"
 )
+
+(define_insn_and_split "*3e3r1_umaddsidi4"
+  [(set (match_operand:DI				    0 "register_operand" "=r,&r")
+	(plus:DI (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "r,r"))
+			  (zero_extend:DI (match_operand:SI 2 "register_operand" "r,r")))
+		 (match_operand:DI			    3 "register_operand" "0,r")))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "@
+   mula.u32\t%0, %1, %2
+   #"
+  "reload_completed && !rtx_equal_p (operands[0], operands[3])"
+  [(const_int 0)]
+  {
+    emit_move_insn (operands[0], operands[3]);
+    emit_insn (gen_umaddsidi4 (operands[0], operands[1], operands[2], operands[0]));
+    DONE;
+  }
+  [(set_attr "type" "alu,alu")
+   (set_attr "length" "4,6")])
 
 (define_insn "msubsidi4"
   [(set (match_operand:DI				     0 "register_operand" "=y")
