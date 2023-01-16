@@ -48,17 +48,6 @@
   [(set_attr "type" "alu")
    (set_attr "length" "4")])
 
-(define_insn "smulsi3_highpart"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(truncate:SI
-	  (lshiftrt:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
-				(sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
-                       (const_int 32))))]
-  "CSKY_ISA_FEATURE(3E3r1)"
-  "mul.s32.h\t%0, %1, %2"
-  [(set_attr "type" "alu")
-   (set_attr "length" "4")])
-
 (define_expand "umulsidi3"
   [(set (match_operand:DI			   0 "register_operand" "")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
@@ -273,3 +262,14 @@
   "min.u32\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
+
+(define_insn "smulsi3_highpart"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(truncate:SI
+	  (lshiftrt:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
+				(sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
+                       (const_int 32))))]
+  "CSKY_ISA_FEATURE(dspv2)"
+  "mul.s32.h\t%0, %1, %2"
+  [(set_attr "type" "alu")
+   (set_attr "length" "4")])

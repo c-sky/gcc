@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-csky-options "-mcpu=ck803fr1 -O2" } */
+/* { dg-csky-options "-mcpu=ck803efr1 -O2" } */
 
 int mul_h(int b, int c)
 {
