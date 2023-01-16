@@ -34,10 +34,13 @@ MULTILIB_DIRNAMES    += ck802 ck801 ck803 ck807 ck810 ck860
 MULTILIB_MATCHES     += mcpu?ck802=march?ck802
 MULTILIB_MATCHES     += mcpu?ck802=mcpu?ck802t
 MULTILIB_MATCHES     += mcpu?ck802=mcpu?ck802j
+MULTILIB_MATCHES     += mcpu?ck802=mcpu?e802
+MULTILIB_MATCHES     += mcpu?ck802=mcpu?e802t
 
 # For arch ck801.
 MULTILIB_MATCHES     += mcpu?ck801=march?ck801
 MULTILIB_MATCHES     += mcpu?ck801=mcpu?ck801t
+MULTILIB_MATCHES     += mcpu?ck801=mcpu?e801
 
 # For arch ck803.
 MULTILIB_MATCHES     += mcpu?ck803f=march?ck803
@@ -115,6 +118,14 @@ MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck804ef
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck804ft
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck804ef
 MULTILIB_MATCHES     += mcpu?ck803f=mcpu?ck804ef
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e803
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e803t
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804d
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804dt
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804f
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804ft
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804df
+MULTILIB_MATCHES     += mcpu?ck803f=mcpu?e804dft
 
 # For arch ck803s.
 MULTILIB_MATCHES     += mcpu?ck803f=march?ck803s
