@@ -3274,6 +3274,24 @@ csky_legitimate_address_p (machine_mode mode, rtx addr, bool strict_p)
 	      || (is_csky_address_register_rtx_p (xop1, strict_p)
 		  && csky_legitimate_index_p (mode, xop0, strict_p)));
     }
+  else if (CSKY_ISA_FEATURE(dspv2) && code == POST_INC
+	   && GET_MODE_CLASS (mode) == MODE_INT
+	   && GET_MODE_SIZE (mode) <= 4)
+    {
+      int regno;
+
+      if (!REG_P (XEXP(addr, 0)))
+	return 0;
+
+      regno = REGNO (XEXP(addr, 0));
+
+      if (strict_p)
+	return (CSKY_GENERAL_REGNO_P(regno)
+		|| CSKY_GENERAL_REGNO_P(reg_renumber[regno]));
+      else
+	return (CSKY_GENERAL_REGNO_P(regno)
+		|| regno >= FIRST_PSEUDO_REGISTER);
+    }
 
   return 0;
 }
@@ -3329,7 +3347,7 @@ csky_cannot_copy_insn_p (rtx_insn *insn)
 
 struct csky_address
 {
-  rtx base, index, symbol, label, disp;
+  rtx base, index, symbol, label, disp, post_inc_reg;
   HOST_WIDE_INT scale;
 };
 
@@ -3341,8 +3359,15 @@ decompose_csky_address (rtx addr, struct csky_address *out)
   rtx scale_rtx = NULL_RTX;
   int i;
 
-  out->base = out->index = out->symbol = out->label = out->disp = NULL_RTX;
+  out->base = out->index = out->symbol = out->label = out->disp
+    = out->post_inc_reg = NULL_RTX;
   out->scale = 0;
+
+  if (CSKY_ISA_FEATURE(dspv2) && GET_CODE (addr) == POST_INC)
+    {
+      out->post_inc_reg = XEXP (addr, 0);
+      return true;
+    }
 
   if (REG_P (addr))
     {
@@ -3567,6 +3592,8 @@ csky_print_operand_address (FILE *stream,
     fprintf (stream, "(%s, %s << %d)",
 	     reg_names[REGNO (addr.base)], reg_names[REGNO (addr.index)],
 	     exact_log2 ((int) (addr.scale)));
+  else if (addr.post_inc_reg)
+    fprintf (stream, "(%s)", reg_names[REGNO (addr.post_inc_reg)]);
   else
     fprintf (stream, "(%s, 0)", reg_names[REGNO (addr.base)]);
 }
@@ -4199,6 +4226,20 @@ csky_output_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
 	{
 	  decompose_csky_address (XEXP (src, 0), &op1);
 
+	  if (op1.post_inc_reg)
+	    switch (GET_MODE (src))
+	      {
+	      case E_HImode:
+	      case E_HFmode:
+		return "ldbi.h\t%0, %1";
+	      case QImode:
+		return "ldbi.b\t%0, %1";
+	      case SImode:
+	      case SFmode:
+		return "ldbi.w\t%0, %1";
+	      default:
+		gcc_unreachable ();
+	      }
 	  if (op1.index)
 	    switch (GET_MODE (src))
 	      {
@@ -4297,6 +4338,20 @@ csky_output_move (rtx insn ATTRIBUTE_UNUSED, rtx operands[],
     {
       decompose_csky_address (XEXP (dst, 0), &op0);
 
+      if (op0.post_inc_reg)
+	switch (GET_MODE (src))
+	  {
+	    case HImode:
+	    case HFmode:
+	      return "stbi.h\t%1, %0";
+	    case QImode:
+	      return "stbi.b\t%1, %0";
+	    case SFmode:
+	    case SImode:
+	      return "stbi.w\t%1, %0";
+	    default:
+	      gcc_unreachable ();
+	  }
       if (op0.index)
 	switch (GET_MODE (src))
 	  {
@@ -7326,6 +7381,8 @@ csky_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
 {
   enum rtx_code code = GET_CODE (x);
 
+  if (code == POST_INC)
+    return 0;
   if (code == REG)
     return COSTS_N_INSNS (1);
   if (code == PLUS

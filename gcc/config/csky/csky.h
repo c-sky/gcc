@@ -811,6 +811,9 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    Shifts in addresses can't be by a register.  */
 #define MAX_REGS_PER_ADDRESS 2
 
+/* The DSPV2 ISA has post inc instructions, enable here and distinguish
+   in the csky_legitimate_address_p function.  */
+#define HAVE_POST_INCREMENT 1
 
 /******************************************************************
  *			  Run-time Target			  *

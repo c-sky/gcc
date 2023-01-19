@@ -1439,12 +1439,14 @@
 )
 
 (define_insn "*cskyv2_zextend_ldh"
-  [(set (match_operand:SI		  0 "register_operand" "=r")
-	(zero_extend:SI (match_operand:HI 1 "csky_simple_mem_operand" "m")))]
+  [(set (match_operand:SI		  0 "register_operand" "=r,r")
+	(zero_extend:SI (match_operand:HI 1 "csky_simple_mem_operand" "Dm,Dp")))]
   ""
-  "ld.h\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ld.h\t%0, %1
+   ldbi.h\t%0, %1"
+  [(set_attr "length" "4,4")
+   (set_attr "type" "load,load")]
 )
 
 (define_insn "zero_extendqisi2"
@@ -1455,12 +1457,14 @@
 )
 
 (define_insn "*cskyv2_zextend_ldb"
-  [(set (match_operand:SI		  0 "register_operand" "=r")
-	(zero_extend:SI (match_operand:QI 1 "csky_simple_mem_operand" "m")))]
+  [(set (match_operand:SI		  0 "register_operand" "=r,r")
+	(zero_extend:SI (match_operand:QI 1 "csky_simple_mem_operand" "Dm,Dp")))]
   ""
-  "ld.b\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ld.b\t%0, %1
+   ldbi.b\t%0, %1"
+  [(set_attr "length" "4,4")
+   (set_attr "type" "load,load")]
 )
 
 (define_insn "zero_extendqihi2"
@@ -1471,12 +1475,14 @@
 )
 
 (define_insn "*cskyv2_zextend_ldbhi"
-  [(set (match_operand:HI		  0 "register_operand"	 "=r")
-	(zero_extend:HI (match_operand:QI 1 "csky_simple_mem_operand" "m")))]
+  [(set (match_operand:HI		  0 "register_operand"	 "=r,r")
+	(zero_extend:HI (match_operand:QI 1 "csky_simple_mem_operand" "Dm,Dp")))]
   ""
-  "ld.b\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ld.b\t%0, %1
+   ldbi.b\t%0, %1"
+  [(set_attr "length" "4,4")
+   (set_attr "type" "load,load")]
 )
 
 ;; -------------------------------------------------------------------------
@@ -1559,12 +1565,14 @@
 )
 
 (define_insn "*cskyv2_sextend_ldhs"
-  [(set (match_operand:SI		  0 "register_operand" "=r")
-	(sign_extend:SI (match_operand:HI 1 "csky_simple_mem_operand" "m")))]
+  [(set (match_operand:SI		  0 "register_operand" "=r,r")
+	(sign_extend:SI (match_operand:HI 1 "csky_simple_mem_operand" "Dm,Dp")))]
   "CSKY_ISA_FEATURE (E2)"
-  "ld.hs\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ld.hs\t%0, %1
+   ldbi.hs\t%0, %1"
+  [(set_attr "length" "4,4")
+   (set_attr "type" "load,load")]
 )
 
 ;; qi -> si
@@ -1576,12 +1584,14 @@
 )
 
 (define_insn "*cskyv2_sextend_ldbs"
-  [(set (match_operand:SI		  0 "register_operand" "=r")
-        (sign_extend:SI (match_operand:QI 1 "csky_simple_mem_operand" "m")))]
+  [(set (match_operand:SI		  0 "register_operand" "=r,r")
+        (sign_extend:SI (match_operand:QI 1 "csky_simple_mem_operand" "Dm,Dp")))]
   "CSKY_ISA_FEATURE (E2)"
-  "ld.bs\t%0, %1"
-  [(set_attr "length" "4")
-   (set_attr "type" "load")]
+  "@
+   ld.bs\t%0, %1
+   ldbi.bs\t%0, %1"
+  [(set_attr "length" "4,4")
+   (set_attr "type" "load,load")]
 )
 
 ;; qi -> hi

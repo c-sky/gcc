@@ -185,3 +185,13 @@
   instruction."
   (and (match_code "const_double")
        (match_test "fpuv3_const_double_rtx (op)")))
+
+(define_constraint "Dp"
+  "memory operands whose address only accept post_inc if condition is dspv2"
+  (and (match_code "mem")
+       (match_test "CSKY_ISA_FEATURE(dspv2) && GET_CODE (XEXP (op, 0)) == POST_INC")))
+
+(define_constraint "Dm"
+  "memory operands whose address do not accept post_inc if condition is dspv2"
+  (and (match_code "mem")
+       (match_test "(!CSKY_ISA_FEATURE(dspv2) || GET_CODE (XEXP (op, 0)) != POST_INC) && csky_simple_mem_operand(op, mode)")))
