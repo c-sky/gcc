@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -49,7 +49,7 @@ PatternDeclaration::visit (AST::TupleStructPattern &pattern)
 
 	for (auto &inner_pattern : items_no_range.get_patterns ())
 	  {
-	    PatternDeclaration::go (inner_pattern.get ());
+	    PatternDeclaration::go (inner_pattern.get (), type);
 	  }
       }
       break;

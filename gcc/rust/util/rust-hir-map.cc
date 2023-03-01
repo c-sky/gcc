@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -316,6 +316,7 @@ Mappings::insert_defid_mapping (DefId id, HIR::Item *item)
 
   rust_assert (lookup_defid (id) == nullptr);
   rust_assert (lookup_local_defid (crate_num, local_def_id) == nullptr);
+  rust_assert (lookup_trait_item_defid (id) == nullptr);
 
   defIdMappings[id] = item;
   insert_local_defid_mapping (crate_num, local_def_id, item);
@@ -326,6 +327,29 @@ Mappings::lookup_defid (DefId id)
 {
   auto it = defIdMappings.find (id);
   if (it == defIdMappings.end ())
+    return nullptr;
+
+  return it->second;
+}
+
+void
+Mappings::insert_defid_mapping (DefId id, HIR::TraitItem *item)
+{
+  CrateNum crate_num = id.crateNum;
+  LocalDefId local_def_id = id.localDefId;
+
+  rust_assert (lookup_defid (id) == nullptr);
+  rust_assert (lookup_local_defid (crate_num, local_def_id) == nullptr);
+  rust_assert (lookup_trait_item_defid (id) == nullptr);
+
+  defIdTraitItemMappings[id] = item;
+}
+
+HIR::TraitItem *
+Mappings::lookup_trait_item_defid (DefId id)
+{
+  auto it = defIdTraitItemMappings.find (id);
+  if (it == defIdTraitItemMappings.end ())
     return nullptr;
 
   return it->second;
@@ -419,7 +443,9 @@ Mappings::insert_hir_impl_block (HIR::ImplBlock *item)
   auto id = item->get_mappings ().get_hirid ();
   rust_assert (lookup_hir_impl_block (id) == nullptr);
 
+  HirId impl_type_id = item->get_type ()->get_mappings ().get_hirid ();
   hirImplBlockMappings[id] = item;
+  hirImplBlockTypeMappings[impl_type_id] = item;
   insert_node_to_hir (item->get_mappings ().get_nodeid (), id);
 }
 
@@ -431,6 +457,17 @@ Mappings::lookup_hir_impl_block (HirId id)
     return nullptr;
 
   return it->second;
+}
+
+bool
+Mappings::lookup_impl_block_type (HirId id, HIR::ImplBlock **impl_block)
+{
+  auto it = hirImplBlockTypeMappings.find (id);
+  if (it == hirImplBlockTypeMappings.end ())
+    return false;
+
+  *impl_block = it->second;
+  return true;
 }
 
 void
@@ -803,20 +840,20 @@ Mappings::iterate_trait_items (
 void
 Mappings::insert_macro_def (AST::MacroRulesDefinition *macro)
 {
-  static std::map<std::string, std::function<AST::ASTFragment (
-				 Location, AST::MacroInvocData &)>>
+  static std::map<
+    std::string, std::function<AST::Fragment (Location, AST::MacroInvocData &)>>
     builtin_macros = {
-      {"assert", MacroBuiltin::assert},
-      {"file", MacroBuiltin::file},
-      {"line", MacroBuiltin::line},
-      {"column", MacroBuiltin::column},
-      {"include_bytes", MacroBuiltin::include_bytes},
-      {"include_str", MacroBuiltin::include_str},
-      {"compile_error", MacroBuiltin::compile_error},
-      {"concat", MacroBuiltin::concat},
-      {"env", MacroBuiltin::env},
-      {"cfg", MacroBuiltin::cfg},
-      {"include", MacroBuiltin::include},
+      {"assert", MacroBuiltin::assert_handler},
+      {"file", MacroBuiltin::file_handler},
+      {"line", MacroBuiltin::line_handler},
+      {"column", MacroBuiltin::column_handler},
+      {"include_bytes", MacroBuiltin::include_bytes_handler},
+      {"include_str", MacroBuiltin::include_str_handler},
+      {"compile_error", MacroBuiltin::compile_error_handler},
+      {"concat", MacroBuiltin::concat_handler},
+      {"env", MacroBuiltin::env_handler},
+      {"cfg", MacroBuiltin::cfg_handler},
+      {"include", MacroBuiltin::include_handler},
     };
 
   auto outer_attrs = macro->get_outer_attrs ();
@@ -847,6 +884,28 @@ Mappings::lookup_macro_def (NodeId id, AST::MacroRulesDefinition **def)
 {
   auto it = macroMappings.find (id);
   if (it == macroMappings.end ())
+    return false;
+
+  *def = it->second;
+  return true;
+}
+
+void
+Mappings::insert_macro_invocation (AST::MacroInvocation &invoc,
+				   AST::MacroRulesDefinition *def)
+{
+  auto it = macroInvocations.find (invoc.get_macro_node_id ());
+  rust_assert (it == macroInvocations.end ());
+
+  macroInvocations[invoc.get_macro_node_id ()] = def;
+}
+
+bool
+Mappings::lookup_macro_invocation (AST::MacroInvocation &invoc,
+				   AST::MacroRulesDefinition **def)
+{
+  auto it = macroInvocations.find (invoc.get_macro_node_id ());
+  if (it == macroInvocations.end ())
     return false;
 
   *def = it->second;

@@ -74,7 +74,33 @@ along with GCC; see the file COPYING3.  If not see
 #include "asan.h"
 #include "ubsan.h"
 
+#if __cpp_inline_variables < 201606L
+/* Tree code classes.  */
 
+#define DEFTREECODE(SYM, NAME, TYPE, LENGTH) TYPE,
+#define END_OF_BASE_TREE_CODES tcc_exceptional,
+
+const enum tree_code_class tree_code_type[] = {
+#include "all-tree.def"
+};
+
+#undef DEFTREECODE
+#undef END_OF_BASE_TREE_CODES
+
+/* Table indexed by tree code giving number of expression
+   operands beyond the fixed part of the node structure.
+   Not used for types or decls.  */
+
+#define DEFTREECODE(SYM, NAME, TYPE, LENGTH) LENGTH,
+#define END_OF_BASE_TREE_CODES 0,
+
+const unsigned char tree_code_length[] = {
+#include "all-tree.def"
+};
+
+#undef DEFTREECODE
+#undef END_OF_BASE_TREE_CODES
+#endif
 
 /* Names of tree components.
    Used for printing out the tree and error messages.  */
@@ -2669,6 +2695,35 @@ build_zero_cst (tree type)
     }
 }
 
+/* If floating-point type TYPE has an IEEE-style sign bit, return an
+   unsigned constant in which only the sign bit is set.  Return null
+   otherwise.  */
+
+tree
+sign_mask_for (tree type)
+{
+  /* Avoid having to choose between a real-only sign and a pair of signs.
+     This could be relaxed if the choice becomes obvious later.  */
+  if (TREE_CODE (type) == COMPLEX_TYPE)
+    return NULL_TREE;
+
+  auto eltmode = as_a<scalar_float_mode> (element_mode (type));
+  auto bits = REAL_MODE_FORMAT (eltmode)->ieee_bits;
+  if (!bits || !pow2p_hwi (bits))
+    return NULL_TREE;
+
+  tree inttype = unsigned_type_for (type);
+  if (!inttype)
+    return NULL_TREE;
+
+  auto mask = wi::set_bit_in_zero (bits - 1, bits);
+  if (TREE_CODE (inttype) == VECTOR_TYPE)
+    {
+      tree elt = wide_int_to_tree (TREE_TYPE (inttype), mask);
+      return build_vector_from_val (inttype, elt);
+    }
+  return wide_int_to_tree (inttype, mask);
+}
 
 /* Build a BINFO with LEN language slots.  */
 
@@ -9703,6 +9758,7 @@ build_common_builtin_nodes (void)
 
   if (!builtin_decl_explicit_p (BUILT_IN_UNREACHABLE)
       || !builtin_decl_explicit_p (BUILT_IN_TRAP)
+      || !builtin_decl_explicit_p (BUILT_IN_UNREACHABLE_TRAP)
       || !builtin_decl_explicit_p (BUILT_IN_ABORT))
     {
       ftype = build_function_type (void_type_node, void_list_node);
@@ -9710,6 +9766,12 @@ build_common_builtin_nodes (void)
 	local_define_builtin ("__builtin_unreachable", ftype,
 			      BUILT_IN_UNREACHABLE,
 			      "__builtin_unreachable",
+			      ECF_NOTHROW | ECF_LEAF | ECF_NORETURN
+			      | ECF_CONST | ECF_COLD);
+      if (!builtin_decl_explicit_p (BUILT_IN_UNREACHABLE_TRAP))
+	local_define_builtin ("__builtin_unreachable trap", ftype,
+			      BUILT_IN_UNREACHABLE_TRAP,
+			      "__builtin_unreachable trap",
 			      ECF_NOTHROW | ECF_LEAF | ECF_NORETURN
 			      | ECF_CONST | ECF_COLD);
       if (!builtin_decl_explicit_p (BUILT_IN_ABORT))
@@ -10853,7 +10915,7 @@ builtin_decl_unreachable ()
   if (sanitize_flags_p (SANITIZE_UNREACHABLE)
       ? (flag_sanitize_trap & SANITIZE_UNREACHABLE)
       : flag_unreachable_traps)
-    fncode = BUILT_IN_TRAP;
+    fncode = BUILT_IN_UNREACHABLE_TRAP;
   /* For non-trapping sanitize, we will rewrite __builtin_unreachable () later,
      in the sanopt pass.  */
 
@@ -10961,6 +11023,10 @@ signed_or_unsigned_type_for (int unsignedp, tree type)
 	return NULL_TREE;
       if (inner == inner2)
 	return type;
+      machine_mode new_mode;
+      if (VECTOR_MODE_P (TYPE_MODE (type))
+	  && related_int_vector_mode (TYPE_MODE (type)).exists (&new_mode))
+	return build_vector_type_for_mode (inner2, new_mode);
       return build_vector_type (inner2, TYPE_VECTOR_SUBPARTS (type));
     }
 

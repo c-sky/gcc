@@ -24,10 +24,10 @@ VPATH = . @srcdir@ @srcdir@/../../gcc/m2/gm2-libs
 # Multilib support.
 MAKEOVERRIDES=
 
-version := $(shell $(CC) -dumpversion)
+gcc_version := $(shell @get_gcc_base_ver@ $(top_srcdir)/../gcc/BASE-VER)
 
 # Directory in which the compiler finds libraries etc.
-libsubdir = $(libdir)/gcc/$(target_alias)/$(version)
+libsubdir = $(libdir)/gcc/$(target_alias)/$(gcc_version)
 # Used to install the shared libgcc.
 slibdir = @slibdir@
 
@@ -161,12 +161,15 @@ libm2pim_la_SOURCES = $(M2MODS) \
                       errno.cc dtoa.cc \
                       ldtoa.cc termios.cc \
                       SysExceptions.cc target.c \
-                      wrapc.c cgetopt.cc
+                      wrapc.cc cgetopt.cc
 
 libm2pimdir = libm2pim
 libm2pim_la_DEPENDENCIES = SYSTEM.def $(addsuffix .lo, $(basename $(libm2pim_la_SOURCES)))
 libm2pim_la_CFLAGS = -I. -I.. -I$(GM2_SRC)/gm2-libs -I$(GM2_SRC)/gm2-libs-iso -DBUILD_GM2_LIBS -I@srcdir@/../  -I@srcdir@/../libm2iso
-libm2pim_la_M2FLAGS = -I. -I$(GM2_SRC)/gm2-libs -I$(GM2_SRC)/gm2-libs-iso -fm2-g -g
+libm2pim_la_M2FLAGS = \
+  -fm2-pathname=m2pim -I. -I$(GM2_SRC)/gm2-libs \
+  -fm2-pathname=m2iso -I$(GM2_SRC)/gm2-libs-iso \
+  -fm2-g -g -Wreturn-type -fcase -fm2-prefix=m2pim
 if TARGET_DARWIN
 libm2pim_la_link_flags = -Wl,-undefined,dynamic_lookup
 else
@@ -192,20 +195,16 @@ SYSTEM.def: Makefile
 	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) -c -I$(srcdir) $(CXXFLAGS) $(LIBCFLAGS) $(libm2pim_la_CFLAGS) $< -o $@
 
 install-data-local: force
-	mkdir -p $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)
-	$(INSTALL_DATA) .libs/libm2pim.la $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)
-	chmod 644 $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)libm2pim.la
-	$(INSTALL_DATA) .libs/libm2pim.a $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)
-	$(RANLIB) $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)libm2pim.a
+	mkdir -p $(DESTDIR)$(inst_libdir)/$(M2LIBDIR)
 	for i in $(M2DEFS) $(M2MODS) ; do \
            if [ -f $$i ] ; then \
-              $(INSTALL_DATA) $$i '$(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)'; \
+              $(INSTALL_DATA) $$i '$(DESTDIR)$(inst_libdir)/$(M2LIBDIR)'; \
            elif [ -f @srcdir@/../../gcc/m2/gm2-libs/$$i ] ; then \
-              $(INSTALL_DATA) @srcdir@/../../gcc/m2/gm2-libs/$$i '$(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)'; \
+              $(INSTALL_DATA) @srcdir@/../../gcc/m2/gm2-libs/$$i '$(DESTDIR)$(inst_libdir)/$(M2LIBDIR)'; \
            else \
               echo "cannot find $$i" ; exit 1 ; \
            fi ; \
-           chmod 644 $(DESTDIR)$(inst_libdir)/$(MULTIDIR)$(M2LIBDIR)$$i ; \
+           chmod 644 $(DESTDIR)$(inst_libdir)/$(M2LIBDIR)$$i ; \
 	done
 
 force:

@@ -1,6 +1,6 @@
 (* M2ALU.mod gcc implementation of the M2ALU module.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -4636,12 +4636,12 @@ BEGIN
                ELSE
                   MetaErrorT2 (tokenno,
                                'the {%1EN} element does not exist in the {%2ad} array declaration used by the compound literal', i, constructorType) ;
-                  RETURN NulSym
                END
             END
          END
       END
-   END
+   END ;
+   RETURN NulSym
 END GetConstructorElement ;
 
 

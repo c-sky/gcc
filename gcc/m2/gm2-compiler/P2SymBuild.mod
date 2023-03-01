@@ -1,6 +1,6 @@
 (* P2SymBuild.mod pass 2 symbol creation.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -108,6 +108,7 @@ FROM SymbolTable IMPORT NulSym,
                         ParametersDefinedInDefinition,
                         ParametersDefinedInImplementation,
                         ProcedureParametersDefined,
+                        PutProcedureNoReturn,
                         CheckForUnImplementedExports,
                         CheckForUndeclaredExports,
                         IsHiddenTypeDeclared,
@@ -2096,6 +2097,17 @@ BEGIN
 *)
    PushT(ProcSym)
 END BuildOptFunction ;
+
+
+(*
+   BuildNoReturnAttribute - provide an interface to the symbol table module.
+*)
+
+PROCEDURE BuildNoReturnAttribute (procedureSym: CARDINAL) ;
+BEGIN
+   Assert (IsProcedure (procedureSym)) ;
+   PutProcedureNoReturn (procedureSym, TRUE)
+END BuildNoReturnAttribute ;
 
 
 (*

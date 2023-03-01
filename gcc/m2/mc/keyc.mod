@@ -1,5 +1,5 @@
 (* keyc maintains the C name scope and avoids C/C++ name conflicts.
-   Copyright (C) 2016-2022 Free Software Foundation, Inc.
+   Copyright (C) 2016-2023 Free Software Foundation, Inc.
 
 This file is part of GNU Modula-2.
 
@@ -457,9 +457,9 @@ PROCEDURE checkLimits (p: pretty) ;
 BEGIN
    IF seenMemcpy OR seenIntMin OR seenUIntMin OR
       seenLongMin OR seenULongMin OR seenCharMin OR
-      seenUCharMin OR seenUIntMin OR seenIntMax OR
+      seenUCharMin OR (* seenUIntMin OR *) seenIntMax OR
       seenUIntMax OR seenLongMax OR seenULongMax OR
-      seenCharMax OR seenUCharMax OR seenUIntMax
+      seenCharMax OR seenUCharMax (* OR seenUIntMax *)
    THEN
       checkGccConfigSystem (p);
       IF NOT getGccConfigSystem ()
@@ -1118,14 +1118,12 @@ BEGIN
    seenULongMin := FALSE ;
    seenCharMin := FALSE ;
    seenUCharMin := FALSE ;
-   seenUIntMin := FALSE ;
    seenIntMax := FALSE ;
    seenUIntMax := FALSE ;
    seenLongMax := FALSE ;
    seenULongMax := FALSE ;
    seenCharMax := FALSE ;
    seenUCharMax := FALSE ;
-   seenUIntMax := FALSE ;
    seenLabs := FALSE ;
    seenAbs := FALSE ;
    seenFabs := FALSE ;

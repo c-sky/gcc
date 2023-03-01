@@ -1,5 +1,5 @@
 # Expect driver script for GCC Regression Tests
-# Copyright (C) 2022 Free Software Foundation, Inc.
+# Copyright (C) 2022-2023 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +27,7 @@ load_lib gm2-torture.exp
 
 set gm2src ${srcdir}/../m2
 
-gm2_link_lib "m2iso m2pim"
-gm2_init_iso
+gm2_init_iso ""
 
 foreach testcase [lsort [glob -nocomplain $srcdir/$subdir/*.mod]] {
     # If we're only testing specific files and this isn't one of them, skip it.

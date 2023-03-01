@@ -1,6 +1,6 @@
 (* M2Base.mod provides a mechanism to check fundamental types.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -33,7 +33,7 @@ IMPLEMENTATION MODULE M2Base ;
 
 FROM DynamicStrings IMPORT InitString, String, Mark, InitStringCharStar, ConCat ;
 FROM M2LexBuf IMPORT BuiltinTokenNo, GetTokenNo ;
-FROM NameKey IMPORT MakeKey, WriteKey, KeyToCharStar ;
+FROM NameKey IMPORT NulName, MakeKey, WriteKey, KeyToCharStar ;
 FROM M2Debug IMPORT Assert ;
 FROM SYSTEM IMPORT WORD ;
 
@@ -74,7 +74,8 @@ FROM SymbolTable IMPORT ModeOfAddr,
                         IsArray, IsProcedure, IsConstString,
                         IsVarient, IsRecordField, IsFieldVarient,
                         GetArraySubscript, IsRecord, NoOfParam,
-                        GetNthParam, IsVarParam, GetNth, GetDimension ;
+                        GetNthParam, IsVarParam, GetNth, GetDimension,
+                        MakeError ;
 
 FROM M2ALU IMPORT PushIntegerTree, PushRealTree, PushCard, Equ, Gre, Less ;
 FROM M2Batch IMPORT MakeDefinitionSource ;
@@ -1044,7 +1045,8 @@ BEGIN
    THEN
       RETURN( RealN(128) )
    ELSE
-      MetaError1('{%1ad} must be a COMPLEX type', sym)
+      MetaError1('{%1ad} must be a COMPLEX type', sym) ;
+      RETURN RType
    END
 END ComplexToScalar ;
 
@@ -1997,7 +1999,8 @@ BEGIN
 
    ELSE
       InternalError ('not expecting this metatype value')
-   END
+   END ;
+   RETURN MakeError (NearTok, NulName)
 END MixMetaTypes ;
 
 

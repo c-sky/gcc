@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -135,6 +135,11 @@ protected:
   std::vector<TypeBoundPredicate> specified_bounds;
 };
 
+extern void
+set_cmp_autoderef_mode ();
+extern void
+reset_cmp_autoderef_mode ();
+
 class TyVisitor;
 class TyConstVisitor;
 class BaseType : public TypeBoundsMappings
@@ -230,28 +235,11 @@ public:
 
   bool contains_type_parameters () const { return !is_concrete (); }
 
-  std::string mappings_str () const
-  {
-    std::string buffer = "Ref: " + std::to_string (get_ref ())
-			 + " TyRef: " + std::to_string (get_ty_ref ());
-    buffer += "[";
-    for (auto &ref : combined)
-      buffer += std::to_string (ref) + ",";
-    buffer += "]";
-    return "(" + buffer + ")";
-  }
+  std::string mappings_str () const;
 
-  std::string debug_str () const
-  {
-    return TypeKindFormat::to_string (get_kind ()) + ":" + as_string () + ":"
-	   + mappings_str () + ":" + bounds_as_string ();
-  }
+  std::string debug_str () const;
 
-  void debug () const
-  {
-    rust_debug ("[%p] %s", static_cast<const void *> (this),
-		debug_str ().c_str ());
-  }
+  void debug () const;
 
   // FIXME this will eventually go away
   const BaseType *get_root () const;
@@ -314,8 +302,8 @@ private:
 class TyWithLocation
 {
 public:
-  TyWithLocation (BaseType *ty, Location locus);
-  TyWithLocation (BaseType *ty);
+  explicit TyWithLocation (BaseType *ty, Location locus);
+  explicit TyWithLocation (BaseType *ty);
 
   BaseType *get_ty () const { return ty; }
   Location get_locus () const { return locus; }
@@ -472,8 +460,8 @@ private:
 class StructFieldType
 {
 public:
-  StructFieldType (HirId ref, std::string name, BaseType *ty)
-    : ref (ref), name (name), ty (ty)
+  StructFieldType (HirId ref, std::string name, BaseType *ty, Location locus)
+    : ref (ref), name (name), ty (ty), locus (locus)
   {}
 
   HirId get_ref () const { return ref; }
@@ -496,10 +484,13 @@ public:
 
   void debug () const { rust_debug ("%s", as_string ().c_str ()); }
 
+  Location get_locus () const { return locus; }
+
 private:
   HirId ref;
   std::string name;
   BaseType *ty;
+  Location locus;
 };
 
 class TupleType : public BaseType
@@ -557,7 +548,7 @@ public:
 
   const std::vector<TyVar> &get_fields () const { return fields; }
 
-  std::string get_name () const override final { return as_string (); }
+  std::string get_name () const override final;
 
   TupleType *handle_substitions (SubstitutionArgumentMappings mappings);
 
@@ -707,6 +698,10 @@ public:
 
     return *this;
   }
+
+  SubstitutionArgumentMappings (SubstitutionArgumentMappings &&other) = default;
+  SubstitutionArgumentMappings &operator= (SubstitutionArgumentMappings &&other)
+    = default;
 
   static SubstitutionArgumentMappings error ()
   {
@@ -974,37 +969,7 @@ public:
   solve_missing_mappings_from_this (SubstitutionRef &ref, SubstitutionRef &to);
 
   // TODO comment
-  BaseType *infer_substitions (Location locus)
-  {
-    std::vector<SubstitutionArg> args;
-    std::map<std::string, BaseType *> argument_mappings;
-    for (auto &p : get_substs ())
-      {
-	if (p.needs_substitution ())
-	  {
-	    const std::string &symbol = p.get_param_ty ()->get_symbol ();
-	    auto it = argument_mappings.find (symbol);
-	    if (it == argument_mappings.end ())
-	      {
-		TyVar infer_var = TyVar::get_implicit_infer_var (locus);
-		args.push_back (SubstitutionArg (&p, infer_var.get_tyty ()));
-		argument_mappings[symbol] = infer_var.get_tyty ();
-	      }
-	    else
-	      {
-		args.push_back (SubstitutionArg (&p, it->second));
-	      }
-	  }
-	else
-	  {
-	    args.push_back (
-	      SubstitutionArg (&p, p.get_param_ty ()->resolve ()));
-	  }
-      }
-
-    SubstitutionArgumentMappings infer_arguments (std::move (args), locus);
-    return handle_substitions (std::move (infer_arguments));
-  }
+  BaseType *infer_substitions (Location locus);
 
   // TODO comment
   bool monomorphize ();
@@ -1071,6 +1036,10 @@ public:
 
   bool requires_generic_args () const;
 
+  bool contains_associated_types () const;
+
+  DefId get_id () const { return reference; }
+
 private:
   DefId reference;
   Location locus;
@@ -1103,9 +1072,9 @@ public:
     return "";
   }
 
-  VariantDef (HirId id, std::string identifier, RustIdent ident,
+  VariantDef (HirId id, DefId defid, std::string identifier, RustIdent ident,
 	      HIR::Expr *discriminant)
-    : id (id), identifier (identifier), ident (ident),
+    : id (id), defid (defid), identifier (identifier), ident (ident),
       discriminant (discriminant)
 
   {
@@ -1113,11 +1082,11 @@ public:
     fields = {};
   }
 
-  VariantDef (HirId id, std::string identifier, RustIdent ident,
+  VariantDef (HirId id, DefId defid, std::string identifier, RustIdent ident,
 	      VariantType type, HIR::Expr *discriminant,
 	      std::vector<StructFieldType *> fields)
-    : id (id), identifier (identifier), ident (ident), type (type),
-      discriminant (discriminant), fields (fields)
+    : id (id), defid (defid), identifier (identifier), ident (ident),
+      type (type), discriminant (discriminant), fields (fields)
   {
     rust_assert (
       (type == VariantType::NUM && fields.empty ())
@@ -1125,8 +1094,8 @@ public:
   }
 
   VariantDef (const VariantDef &other)
-    : id (other.id), identifier (other.identifier), ident (other.ident),
-      type (other.type), discriminant (other.discriminant),
+    : id (other.id), defid (other.defid), identifier (other.identifier),
+      ident (other.ident), type (other.type), discriminant (other.discriminant),
       fields (other.fields)
   {}
 
@@ -1145,7 +1114,7 @@ public:
   static VariantDef &get_error_node ()
   {
     static VariantDef node
-      = VariantDef (UNKNOWN_HIRID, "",
+      = VariantDef (UNKNOWN_HIRID, UNKNOWN_DEFID, "",
 		    {Resolver::CanonicalPath::create_empty (),
 		     Linemap::unknown_location ()},
 		    nullptr);
@@ -1156,6 +1125,7 @@ public:
   bool is_error () const { return get_id () == UNKNOWN_HIRID; }
 
   HirId get_id () const { return id; }
+  DefId get_defid () const { return defid; }
 
   VariantType get_variant_type () const { return type; }
   bool is_data_variant () const { return type != VariantType::NUM; }
@@ -1251,7 +1221,7 @@ public:
     for (auto &f : fields)
       cloned_fields.push_back ((StructFieldType *) f->clone ());
 
-    return new VariantDef (id, identifier, ident, type, discriminant,
+    return new VariantDef (id, defid, identifier, ident, type, discriminant,
 			   cloned_fields);
   }
 
@@ -1261,7 +1231,7 @@ public:
     for (auto &f : fields)
       cloned_fields.push_back ((StructFieldType *) f->monomorphized_clone ());
 
-    return new VariantDef (id, identifier, ident, type, discriminant,
+    return new VariantDef (id, defid, identifier, ident, type, discriminant,
 			   cloned_fields);
   }
 
@@ -1269,6 +1239,7 @@ public:
 
 private:
   HirId id;
+  DefId defid;
   std::string identifier;
   RustIdent ident;
   VariantType type;
@@ -1374,6 +1345,11 @@ public:
 
   bool is_concrete () const override final
   {
+    if (is_unit ())
+      {
+	return !needs_substitution ();
+      }
+
     for (auto &variant : variants)
       {
 	for (auto &field : variant->get_fields ())
@@ -1654,31 +1630,39 @@ class ClosureType : public BaseType, public SubstitutionRef
 {
 public:
   ClosureType (HirId ref, DefId id, RustIdent ident,
-	       std::vector<TyVar> parameter_types, TyVar result_type,
+	       TyTy::TupleType *parameters, TyVar result_type,
 	       std::vector<SubstitutionParamMapping> subst_refs,
-	       std::set<HirId> refs = std::set<HirId> ())
+	       std::set<NodeId> captures,
+	       std::set<HirId> refs = std::set<HirId> (),
+	       std::vector<TypeBoundPredicate> specified_bounds
+	       = std::vector<TypeBoundPredicate> ())
     : BaseType (ref, ref, TypeKind::CLOSURE, ident, refs),
       SubstitutionRef (std::move (subst_refs),
 		       SubstitutionArgumentMappings::error ()),
-      parameter_types (std::move (parameter_types)),
-      result_type (std::move (result_type)), id (id)
+      parameters (parameters), result_type (std::move (result_type)), id (id),
+      captures (captures)
   {
     LocalDefId local_def_id = id.localDefId;
     rust_assert (local_def_id != UNKNOWN_LOCAL_DEFID);
+    inherit_bounds (specified_bounds);
   }
 
   ClosureType (HirId ref, HirId ty_ref, RustIdent ident, DefId id,
-	       std::vector<TyVar> parameter_types, TyVar result_type,
+	       TyTy::TupleType *parameters, TyVar result_type,
 	       std::vector<SubstitutionParamMapping> subst_refs,
-	       std::set<HirId> refs = std::set<HirId> ())
+	       std::set<NodeId> captures,
+	       std::set<HirId> refs = std::set<HirId> (),
+	       std::vector<TypeBoundPredicate> specified_bounds
+	       = std::vector<TypeBoundPredicate> ())
     : BaseType (ref, ty_ref, TypeKind::CLOSURE, ident, refs),
       SubstitutionRef (std::move (subst_refs),
 		       SubstitutionArgumentMappings::error ()),
-      parameter_types (std::move (parameter_types)),
-      result_type (std::move (result_type)), id (id)
+      parameters (parameters), result_type (std::move (result_type)), id (id),
+      captures (captures)
   {
     LocalDefId local_def_id = id.localDefId;
     rust_assert (local_def_id != UNKNOWN_LOCAL_DEFID);
+    inherit_bounds (specified_bounds);
   }
 
   void accept_vis (TyVisitor &vis) override;
@@ -1697,13 +1681,8 @@ public:
 
   bool is_concrete () const override final
   {
-    for (auto &param : parameter_types)
-      {
-	auto p = param.get_tyty ();
-	if (!p->is_concrete ())
-	  return false;
-      }
-    return result_type.get_tyty ()->is_concrete ();
+    return parameters->is_concrete ()
+	   && result_type.get_tyty ()->is_concrete ();
   }
 
   bool needs_generic_substitutions () const override final
@@ -1721,10 +1700,20 @@ public:
   ClosureType *
   handle_substitions (SubstitutionArgumentMappings mappings) override final;
 
+  TyTy::TupleType &get_parameters () const { return *parameters; }
+  TyTy::BaseType &get_result_type () const { return *result_type.get_tyty (); }
+
+  DefId get_def_id () const { return id; }
+
+  void setup_fn_once_output () const;
+
+  const std::set<NodeId> &get_captures () const { return captures; }
+
 private:
-  std::vector<TyVar> parameter_types;
+  TyTy::TupleType *parameters;
   TyVar result_type;
   DefId id;
+  std::set<NodeId> captures;
 };
 
 class ArrayType : public BaseType
@@ -2161,10 +2150,7 @@ public:
 
   std::string as_string () const override;
 
-  std::string get_name () const override final
-  {
-    return "&" + get_base ()->get_name ();
-  }
+  std::string get_name () const override final;
 
   BaseType *unify (BaseType *other) override;
   bool can_eq (const BaseType *other, bool emit_errors) const override final;
@@ -2246,11 +2232,7 @@ public:
   void accept_vis (TyConstVisitor &vis) const override;
 
   std::string as_string () const override;
-
-  std::string get_name () const override final
-  {
-    return "*" + get_base ()->get_name ();
-  }
+  std::string get_name () const override final;
 
   BaseType *unify (BaseType *other) override;
   bool can_eq (const BaseType *other, bool emit_errors) const override final;

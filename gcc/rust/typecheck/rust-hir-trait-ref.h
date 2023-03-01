@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Free Software Foundation, Inc.
+// Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -336,6 +336,15 @@ public:
 	    return true;
 	  }
       }
+
+    // lookup super traits
+    for (const auto &super_trait : super_traits)
+      {
+	bool found = super_trait->lookup_trait_item (ident, ref);
+	if (found)
+	  return true;
+      }
+
     return false;
   }
 
@@ -351,6 +360,16 @@ public:
 	if (ident.compare (item.get_identifier ()) == 0)
 	  return &item;
       }
+
+    // lookup super traits
+    for (const auto &super_trait : super_traits)
+      {
+	const TraitItemReference *res
+	  = super_trait->lookup_trait_item (ident, type);
+	if (!res->is_error ())
+	  return res;
+      }
+
     return &TraitItemReference::error_node ();
   }
 
@@ -359,6 +378,16 @@ public:
   const std::vector<TraitItemReference> &get_trait_items () const
   {
     return item_refs;
+  }
+
+  void get_trait_items_and_supers (
+    std::vector<const TraitItemReference *> &result) const
+  {
+    for (const auto &item : item_refs)
+      result.push_back (&item);
+
+    for (const auto &super_trait : super_traits)
+      super_trait->get_trait_items_and_supers (result);
   }
 
   void on_resolved ()
@@ -430,6 +459,20 @@ public:
   std::vector<TyTy::SubstitutionParamMapping> get_trait_substs () const
   {
     return trait_substs;
+  }
+
+  bool satisfies_bound (const TraitReference &reference) const
+  {
+    if (is_equal (reference))
+      return true;
+
+    for (const auto &super_trait : super_traits)
+      {
+	if (super_trait->satisfies_bound (reference))
+	  return true;
+      }
+
+    return false;
   }
 
 private:

@@ -1,5 +1,5 @@
 /* Functions related to invoking -*- C++ -*- methods and overloaded functions.
-   Copyright (C) 1987-2022 Free Software Foundation, Inc.
+   Copyright (C) 1987-2023 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com) and
    modified by Brendan Kehoe (brendan@cygnus.com).
 
@@ -4581,7 +4581,7 @@ build_user_type_conversion_1 (tree totype, tree expr, int flags,
   if (tree iters = maybe_init_list_as_range (cand->fn, expr))
     if (z_candidate *cand2
 	= build_user_type_conversion_1 (totype, iters, flags, tf_none))
-      if (cand2->viable == 1)
+      if (cand2->viable == 1 && !is_list_ctor (cand2->fn))
 	{
 	  cand = cand2;
 	  expr = iters;
@@ -5187,7 +5187,7 @@ build_operator_new_call (tree fnname, vec<tree, va_gc> **args,
    or static operator(), in which cases the source expression
    would be `obj[...]' or `obj(...)'.  */
 
-static tree
+tree
 keep_unused_object_arg (tree result, tree obj, tree fn)
 {
   if (result == NULL_TREE
@@ -7335,7 +7335,7 @@ build_new_op (const op_location_t &loc, enum tree_code code, int flags,
     case TRUTH_ORIF_EXPR:
     case TRUTH_AND_EXPR:
     case TRUTH_OR_EXPR:
-      if (complain & tf_warning)
+      if ((complain & tf_warning) && !processing_template_decl)
 	warn_logical_operator (loc, code, boolean_type_node,
 			       code_orig_arg1, arg1,
 			       code_orig_arg2, arg2);
@@ -12542,6 +12542,8 @@ joust_maybe_elide_copy (z_candidate *&cand)
   if (!DECL_COPY_CONSTRUCTOR_P (fn) && !DECL_MOVE_CONSTRUCTOR_P (fn))
     return false;
   conversion *conv = cand->convs[0];
+  if (conv->kind == ck_ambig)
+    return false;
   gcc_checking_assert (conv->kind == ck_ref_bind);
   conv = next_conversion (conv);
   if (conv->kind == ck_user && !TYPE_REF_P (conv->type))
@@ -13583,7 +13585,7 @@ set_up_extended_ref_temp (tree decl, tree expr, vec<tree, va_gc> **cleanups,
 
   /* If the initializer is constant, put it in DECL_INITIAL so we get
      static initialization and use in constant expressions.  */
-  init = maybe_constant_init (expr);
+  init = maybe_constant_init (expr, var, /*manifestly_const_eval=*/true);
   /* As in store_init_value.  */
   init = cp_fully_fold (init);
   if (TREE_CONSTANT (init))
@@ -13952,6 +13954,34 @@ static tree
 extend_ref_init_temps_1 (tree decl, tree init, vec<tree, va_gc> **cleanups,
 			 tree *cond_guard)
 {
+  /* CWG1299 (C++20): The temporary object to which the reference is bound or
+     the temporary object that is the complete object of a subobject to which
+     the reference is bound persists for the lifetime of the reference if the
+     glvalue to which the reference is bound was obtained through one of the
+     following:
+     - a temporary materialization conversion ([conv.rval]),
+     - ( expression ), where expression is one of these expressions,
+     - subscripting ([expr.sub]) of an array operand, where that operand is one
+       of these expressions,
+     - a class member access ([expr.ref]) using the . operator where the left
+       operand is one of these expressions and the right operand designates a
+       non-static data member of non-reference type,
+     - a pointer-to-member operation ([expr.mptr.oper]) using the .* operator
+       where the left operand is one of these expressions and the right operand
+       is a pointer to data member of non-reference type,
+     - a const_cast ([expr.const.cast]), static_cast ([expr.static.cast]),
+       dynamic_cast ([expr.dynamic.cast]), or reinterpret_cast
+       ([expr.reinterpret.cast]) converting, without a user-defined conversion,
+       a glvalue operand that is one of these expressions to a glvalue that
+       refers to the object designated by the operand, or to its complete
+       object or a subobject thereof,
+     - a conditional expression ([expr.cond]) that is a glvalue where the
+       second or third operand is one of these expressions, or
+     - a comma expression ([expr.comma]) that is a glvalue where the right
+       operand is one of these expressions.  */
+
+  /* FIXME several cases are still handled wrong (101572, 81420).  */
+
   tree sub = init;
   tree *p;
   STRIP_NOPS (sub);
@@ -13959,6 +13989,16 @@ extend_ref_init_temps_1 (tree decl, tree init, vec<tree, va_gc> **cleanups,
     {
       TREE_OPERAND (sub, 1)
 	= extend_ref_init_temps_1 (decl, TREE_OPERAND (sub, 1), cleanups,
+				   cond_guard);
+      return init;
+    }
+  if (TREE_CODE (sub) == POINTER_PLUS_EXPR
+      && TYPE_PTRDATAMEM_P (TREE_TYPE (tree_strip_nop_conversions
+				       (TREE_OPERAND (sub, 1)))))
+    {
+      /* A pointer-to-member operation.  */
+      TREE_OPERAND (sub, 0)
+	= extend_ref_init_temps_1 (decl, TREE_OPERAND (sub, 0), cleanups,
 				   cond_guard);
       return init;
     }

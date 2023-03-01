@@ -1,6 +1,6 @@
 (* M2Quads.mod generates quadruples.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -126,7 +126,7 @@ FROM SymbolTable IMPORT ModeOfAddr, GetMode, PutMode, GetSymName, IsUnknown,
                         GetUnboundedHighOffset,
 
                         ForeachFieldEnumerationDo, ForeachLocalSymDo,
-                        GetExported, PutImported, GetSym,
+                        GetExported, PutImported, GetSym, GetLibName,
                         IsUnused,
                         NulSym ;
 
@@ -2259,7 +2259,8 @@ END SafeRequestSym ;
 
 (*
    callRequestDependant - create a call:
-                          RequestDependant (GetSymName (modulesym), GetSymName (depModuleSym));
+                          RequestDependant (GetSymName (modulesym), GetLibName (modulesym),
+                                            GetSymName (depModuleSym), GetLibName (depModuleSym));
 *)
 
 PROCEDURE callRequestDependant (tokno: CARDINAL;
@@ -2273,17 +2274,28 @@ BEGIN
    PushT (1) ;
    BuildAdrFunction ;
 
+   PushTF (Adr, Address) ;
+   PushTtok (MakeConstLitString (tokno, GetLibName (moduleSym)), tokno) ;
+   PushT (1) ;
+   BuildAdrFunction ;
+
    IF depModuleSym = NulSym
    THEN
+      PushTF (Nil, Address) ;
       PushTF (Nil, Address)
    ELSE
       PushTF (Adr, Address) ;
       PushTtok (MakeConstLitString (tokno, GetSymName (depModuleSym)), tokno) ;
       PushT (1) ;
+      BuildAdrFunction ;
+
+      PushTF (Adr, Address) ;
+      PushTtok (MakeConstLitString (tokno, GetLibName (depModuleSym)), tokno) ;
+      PushT (1) ;
       BuildAdrFunction
    END ;
 
-   PushT (2) ;
+   PushT (4) ;
    BuildProcedureCall (tokno)
 END callRequestDependant ;
 
@@ -2344,8 +2356,8 @@ END ForeachImportedModuleDo ;
                         static void
                         dependencies (void)
                         {
-                           M2RTS_RequestDependant (module_name, "b");
-                           M2RTS_RequestDependant (module_name, NULL);
+                           M2RTS_RequestDependant (module_name, libname, "b", "b libname");
+                           M2RTS_RequestDependant (module_name, libname, NULL, NULL);
                         }
 *)
 
@@ -2469,6 +2481,7 @@ BEGIN
             }
             catch (...) {
                RTExceptions_DefaultErrorCatch ();
+               return 0;
             }
          }
       *)
@@ -2492,10 +2505,11 @@ BEGIN
       PushTtok (RequestSym (tokno, MakeKey ("envp")), tokno) ;
       PushT (3) ;
       BuildProcedureCall (tokno) ;
-
       PushZero (tokno, Integer) ;
       BuildReturn (tokno) ;
       BuildExcept (tokno) ;
+      PushZero (tokno, Integer) ;
+      BuildReturn (tokno) ;
       EndScope ;
       BuildProcedureEnd ;
       PopN (1)
@@ -2517,7 +2531,7 @@ BEGIN
       (* int
          _M2_init (int argc, char *argv[], char *envp[])
          {
-            M2RTS_ConstructModules (module_name, argc, argv, envp);
+            M2RTS_ConstructModules (module_name, libname, argc, argv, envp);
          }  *)
       PushT (initFunction) ;
       BuildProcedureStart ;
@@ -2547,10 +2561,15 @@ BEGIN
             PushT(1) ;
             BuildAdrFunction ;
 
+            PushTF(Adr, Address) ;
+            PushTtok (MakeConstLitString (tok, GetLibName (moduleSym)), tok) ;
+            PushT(1) ;
+            BuildAdrFunction ;
+
             PushTtok (SafeRequestSym (tok, MakeKey ("argc")), tok) ;
             PushTtok (SafeRequestSym (tok, MakeKey ("argv")), tok) ;
             PushTtok (SafeRequestSym (tok, MakeKey ("envp")), tok) ;
-            PushT (4) ;
+            PushT (5) ;
             BuildProcedureCall (tok) ;
          END
       ELSIF ScaffoldStatic
@@ -2602,10 +2621,15 @@ BEGIN
             PushT(1) ;
             BuildAdrFunction ;
 
+            PushTF(Adr, Address) ;
+            PushTtok (MakeConstLitString (tok, GetLibName (moduleSym)), tok) ;
+            PushT(1) ;
+            BuildAdrFunction ;
+
             PushTtok (SafeRequestSym (tok, MakeKey ("argc")), tok) ;
             PushTtok (SafeRequestSym (tok, MakeKey ("argv")), tok) ;
             PushTtok (SafeRequestSym (tok, MakeKey ("envp")), tok) ;
-            PushT (4) ;
+            PushT (5) ;
             BuildProcedureCall (tok)
          END
       ELSIF ScaffoldStatic
@@ -2628,7 +2652,7 @@ END BuildM2FiniFunction ;
                          void
                          ctorFunction ()
                          {
-                           M2RTS_RegisterModule (GetSymName (moduleSym),
+                           M2RTS_RegisterModule (GetSymName (moduleSym), GetLibName (moduleSym),
                                                  init, fini, dependencies);
                          }
 *)
@@ -2661,10 +2685,15 @@ BEGIN
             PushT (1) ;
             BuildAdrFunction ;
 
+            PushTF (Adr, Address) ;
+            PushTtok (MakeConstLitString (tok, GetLibName (moduleSym)), tok) ;
+            PushT (1) ;
+            BuildAdrFunction ;
+
             PushTtok (init, tok) ;
             PushTtok (fini, tok) ;
             PushTtok (dep, tok) ;
-            PushT (4) ;
+            PushT (5) ;
             BuildProcedureCall (tok)
          END ;
          EndScope ;
@@ -6327,7 +6356,10 @@ BEGIN
    ELSIF IsVar(Sym)
    THEN
       Type := GetDType(Sym) ;
-      IF IsUnbounded(Type)
+      IF Type = NulSym
+      THEN
+         MetaErrorT1 (tok, '{%1ad} has no type and cannot be passed to a VAR formal parameter', Sym)
+      ELSIF IsUnbounded(Type)
       THEN
          IF Type = GetSType (UnboundedSym)
          THEN
@@ -6382,7 +6414,10 @@ BEGIN
    ELSIF IsVar (Sym)
    THEN
       Type := GetDType (Sym) ;
-      IF IsUnbounded (Type)
+      IF Type = NulSym
+      THEN
+         MetaErrorT1 (tok, '{%1ad} has no type and cannot be passed to a non VAR formal parameter', Sym)
+      ELSIF IsUnbounded (Type)
       THEN
          UnboundedNonVarLinkToArray (tok, Sym, ArraySym, UnboundedSym, ParamType, dim)
       ELSIF IsArray (Type) OR IsGenericSystemType (ParamType)
@@ -6669,6 +6704,8 @@ BEGIN
    ELSIF IsVar (Sym) OR IsType (Sym)
    THEN
       RETURN GetItemPointedTo (GetSType (Sym))
+   ELSE
+      InternalError ('expecting a pointer or variable symbol')
    END
 END GetItemPointedTo ;
 
@@ -8095,14 +8132,11 @@ END BuildHighFunction ;
 
 PROCEDURE BuildConstHighFromSym (tok: CARDINAL) ;
 VAR
-   Dim,
    NoOfParam,
    ReturnVar: CARDINAL ;
 BEGIN
    PopT (NoOfParam) ;
    ReturnVar := MakeTemporary (tok, ImmediateValue) ;
-   Dim := OperandD (1) ;
-   INC (Dim) ;
    GenHigh (tok, ReturnVar, 1, OperandT (1)) ;
    PopN (NoOfParam+1) ;
    PushTtok (ReturnVar, tok)
@@ -9292,8 +9326,9 @@ BEGIN
    ELSIF GetSType (type) = NulSym
    THEN
       MetaErrorT1 (tok,
-                   'unable to obtain the {%AkMIN} value for type {%1Aad}', type)
+                   'unable to obtain the {%AkMIN} value for type {%1Aad}', type) ;
       (* non recoverable error.  *)
+      InternalError ('MetaErrorT1 {%AkMIN} should call abort')
    ELSE
       RETURN GetTypeMin (tok, func, GetSType (type))
    END
@@ -9329,8 +9364,9 @@ BEGIN
    ELSIF GetSType (type) = NulSym
    THEN
       MetaErrorT1 (tok,
-                   'unable to obtain the {%AkMAX} value for type {%1Aad}', type)
+                   'unable to obtain the {%AkMAX} value for type {%1Aad}', type) ;
       (* non recoverable error.  *)
+      InternalError ('MetaErrorT1 {%AkMAX} should call abort')
    ELSE
       RETURN GetTypeMax (tok, func, GetSType (type))
    END
@@ -9447,7 +9483,7 @@ BEGIN
          MetaErrorT1 (vartok,
                       'parameter to {%AkMAX} must be a type or a variable, seen {%1Aad}',
                       Var)
-         (* non recoverable error.  *)
+         (* non recoverable error.  *) ;
       END
    ELSE
       (* we dont know the type therefore cannot fake a return.  *)
@@ -11386,7 +11422,10 @@ VAR
 BEGIN
    PopTFrwtok (Sym1, Type1, rw, exprtok) ;
    Type1 := SkipType (Type1) ;
-   IF IsUnknown (Sym1)
+   IF Type1 = NulSym
+   THEN
+      MetaErrorT1 (ptrtok, '{%1ad} has no type and therefore cannot be dereferenced by ^', Sym1)
+   ELSIF IsUnknown (Sym1)
    THEN
       MetaError1 ('{%1EMad} is undefined and therefore {%1ad}^ cannot be resolved', Sym1)
    ELSIF IsPointer (Type1)
@@ -11436,6 +11475,7 @@ VAR
    Sym, Type,
    Ref      : CARDINAL ;
 BEGIN
+   BuildStmtNoteTok (withTok) ;
    DisplayStack ;
    PopTFtok (Sym, Type, tok) ;
    Type := SkipType (Type) ;
@@ -12872,13 +12912,16 @@ END BuildRelOp ;
                   |------------|          |------------|
 *)
 
-PROCEDURE BuildNot ;
+PROCEDURE BuildNot (notTokPos: CARDINAL) ;
 VAR
-   t, f: CARDINAL ;
+   combinedTok,
+   exprTokPos : CARDINAL ;
+   t, f       : CARDINAL ;
 BEGIN
    CheckBooleanId ;
-   PopBool (t, f) ;
-   PushBool (f, t)
+   PopBooltok (t, f, exprTokPos) ;
+   combinedTok := MakeVirtualTok (notTokPos, notTokPos, exprTokPos) ;
+   PushBooltok (f, t, combinedTok)
 END BuildNot ;
 
 
@@ -13662,11 +13705,11 @@ END OperandTtok ;
 
 
 (*
-   PopBool - Pops a True and a False exit quad number from the True/False
-             stack.
+   PopBooltok - Pops a True and a False exit quad number from the True/False
+                stack.
 *)
 
-PROCEDURE PopBool (VAR True, False: CARDINAL) ;
+PROCEDURE PopBooltok (VAR True, False: CARDINAL; VAR tokno: CARDINAL) ;
 VAR
    f: BoolFrame ;
 BEGIN
@@ -13674,9 +13717,47 @@ BEGIN
    WITH f^ DO
       True := TrueExit ;
       False := FalseExit ;
+      tokno := tokenno ;
       Assert (BooleanOp)
    END ;
    DISPOSE (f)
+END PopBooltok ;
+
+
+(*
+   PushBooltok - Push a True and a False exit quad numbers onto the
+                 True/False stack.
+*)
+
+PROCEDURE PushBooltok (True, False: CARDINAL; tokno: CARDINAL) ;
+VAR
+   f: BoolFrame ;
+BEGIN
+   Assert (True<=NextQuad) ;
+   Assert (False<=NextQuad) ;
+   f := newBoolFrame () ;
+   WITH f^ DO
+      TrueExit := True ;
+      FalseExit := False ;
+      BooleanOp := TRUE ;
+      tokenno := tokno ;
+      Annotation := NIL
+   END ;
+   PushAddress (BoolStack, f) ;
+   Annotate ('<q%1d>|<q%2d>||true quad|false quad')
+END PushBooltok ;
+
+
+(*
+   PopBool - Pops a True and a False exit quad number from the True/False
+             stack.
+*)
+
+PROCEDURE PopBool (VAR True, False: CARDINAL) ;
+VAR
+   tokno: CARDINAL ;
+BEGIN
+   PopBooltok (True, False, tokno)
 END PopBool ;
 
 
@@ -13686,20 +13767,8 @@ END PopBool ;
 *)
 
 PROCEDURE PushBool (True, False: CARDINAL) ;
-VAR
-   f: BoolFrame ;
 BEGIN
-   Assert(True<=NextQuad) ;
-   Assert(False<=NextQuad) ;
-   NEW(f) ;
-   WITH f^ DO
-      TrueExit := True ;
-      FalseExit := False ;
-      BooleanOp := TRUE ;
-      Annotation := NIL
-   END ;
-   PushAddress (BoolStack, f) ;
-   Annotate ('<q%1d>|<q%2d>||true quad|false quad')
+   PushBooltok (True, False, UnknownTokenNo)
 END PushBool ;
 
 
@@ -14069,23 +14138,34 @@ END PushLineNo ;
 
 PROCEDURE BuildStmtNote (offset: INTEGER) ;
 VAR
-   filename: Name ;
-   f       : QuadFrame ;
-   i       : INTEGER ;
+   tokenno: INTEGER ;
 BEGIN
    IF NextQuad#Head
    THEN
-      f := GetQF (NextQuad-1) ;
-      i := offset ;
-      INC (i, GetTokenNo ()) ;
-      (* no need to have multiple notes at the same position.  *)
-      IF (f^.Operator # StatementNoteOp) OR (f^.Operand3 # VAL (CARDINAL, i))
-      THEN
-         filename := makekey (string (GetFileName ())) ;
-         GenQuad (StatementNoteOp, WORD (filename), NulSym, i)
-      END
+      tokenno := offset ;
+      INC (tokenno, GetTokenNo ()) ;
+      BuildStmtNoteTok (VAL(CARDINAL, tokenno))
    END
 END BuildStmtNote ;
+
+
+(*
+   BuildStmtNoteTok - adds a nop (with an assigned tokenno location) to the code.
+*)
+
+PROCEDURE BuildStmtNoteTok (tokenno: CARDINAL) ;
+VAR
+   filename: Name ;
+   f       : QuadFrame ;
+BEGIN
+   f := GetQF (NextQuad-1) ;
+   (* no need to have multiple notes at the same position.  *)
+   IF (f^.Operator # StatementNoteOp) OR (f^.Operand3 # tokenno)
+   THEN
+      filename := makekey (string (GetFileName ())) ;
+      GenQuad (StatementNoteOp, WORD (filename), NulSym, tokenno)
+   END
+END BuildStmtNoteTok ;
 
 
 (*
@@ -14571,7 +14651,7 @@ PROCEDURE newBoolFrame () : BoolFrame ;
 VAR
    f: BoolFrame ;
 BEGIN
-   NEW(f) ;
+   NEW (f) ;
    WITH f^ DO
       TrueExit   := 0 ;
       FalseExit  := 0 ;
@@ -14618,7 +14698,7 @@ BEGIN
    WITH f^ DO
       TrueExit := True
    END ;
-   PushAddress(BoolStack, f)
+   PushAddress (BoolStack, f)
 END PushT ;
 
 
@@ -14630,7 +14710,7 @@ PROCEDURE PopT (VAR True: WORD) ;
 VAR
    f: BoolFrame ;
 BEGIN
-   f := PopAddress(BoolStack) ;
+   f := PopAddress (BoolStack) ;
    WITH f^ DO
       True := TrueExit ;
       Assert(NOT BooleanOp)

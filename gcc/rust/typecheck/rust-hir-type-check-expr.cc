@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -158,17 +158,17 @@ void
 TypeCheckExpr::visit (HIR::ReturnExpr &expr)
 {
   auto fn_return_tyty = context->peek_return_type ();
-  rust_assert (fn_return_tyty != nullptr);
-
+  Location expr_locus = expr.has_return_expr () ? expr.get_expr ()->get_locus ()
+						: expr.get_locus ();
   TyTy::BaseType *expr_ty
     = expr.has_return_expr ()
 	? TypeCheckExpr::Resolve (expr.get_expr ())
 	: TyTy::TupleType::get_unit_type (expr.get_mappings ().get_hirid ());
 
-  infered = fn_return_tyty->unify (expr_ty);
-  fn_return_tyty->append_reference (expr_ty->get_ref ());
-  for (auto &ref : infered->get_combined_refs ())
-    fn_return_tyty->append_reference (ref);
+  infered = unify_site (expr.get_mappings ().get_hirid (),
+			TyTy::TyWithLocation (fn_return_tyty),
+			TyTy::TyWithLocation (expr_ty, expr_locus),
+			expr.get_locus ());
 
   infered = new TyTy::NeverType (expr.get_mappings ().get_hirid ());
 }
@@ -178,15 +178,8 @@ TypeCheckExpr::visit (HIR::CallExpr &expr)
 {
   TyTy::BaseType *function_tyty = TypeCheckExpr::Resolve (expr.get_fnexpr ());
 
-  bool valid_tyty = function_tyty->get_kind () == TyTy::TypeKind::ADT
-		    || function_tyty->get_kind () == TyTy::TypeKind::FNDEF
-		    || function_tyty->get_kind () == TyTy::TypeKind::FNPTR;
-  if (!valid_tyty)
-    {
-      rust_error_at (expr.get_locus (),
-		     "Failed to resolve expression of function call");
-      return;
-    }
+  rust_debug_loc (expr.get_locus (), "resolved_call_expr to: {%s}",
+		  function_tyty->get_name ().c_str ());
 
   TyTy::VariantDef &variant = TyTy::VariantDef::get_error_node ();
   if (function_tyty->get_kind () == TyTy::TypeKind::ADT)
@@ -211,6 +204,24 @@ TypeCheckExpr::visit (HIR::CallExpr &expr)
 	  rust_assert (adt->number_of_variants () == 1);
 	  variant = *adt->get_variants ().at (0);
 	}
+
+      infered
+	= TyTy::TypeCheckCallExpr::go (function_tyty, expr, variant, context);
+      return;
+    }
+
+  bool resolved_fn_trait_call
+    = resolve_fn_trait_call (expr, function_tyty, &infered);
+  if (resolved_fn_trait_call)
+    return;
+
+  bool valid_tyty = function_tyty->get_kind () == TyTy::TypeKind::FNDEF
+		    || function_tyty->get_kind () == TyTy::TypeKind::FNPTR;
+  if (!valid_tyty)
+    {
+      rust_error_at (expr.get_locus (),
+		     "Failed to resolve expression of function call");
+      return;
     }
 
   infered = TyTy::TypeCheckCallExpr::go (function_tyty, expr, variant, context);
@@ -224,7 +235,9 @@ TypeCheckExpr::visit (HIR::AssignmentExpr &expr)
   auto lhs = TypeCheckExpr::Resolve (expr.get_lhs ());
   auto rhs = TypeCheckExpr::Resolve (expr.get_rhs ());
 
-  coercion_site (expr.get_mappings ().get_hirid (), lhs, rhs,
+  coercion_site (expr.get_mappings ().get_hirid (),
+		 TyTy::TyWithLocation (lhs, expr.get_lhs ()->get_locus ()),
+		 TyTy::TyWithLocation (rhs, expr.get_rhs ()->get_locus ()),
 		 expr.get_locus ());
 }
 
@@ -238,9 +251,12 @@ TypeCheckExpr::visit (HIR::CompoundAssignmentExpr &expr)
 
   // we dont care about the result of the unify from a compound assignment
   // since this is a unit-type expr
-  auto result = lhs->unify (rhs);
-  if (result->get_kind () == TyTy::TypeKind::ERROR)
-    return;
+  coercion_site (expr.get_mappings ().get_hirid (),
+		 TyTy::TyWithLocation (lhs,
+				       expr.get_left_expr ()->get_locus ()),
+		 TyTy::TyWithLocation (rhs,
+				       expr.get_right_expr ()->get_locus ()),
+		 expr.get_locus ());
 
   auto lang_item_type
     = Analysis::RustLangItem::CompoundAssignmentOperatorToLangItem (
@@ -304,8 +320,13 @@ TypeCheckExpr::visit (HIR::ArithmeticOrLogicalExpr &expr)
       }
       break;
 
-    default:
-      infered = lhs->unify (rhs);
+      default: {
+	infered = unify_site (
+	  expr.get_mappings ().get_hirid (),
+	  TyTy::TyWithLocation (lhs, expr.get_lhs ()->get_locus ()),
+	  TyTy::TyWithLocation (rhs, expr.get_rhs ()->get_locus ()),
+	  expr.get_locus ());
+      }
       break;
     }
 }
@@ -316,9 +337,10 @@ TypeCheckExpr::visit (HIR::ComparisonExpr &expr)
   auto lhs = TypeCheckExpr::Resolve (expr.get_lhs ());
   auto rhs = TypeCheckExpr::Resolve (expr.get_rhs ());
 
-  auto result = lhs->unify (rhs);
-  if (result == nullptr || result->get_kind () == TyTy::TypeKind::ERROR)
-    return;
+  unify_site (expr.get_mappings ().get_hirid (),
+	      TyTy::TyWithLocation (lhs, expr.get_lhs ()->get_locus ()),
+	      TyTy::TyWithLocation (rhs, expr.get_rhs ()->get_locus ()),
+	      expr.get_locus ());
 
   bool ok = context->lookup_builtin ("bool", &infered);
   rust_assert (ok);
@@ -331,17 +353,28 @@ TypeCheckExpr::visit (HIR::LazyBooleanExpr &expr)
   auto rhs = TypeCheckExpr::Resolve (expr.get_rhs ());
 
   // we expect the lhs and rhs must be bools at this point
-  TyTy::BoolType elhs (expr.get_mappings ().get_hirid ());
-  lhs = elhs.unify (lhs);
-  if (lhs->get_kind () == TyTy::TypeKind::ERROR)
-    return;
+  TyTy::BaseType *boolean_node = nullptr;
+  bool ok = context->lookup_builtin ("bool", &boolean_node);
+  rust_assert (ok);
 
-  TyTy::BoolType rlhs (expr.get_mappings ().get_hirid ());
-  rhs = elhs.unify (rhs);
-  if (lhs->get_kind () == TyTy::TypeKind::ERROR)
-    return;
+  // verify the lhs and rhs before unifying together
+  lhs = unify_site (expr.get_mappings ().get_hirid (),
+		    TyTy::TyWithLocation (boolean_node,
+					  expr.get_lhs ()->get_locus ()),
+		    TyTy::TyWithLocation (lhs, expr.get_lhs ()->get_locus ()),
+		    expr.get_locus ());
 
-  infered = lhs->unify (rhs);
+  rhs = unify_site (expr.get_mappings ().get_hirid (),
+		    TyTy::TyWithLocation (boolean_node,
+					  expr.get_rhs ()->get_locus ()),
+		    TyTy::TyWithLocation (rhs, expr.get_rhs ()->get_locus ()),
+		    expr.get_locus ());
+
+  infered
+    = unify_site (expr.get_mappings ().get_hirid (),
+		  TyTy::TyWithLocation (lhs, expr.get_lhs ()->get_locus ()),
+		  TyTy::TyWithLocation (rhs, expr.get_rhs ()->get_locus ()),
+		  expr.get_locus ());
 }
 
 void
@@ -426,7 +459,15 @@ TypeCheckExpr::visit (HIR::IfExprConseqElse &expr)
   else if (else_blk_resolved->get_kind () == TyTy::NEVER)
     infered = if_blk_resolved;
   else
-    infered = if_blk_resolved->unify (else_blk_resolved);
+    {
+      infered = unify_site (
+	expr.get_mappings ().get_hirid (),
+	TyTy::TyWithLocation (if_blk_resolved,
+			      expr.get_if_block ()->get_locus ()),
+	TyTy::TyWithLocation (else_blk_resolved,
+			      expr.get_else_block ()->get_locus ()),
+	expr.get_locus ());
+    }
 }
 
 void
@@ -441,7 +482,15 @@ TypeCheckExpr::visit (HIR::IfExprConseqIf &expr)
   else if (else_blk_resolved->get_kind () == TyTy::NEVER)
     infered = if_blk_resolved;
   else
-    infered = if_blk_resolved->unify (else_blk_resolved);
+    {
+      infered = unify_site (
+	expr.get_mappings ().get_hirid (),
+	TyTy::TyWithLocation (if_blk_resolved,
+			      expr.get_if_block ()->get_locus ()),
+	TyTy::TyWithLocation (else_blk_resolved,
+			      expr.get_conseq_if_expr ()->get_locus ()),
+	expr.get_locus ());
+    }
 }
 
 void
@@ -457,9 +506,10 @@ TypeCheckExpr::visit (HIR::IfLetExpr &expr)
       TyTy::BaseType *kase_arm_ty
 	= TypeCheckPattern::Resolve (pattern.get (), scrutinee_tyty);
 
-      TyTy::BaseType *checked_kase = scrutinee_tyty->unify (kase_arm_ty);
-      if (checked_kase->get_kind () == TyTy::TypeKind::ERROR)
-	return;
+      unify_site (expr.get_mappings ().get_hirid (),
+		  TyTy::TyWithLocation (scrutinee_tyty),
+		  TyTy::TyWithLocation (kase_arm_ty, pattern->get_locus ()),
+		  expr.get_locus ());
     }
 
   TypeCheckExpr::Resolve (expr.get_if_block ());
@@ -500,7 +550,10 @@ TypeCheckExpr::visit (HIR::BlockExpr &expr)
 	{
 	  auto unit
 	    = TyTy::TupleType::get_unit_type (s->get_mappings ().get_hirid ());
-	  resolved = unit->unify (resolved);
+	  resolved
+	    = unify_site (s->get_mappings ().get_hirid (),
+			  TyTy::TyWithLocation (unit),
+			  TyTy::TyWithLocation (resolved), s->get_locus ());
 	}
     }
 
@@ -510,7 +563,10 @@ TypeCheckExpr::visit (HIR::BlockExpr &expr)
     infered
       = TyTy::TupleType::get_unit_type (expr.get_mappings ().get_hirid ());
   else
-    infered = new TyTy::NeverType (expr.get_mappings ().get_hirid ());
+    {
+      // FIXME this seems wrong
+      infered = new TyTy::NeverType (expr.get_mappings ().get_hirid ());
+    }
 }
 
 void
@@ -550,7 +606,12 @@ TypeCheckExpr::visit (HIR::RangeFromToExpr &expr)
   TyTy::BaseType *from_ty
     = TypeCheckExpr::Resolve (expr.get_from_expr ().get ());
   TyTy::BaseType *to_ty = TypeCheckExpr::Resolve (expr.get_to_expr ().get ());
-  TyTy::BaseType *unified = from_ty->unify (to_ty);
+
+  TyTy::BaseType *unified = unify_site (
+    expr.get_mappings ().get_hirid (),
+    TyTy::TyWithLocation (from_ty, expr.get_from_expr ()->get_locus ()),
+    TyTy::TyWithLocation (to_ty, expr.get_to_expr ()->get_locus ()),
+    expr.get_locus ());
 
   // substitute it in
   std::vector<TyTy::SubstitutionArg> subst_mappings;
@@ -720,7 +781,11 @@ TypeCheckExpr::visit (HIR::RangeFromToInclExpr &expr)
   TyTy::BaseType *from_ty
     = TypeCheckExpr::Resolve (expr.get_from_expr ().get ());
   TyTy::BaseType *to_ty = TypeCheckExpr::Resolve (expr.get_to_expr ().get ());
-  TyTy::BaseType *unified = from_ty->unify (to_ty);
+  TyTy::BaseType *unified = unify_site (
+    expr.get_mappings ().get_hirid (),
+    TyTy::TyWithLocation (from_ty, expr.get_from_expr ()->get_locus ()),
+    TyTy::TyWithLocation (to_ty, expr.get_to_expr ()->get_locus ()),
+    expr.get_locus ());
 
   // substitute it in
   std::vector<TyTy::SubstitutionArg> subst_mappings;
@@ -761,9 +826,11 @@ TypeCheckExpr::visit (HIR::ArrayIndexExpr &expr)
   if (maybe_simple_array_access
       && direct_array_expr_ty->get_kind () == TyTy::TypeKind::ARRAY)
     {
-      auto resolved_index_expr = size_ty->unify (index_expr_ty);
-      if (resolved_index_expr->get_kind () == TyTy::TypeKind::ERROR)
-	return;
+      unify_site (expr.get_index_expr ()->get_mappings ().get_hirid (),
+		  TyTy::TyWithLocation (size_ty),
+		  TyTy::TyWithLocation (index_expr_ty,
+					expr.get_index_expr ()->get_locus ()),
+		  expr.get_locus ());
 
       TyTy::ArrayType *array_type
 	= static_cast<TyTy::ArrayType *> (direct_array_expr_ty);
@@ -819,9 +886,11 @@ TypeCheckExpr::visit (HIR::ArrayExpr &expr)
 	context->insert_type (elems.get_num_copies_expr ()->get_mappings (),
 			      expected_ty);
 
-	auto unified = expected_ty->unify (capacity_type);
-	if (unified->get_kind () == TyTy::TypeKind::ERROR)
-	  return;
+	unify_site (
+	  expr.get_mappings ().get_hirid (), TyTy::TyWithLocation (expected_ty),
+	  TyTy::TyWithLocation (capacity_type,
+				elems.get_num_copies_expr ()->get_locus ()),
+	  expr.get_locus ());
 
 	capacity_expr = elems.get_num_copies_expr ();
       }
@@ -837,11 +906,16 @@ TypeCheckExpr::visit (HIR::ArrayExpr &expr)
 	    types.push_back (TypeCheckExpr::Resolve (elem.get ()));
 	  }
 
+	// this is a LUB
 	element_type
 	  = TyTy::TyVar::get_implicit_infer_var (expr.get_locus ()).get_tyty ();
 	for (auto &type : types)
 	  {
-	    element_type = element_type->unify (type);
+	    element_type
+	      = unify_site (expr.get_mappings ().get_hirid (),
+			    TyTy::TyWithLocation (element_type),
+			    TyTy::TyWithLocation (type, type->get_locus ()),
+			    expr.get_locus ());
 	  }
 
 	auto crate_num = mappings->get_current_crate ();
@@ -949,10 +1023,10 @@ TypeCheckExpr::visit (HIR::MethodCallExpr &expr)
 
   context->insert_receiver (expr.get_mappings ().get_hirid (), receiver_tyty);
 
-  auto candidate
+  auto candidates
     = MethodResolver::Probe (receiver_tyty,
 			     expr.get_method_name ().get_segment ());
-  if (candidate.is_error ())
+  if (candidates.empty ())
     {
       rust_error_at (
 	expr.get_method_name ().get_locus (),
@@ -960,6 +1034,24 @@ TypeCheckExpr::visit (HIR::MethodCallExpr &expr)
 	expr.get_method_name ().get_segment ().as_string ().c_str ());
       return;
     }
+
+  if (candidates.size () > 1)
+    {
+      RichLocation r (expr.get_method_name ().get_locus ());
+      for (auto &c : candidates)
+	r.add_range (c.candidate.locus);
+
+      rust_error_at (
+	r, "multiple candidates found for method %<%s%>",
+	expr.get_method_name ().get_segment ().as_string ().c_str ());
+      return;
+    }
+
+  auto candidate = *candidates.begin ();
+  rust_debug_loc (expr.get_method_name ().get_locus (),
+		  "resolved method to: {%u} {%s}",
+		  candidate.candidate.ty->get_ref (),
+		  candidate.candidate.ty->debug_str ().c_str ());
 
   // Get the adjusted self
   Adjuster adj (receiver_tyty);
@@ -1058,6 +1150,10 @@ TypeCheckExpr::visit (HIR::MethodCallExpr &expr)
   if (expr.get_method_name ().has_generic_args ())
     {
       HIR::GenericArgs &args = expr.get_method_name ().get_generic_args ();
+      rust_debug_loc (args.get_locus (),
+		      "applying generic arguments to method_call: {%s}",
+		      lookup->debug_str ().c_str ());
+
       lookup
 	= SubstMapper::Resolve (lookup, expr.get_method_name ().get_locus (),
 				&args);
@@ -1066,12 +1162,17 @@ TypeCheckExpr::visit (HIR::MethodCallExpr &expr)
     }
   else if (lookup->needs_generic_substitutions ())
     {
+      rust_debug ("method needs inference: {%s}",
+		  lookup->debug_str ().c_str ());
       lookup = SubstMapper::InferSubst (lookup,
 					expr.get_method_name ().get_locus ());
     }
 
+  rust_debug ("type-checking method_call: {%s}", lookup->debug_str ().c_str ());
+
   TyTy::BaseType *function_ret_tyty
-    = TyTy::TypeCheckMethodCallExpr::go (lookup, expr, adjusted_self, context);
+    = TyTy::TypeCheckMethodCallExpr::go (static_cast<TyTy::FnType *> (lookup),
+					 expr, adjusted_self, context);
   if (function_ret_tyty == nullptr
       || function_ret_tyty->get_kind () == TyTy::TypeKind::ERROR)
     {
@@ -1163,7 +1264,12 @@ TypeCheckExpr::visit (HIR::BreakExpr &expr)
 	  return;
 	}
 
-      TyTy::BaseType *unified_ty = loop_context->unify (break_expr_tyty);
+      TyTy::BaseType *unified_ty
+	= unify_site (expr.get_mappings ().get_hirid (),
+		      TyTy::TyWithLocation (loop_context),
+		      TyTy::TyWithLocation (break_expr_tyty,
+					    expr.get_expr ()->get_locus ()),
+		      expr.get_locus ());
       context->swap_head_loop_context (unified_ty);
     }
 
@@ -1207,12 +1313,6 @@ TypeCheckExpr::visit (HIR::BorrowExpr &expr)
 	  infered = resolved_base;
 	  return;
 	}
-    }
-
-  if (expr.get_is_double_borrow ())
-    {
-      // FIXME double_reference
-      gcc_unreachable ();
     }
 
   infered = new TyTy::ReferenceType (expr.get_mappings ().get_hirid (),
@@ -1294,7 +1394,12 @@ TypeCheckExpr::visit (HIR::MatchExpr &expr)
 	  TyTy::BaseType *kase_arm_ty
 	    = TypeCheckPattern::Resolve (pattern.get (), scrutinee_tyty);
 
-	  TyTy::BaseType *checked_kase = scrutinee_tyty->unify (kase_arm_ty);
+	  TyTy::BaseType *checked_kase = unify_site (
+	    expr.get_mappings ().get_hirid (),
+	    TyTy::TyWithLocation (scrutinee_tyty,
+				  expr.get_scrutinee_expr ()->get_locus ()),
+	    TyTy::TyWithLocation (kase_arm_ty, pattern->get_locus ()),
+	    expr.get_locus ());
 	  if (checked_kase->get_kind () == TyTy::TypeKind::ERROR)
 	    return;
 	}
@@ -1312,14 +1417,139 @@ TypeCheckExpr::visit (HIR::MatchExpr &expr)
       return;
     }
 
+  // this is a LUB
   infered = kase_block_tys.at (0);
   for (size_t i = 1; i < kase_block_tys.size (); i++)
     {
       TyTy::BaseType *kase_ty = kase_block_tys.at (i);
-      infered = infered->unify (kase_ty);
-      if (infered->get_kind () == TyTy::TypeKind::ERROR)
-	return;
+      infered = unify_site (expr.get_mappings ().get_hirid (),
+			    TyTy::TyWithLocation (infered),
+			    TyTy::TyWithLocation (kase_ty), expr.get_locus ());
     }
+}
+
+void
+TypeCheckExpr::visit (HIR::ClosureExpr &expr)
+{
+  TypeCheckContextItem &current_context = context->peek_context ();
+  TyTy::FnType *current_context_fndecl = current_context.get_context_type ();
+
+  HirId ref = expr.get_mappings ().get_hirid ();
+  DefId id = expr.get_mappings ().get_defid ();
+  RustIdent ident{current_context_fndecl->get_ident ().path, expr.get_locus ()};
+
+  // get from parent context
+  std::vector<TyTy::SubstitutionParamMapping> subst_refs
+    = current_context_fndecl->clone_substs ();
+
+  std::vector<TyTy::TyVar> parameter_types;
+  for (auto &p : expr.get_params ())
+    {
+      if (p.has_type_given ())
+	{
+	  TyTy::BaseType *param_tyty
+	    = TypeCheckType::Resolve (p.get_type ().get ());
+	  TyTy::TyVar param_ty (param_tyty->get_ref ());
+	  parameter_types.push_back (param_ty);
+
+	  TypeCheckPattern::Resolve (p.get_pattern ().get (),
+				     param_ty.get_tyty ());
+	}
+      else
+	{
+	  TyTy::TyVar param_ty
+	    = TyTy::TyVar::get_implicit_infer_var (p.get_locus ());
+	  parameter_types.push_back (param_ty);
+
+	  TypeCheckPattern::Resolve (p.get_pattern ().get (),
+				     param_ty.get_tyty ());
+	}
+    }
+
+  // we generate an implicit hirid for the closure args
+  HirId implicit_args_id = mappings->get_next_hir_id ();
+  TyTy::TupleType *closure_args
+    = new TyTy::TupleType (implicit_args_id, expr.get_locus (),
+			   parameter_types);
+  context->insert_implicit_type (closure_args);
+
+  Location result_type_locus = expr.has_return_type ()
+				 ? expr.get_return_type ()->get_locus ()
+				 : expr.get_locus ();
+  TyTy::TyVar result_type
+    = expr.has_return_type ()
+	? TyTy::TyVar (
+	  TypeCheckType::Resolve (expr.get_return_type ().get ())->get_ref ())
+	: TyTy::TyVar::get_implicit_infer_var (expr.get_locus ());
+
+  // resolve the block
+  Location closure_expr_locus = expr.get_expr ()->get_locus ();
+  TyTy::BaseType *closure_expr_ty
+    = TypeCheckExpr::Resolve (expr.get_expr ().get ());
+  coercion_site (expr.get_mappings ().get_hirid (),
+		 TyTy::TyWithLocation (result_type.get_tyty (),
+				       result_type_locus),
+		 TyTy::TyWithLocation (closure_expr_ty, closure_expr_locus),
+		 expr.get_locus ());
+
+  // generate the closure type
+  NodeId closure_node_id = expr.get_mappings ().get_nodeid ();
+  const std::set<NodeId> &captures = resolver->get_captures (closure_node_id);
+  infered = new TyTy::ClosureType (ref, id, ident, closure_args, result_type,
+				   subst_refs, captures);
+
+  // FIXME
+  // all closures automatically inherit the appropriate fn trait. Lets just
+  // assume FnOnce for now. I think this is based on the return type of the
+  // closure
+
+  Analysis::RustLangItem::ItemType lang_item_type
+    = Analysis::RustLangItem::ItemType::FN_ONCE;
+  DefId respective_lang_item_id = UNKNOWN_DEFID;
+  bool lang_item_defined
+    = mappings->lookup_lang_item (lang_item_type, &respective_lang_item_id);
+  if (!lang_item_defined)
+    {
+      // FIXME
+      // we need to have a unified way or error'ing when we are missing lang
+      // items that is useful
+      rust_fatal_error (
+	expr.get_locus (), "unable to find lang item: %<%s%>",
+	Analysis::RustLangItem::ToString (lang_item_type).c_str ());
+    }
+  rust_assert (lang_item_defined);
+
+  // these lang items are always traits
+  HIR::Item *item = mappings->lookup_defid (respective_lang_item_id);
+  rust_assert (item->get_item_kind () == HIR::Item::ItemKind::Trait);
+  HIR::Trait *trait_item = static_cast<HIR::Trait *> (item);
+
+  TraitReference *trait = TraitResolver::Resolve (*trait_item);
+  rust_assert (!trait->is_error ());
+
+  TyTy::TypeBoundPredicate predicate (*trait, expr.get_locus ());
+
+  // resolve the trait bound where the <(Args)> are the parameter tuple type
+  HIR::GenericArgs args = HIR::GenericArgs::create_empty (expr.get_locus ());
+
+  // lets generate an implicit Type so that it resolves to the implict tuple
+  // type we have created
+  auto crate_num = mappings->get_current_crate ();
+  Analysis::NodeMapping mapping (crate_num, expr.get_mappings ().get_nodeid (),
+				 implicit_args_id, UNKNOWN_LOCAL_DEFID);
+  HIR::TupleType *implicit_tuple
+    = new HIR::TupleType (mapping,
+			  {} // we dont need to fill this out because it will
+			     // auto resolve because the hir id's match
+			  ,
+			  expr.get_locus ());
+  args.get_type_args ().push_back (std::unique_ptr<HIR::Type> (implicit_tuple));
+
+  // apply the arguments
+  predicate.apply_generic_arguments (&args);
+
+  // finally inherit the trait bound
+  infered->inherit_bounds ({predicate});
 }
 
 bool
@@ -1339,14 +1569,28 @@ TypeCheckExpr::resolve_operator_overload (
     return false;
 
   auto segment = HIR::PathIdentSegment (associated_item_name);
-  auto candidate
+  auto candidates
     = MethodResolver::Probe (lhs, HIR::PathIdentSegment (associated_item_name));
 
-  bool have_implementation_for_lang_item = !candidate.is_error ();
+  bool have_implementation_for_lang_item = candidates.size () > 0;
   if (!have_implementation_for_lang_item)
     return false;
 
+  if (candidates.size () > 1)
+    {
+      // mutliple candidates
+      RichLocation r (expr.get_locus ());
+      for (auto &c : candidates)
+	r.add_range (c.candidate.locus);
+
+      rust_error_at (
+	r, "multiple candidates found for possible operator overload");
+
+      return false;
+    }
+
   // Get the adjusted self
+  auto candidate = *candidates.begin ();
   Adjuster adj (lhs);
   TyTy::BaseType *adjusted_self = adj.adjust_type (candidate.adjustments);
 
@@ -1474,7 +1718,11 @@ TypeCheckExpr::resolve_operator_overload (
   TyTy::FnType *type = static_cast<TyTy::FnType *> (lookup);
   rust_assert (type->num_params () > 0);
   auto fnparam = type->param_at (0);
-  fnparam.second->unify (adjusted_self); // typecheck the self
+
+  // typecheck the self
+  unify_site (expr.get_mappings ().get_hirid (),
+	      TyTy::TyWithLocation (fnparam.second),
+	      TyTy::TyWithLocation (adjusted_self), expr.get_locus ());
   if (rhs == nullptr)
     {
       rust_assert (type->num_params () == 1);
@@ -1483,7 +1731,9 @@ TypeCheckExpr::resolve_operator_overload (
     {
       rust_assert (type->num_params () == 2);
       auto fnparam = type->param_at (1);
-      fnparam.second->unify (rhs); // typecheck the rhs
+      unify_site (expr.get_mappings ().get_hirid (),
+		  TyTy::TyWithLocation (fnparam.second),
+		  TyTy::TyWithLocation (rhs), expr.get_locus ());
     }
 
   rust_assert (lookup->get_kind () == TyTy::TypeKind::FNDEF);
@@ -1503,6 +1753,168 @@ TypeCheckExpr::resolve_operator_overload (
 
   // return the result of the function back
   infered = function_ret_tyty;
+
+  return true;
+}
+
+HIR::PathIdentSegment
+TypeCheckExpr::resolve_possible_fn_trait_call_method_name (
+  const TyTy::BaseType &receiver)
+{
+  // Question
+  // do we need to probe possible bounds here? I think not, i think when we
+  // support Fn traits they are explicitly specified
+
+  // FIXME
+  // the logic to map the FnTrait to their respective call trait-item is
+  // duplicated over in the backend/rust-compile-expr.cc
+  for (const auto &bound : receiver.get_specified_bounds ())
+    {
+      bool found_fn = bound.get_name ().compare ("Fn") == 0;
+      bool found_fn_mut = bound.get_name ().compare ("FnMut") == 0;
+      bool found_fn_once = bound.get_name ().compare ("FnOnce") == 0;
+
+      if (found_fn)
+	{
+	  return HIR::PathIdentSegment ("call");
+	}
+      else if (found_fn_mut)
+	{
+	  return HIR::PathIdentSegment ("call_mut");
+	}
+      else if (found_fn_once)
+	{
+	  return HIR::PathIdentSegment ("call_once");
+	}
+    }
+
+  // nothing
+  return HIR::PathIdentSegment ("");
+}
+
+bool
+TypeCheckExpr::resolve_fn_trait_call (HIR::CallExpr &expr,
+				      TyTy::BaseType *receiver_tyty,
+				      TyTy::BaseType **result)
+{
+  // we turn this into a method call expr
+  HIR::PathIdentSegment method_name
+    = resolve_possible_fn_trait_call_method_name (*receiver_tyty);
+  if (method_name.is_error ())
+    return false;
+
+  auto candidates = MethodResolver::Probe (receiver_tyty, method_name);
+  if (candidates.empty ())
+    return false;
+
+  if (candidates.size () > 1)
+    {
+      RichLocation r (expr.get_locus ());
+      for (auto &c : candidates)
+	r.add_range (c.candidate.locus);
+
+      rust_error_at (
+	r, "multiple candidates found for function trait method call %<%s%>",
+	method_name.as_string ().c_str ());
+      return false;
+    }
+
+  if (receiver_tyty->get_kind () == TyTy::TypeKind::CLOSURE)
+    {
+      const TyTy::ClosureType &closure
+	= static_cast<TyTy::ClosureType &> (*receiver_tyty);
+      closure.setup_fn_once_output ();
+    }
+
+  auto candidate = *candidates.begin ();
+  rust_debug_loc (expr.get_locus (),
+		  "resolved call-expr to fn trait: {%u} {%s}",
+		  candidate.candidate.ty->get_ref (),
+		  candidate.candidate.ty->debug_str ().c_str ());
+
+  // Get the adjusted self
+  Adjuster adj (receiver_tyty);
+  TyTy::BaseType *adjusted_self = adj.adjust_type (candidate.adjustments);
+
+  // store the adjustments for code-generation to know what to do which must be
+  // stored onto the receiver to so as we don't trigger duplicate deref mappings
+  // ICE when an argument is a method call
+  HirId autoderef_mappings_id = expr.get_mappings ().get_hirid ();
+  context->insert_autoderef_mappings (autoderef_mappings_id,
+				      std::move (candidate.adjustments));
+  context->insert_receiver (expr.get_mappings ().get_hirid (), receiver_tyty);
+
+  PathProbeCandidate &resolved_candidate = candidate.candidate;
+  TyTy::BaseType *lookup_tyty = candidate.candidate.ty;
+  NodeId resolved_node_id
+    = resolved_candidate.is_impl_candidate ()
+	? resolved_candidate.item.impl.impl_item->get_impl_mappings ()
+	    .get_nodeid ()
+	: resolved_candidate.item.trait.item_ref->get_mappings ().get_nodeid ();
+
+  if (lookup_tyty->get_kind () != TyTy::TypeKind::FNDEF)
+    {
+      RichLocation r (expr.get_locus ());
+      r.add_range (resolved_candidate.locus);
+      rust_error_at (r, "associated impl item is not a method");
+      return false;
+    }
+
+  TyTy::BaseType *lookup = lookup_tyty;
+  TyTy::FnType *fn = static_cast<TyTy::FnType *> (lookup);
+  if (!fn->is_method ())
+    {
+      RichLocation r (expr.get_locus ());
+      r.add_range (resolved_candidate.locus);
+      rust_error_at (r, "associated function is not a method");
+      return false;
+    }
+
+  // fn traits only support tuple argument passing so we need to implicitly set
+  // this up to get the same type checking we get in the rest of the pipeline
+
+  std::vector<TyTy::TyVar> call_args;
+  for (auto &arg : expr.get_arguments ())
+    {
+      TyTy::BaseType *a = TypeCheckExpr::Resolve (arg.get ());
+      call_args.push_back (TyTy::TyVar (a->get_ref ()));
+    }
+
+  // crate implicit tuple
+  HirId implicit_arg_id = mappings->get_next_hir_id ();
+  Analysis::NodeMapping mapping (mappings->get_current_crate (), UNKNOWN_NODEID,
+				 implicit_arg_id, UNKNOWN_LOCAL_DEFID);
+
+  TyTy::TupleType *tuple
+    = new TyTy::TupleType (implicit_arg_id, expr.get_locus (), call_args);
+  context->insert_implicit_type (implicit_arg_id, tuple);
+
+  std::vector<TyTy::Argument> args;
+  TyTy::Argument a (mapping, tuple,
+		    expr.get_locus () /*FIXME is there a better location*/);
+  args.push_back (std::move (a));
+
+  TyTy::BaseType *function_ret_tyty
+    = TyTy::TypeCheckMethodCallExpr::go (fn, expr.get_mappings (), args,
+					 expr.get_locus (), expr.get_locus (),
+					 adjusted_self, context);
+  if (function_ret_tyty == nullptr
+      || function_ret_tyty->get_kind () == TyTy::TypeKind::ERROR)
+    {
+      rust_error_at (expr.get_locus (),
+		     "failed check fn trait call-expr MethodCallExpr");
+      return false;
+    }
+
+  // store the expected fntype
+  context->insert_operator_overload (expr.get_mappings ().get_hirid (), fn);
+
+  // set up the resolved name on the path
+  resolver->insert_resolved_name (expr.get_mappings ().get_nodeid (),
+				  resolved_node_id);
+
+  // return the result of the function back
+  *result = function_ret_tyty;
 
   return true;
 }

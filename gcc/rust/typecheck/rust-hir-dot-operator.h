@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -35,9 +35,16 @@ struct MethodCandidate
   }
 
   bool is_error () const { return candidate.is_error (); }
+
+  DefId get_defid () const { return candidate.get_defid (); }
+
+  bool operator< (const MethodCandidate &c) const
+  {
+    return get_defid () < c.get_defid ();
+  }
 };
 
-class MethodResolver : protected AutoderefCycle
+class MethodResolver : private TypeCheckBase, protected AutoderefCycle
 {
 public:
   struct predicate_candidate
@@ -46,9 +53,10 @@ public:
     TyTy::FnType *fntype;
   };
 
-  static MethodCandidate Probe (const TyTy::BaseType *receiver,
-				const HIR::PathIdentSegment &segment_name,
-				bool autoderef_flag = false);
+  static std::set<MethodCandidate>
+  Probe (const TyTy::BaseType *receiver,
+	 const HIR::PathIdentSegment &segment_name,
+	 bool autoderef_flag = false);
 
   static std::vector<predicate_candidate> get_predicate_items (
     const HIR::PathIdentSegment &segment_name, const TyTy::BaseType &receiver,
@@ -63,16 +71,12 @@ protected:
   bool select (const TyTy::BaseType &receiver) override;
 
 private:
-  // context info
-  Analysis::Mappings *mappings;
-  TypeCheckContext *context;
-
   // search
   const HIR::PathIdentSegment &segment_name;
   std::vector<MethodResolver::predicate_candidate> predicate_items;
 
   // mutable fields
-  MethodCandidate try_result;
+  std::set<MethodCandidate> result;
 };
 
 } // namespace Resolver

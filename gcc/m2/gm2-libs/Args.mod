@@ -1,6 +1,6 @@
 (* Args.mod provide access to command line arguments.
 
-Copyright (C) 2001-2021 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -62,7 +62,7 @@ BEGIN
    IF i < GetArgC ()
    THEN
       Source := GetArgV () ;
-      WHILE (Source^[i]^[j]#nul) AND (j<High) DO
+      WHILE (j<High) AND (Source^[i]^[j]#nul) DO
          a[j] := Source^[i]^[j] ;
          INC(j)
       END

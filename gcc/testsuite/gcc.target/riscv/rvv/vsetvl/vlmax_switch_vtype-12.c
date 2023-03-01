@@ -51,5 +51,5 @@ void foo (int8_t * restrict in, int8_t * restrict out, int n, int cond1, int con
       *(vint16mf4_t*)(out + 30000) = v;
     }
 }
-/* { dg-final { scan-assembler-times {vsetvli} 9 { target { no-opts "-O0" no-opts "-O1" no-opts "-Os" no-opts "-funroll-loops" no-opts "-g" } } } } */
-/* { dg-final { scan-assembler-times {vsetvli\s+[a-x0-9]+,\s*zero,\s*e32,\s*mf2,\s*t[au],\s*m[au]\s+j\s+\.L[0-9]+} 1 { target { no-opts "-O0" no-opts "-O1"  no-opts "-Os" no-opts "-funroll-loops" no-opts "-g" no-opts "-flto" } } } } */
+/* { dg-final { scan-assembler-times {vsetvli} 9 { target { no-opts "-O0" no-opts "-O1" no-opts "-Os" no-opts "-Oz" no-opts "-funroll-loops" no-opts "-g" } } } } */
+

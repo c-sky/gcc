@@ -1,6 +1,6 @@
 (* sckt.def provides a minimal interface to tcp sockets.
 
-Copyright (C) 2003-2021 Free Software Foundation, Inc.
+Copyright (C) 2003-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -27,14 +27,14 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 DEFINITION MODULE sckt ;
 
 FROM SYSTEM IMPORT ADDRESS ;
-EXPORT UNQUALIFIED tcpServerState,
-                   tcpServerEstablish, tcpServerEstablishPort,
-                   tcpServerAccept, getLocalIP,
-                   tcpServerPortNo, tcpServerIP, tcpServerSocketFd,
-                   tcpServerClientIP, tcpServerClientPortNo,
-                   tcpClientState,
-                   tcpClientSocket, tcpClientSocketIP, tcpClientConnect,
-                   tcpClientPortNo, tcpClientIP, tcpClientSocketFd ;
+EXPORT QUALIFIED tcpServerState,
+                 tcpServerEstablish, tcpServerEstablishPort,
+                 tcpServerAccept, getLocalIP,
+                 tcpServerPortNo, tcpServerIP, tcpServerSocketFd,
+                 tcpServerClientIP, tcpServerClientPortNo,
+                 tcpClientState,
+                 tcpClientSocket, tcpClientSocketIP, tcpClientConnect,
+                 tcpClientPortNo, tcpClientIP, tcpClientSocketFd ;
 
 TYPE
    tcpServerState = ADDRESS ;

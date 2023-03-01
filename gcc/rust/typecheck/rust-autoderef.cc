@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -139,15 +139,23 @@ resolve_operator_overload_fn (
     return false;
 
   auto segment = HIR::PathIdentSegment (associated_item_name);
-  auto candidate
+  auto candidates
     = MethodResolver::Probe (ty, HIR::PathIdentSegment (associated_item_name),
 			     true);
 
-  bool have_implementation_for_lang_item = !candidate.is_error ();
+  bool have_implementation_for_lang_item = !candidates.empty ();
   if (!have_implementation_for_lang_item)
     return false;
 
+  // multiple candidates?
+  if (candidates.size () > 1)
+    {
+      // error out? probably not for this case
+      return false;
+    }
+
   // Get the adjusted self
+  auto candidate = *candidates.begin ();
   Adjuster adj (ty);
   TyTy::BaseType *adjusted_self = adj.adjust_type (candidate.adjustments);
 
@@ -255,7 +263,12 @@ resolve_operator_overload_fn (
 	  lookup = fn->infer_substitions (Location ());
 	  rust_assert (lookup->get_kind () == TyTy::TypeKind::FNDEF);
 	  fn = static_cast<TyTy::FnType *> (lookup);
-	  fn->get_self_type ()->unify (adjusted_self);
+
+	  Location unify_locus = mappings->lookup_location (ty->get_ref ());
+	  TypeCheckBase::unify_site (
+	    ty->get_ref (), TyTy::TyWithLocation (fn->get_self_type ()),
+	    TyTy::TyWithLocation (adjusted_self), unify_locus);
+
 	  lookup = fn;
 	}
     }
@@ -284,6 +297,7 @@ AutoderefCycle::cycle (const TyTy::BaseType *receiver)
   const TyTy::BaseType *r = receiver;
   while (true)
     {
+      rust_debug ("autoderef try 1: {%s}", r->debug_str ().c_str ());
       if (try_autoderefed (r))
 	return true;
 
@@ -292,12 +306,15 @@ AutoderefCycle::cycle (const TyTy::BaseType *receiver)
 	return false;
 
       // try unsize
+
       Adjustment unsize = Adjuster::try_unsize_type (r);
       if (!unsize.is_error ())
 	{
 	  adjustments.push_back (unsize);
 	  auto unsize_r = unsize.get_expected ();
 
+	  rust_debug ("autoderef try unsize: {%s}",
+		      unsize_r->debug_str ().c_str ());
 	  if (try_autoderefed (unsize_r))
 	    return true;
 
@@ -311,6 +328,8 @@ AutoderefCycle::cycle (const TyTy::BaseType *receiver)
 	  auto deref_r = deref.get_expected ();
 	  adjustments.push_back (deref);
 
+	  rust_debug ("autoderef try lang-item DEREF: {%s}",
+		      deref_r->debug_str ().c_str ());
 	  if (try_autoderefed (deref_r))
 	    return true;
 
@@ -324,6 +343,8 @@ AutoderefCycle::cycle (const TyTy::BaseType *receiver)
 	  auto deref_r = deref_mut.get_expected ();
 	  adjustments.push_back (deref_mut);
 
+	  rust_debug ("autoderef try lang-item DEREF_MUT: {%s}",
+		      deref_r->debug_str ().c_str ());
 	  if (try_autoderefed (deref_r))
 	    return true;
 

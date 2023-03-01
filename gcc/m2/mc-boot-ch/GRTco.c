@@ -1,6 +1,6 @@
 /* RTco.c provides dummy access to thread primitives.
 
-Copyright (C) 2019-2022 Free Software Foundation, Inc.
+Copyright (C) 2019-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -122,6 +122,6 @@ _M2_RTco_init (void)
 
 EXTERN
 void
-_M2_RTco_finish (void)
+_M2_RTco_fini (void)
 {
 }

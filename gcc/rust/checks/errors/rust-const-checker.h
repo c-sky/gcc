@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -46,6 +46,31 @@ private:
    */
   void check_function_call (HirId fn_id, Location locus);
 
+  /* All possible const contexts */
+  enum class ConstGenericCtx
+  {
+    Function,
+    TypeAlias,
+    Struct,
+    Enum,
+    Union,
+    Trait,
+    Impl
+  };
+
+  /* Get the string representation of a const context */
+  const char *ctx_to_str (ConstGenericCtx ctx);
+
+  /* Check if a const context allows default values */
+  bool ctx_allows_default (ConstGenericCtx ctx);
+
+  /**
+   * Check that const generic parameters only contains defaults in allowed
+   * contexts
+   */
+  void check_default_const_generics (
+    std::vector<std::unique_ptr<GenericParam>> &param, ConstGenericCtx context);
+
   StackedContexts<HirId> const_context;
   Resolver::Resolver &resolver;
   Analysis::Mappings &mappings;
@@ -86,9 +111,8 @@ private:
   virtual void visit (CallExpr &expr) override;
   virtual void visit (MethodCallExpr &expr) override;
   virtual void visit (FieldAccessExpr &expr) override;
-  virtual void visit (ClosureExprInner &expr) override;
+  virtual void visit (ClosureExpr &expr) override;
   virtual void visit (BlockExpr &expr) override;
-  virtual void visit (ClosureExprInnerTyped &expr) override;
   virtual void visit (ContinueExpr &expr) override;
   virtual void visit (BreakExpr &expr) override;
   virtual void visit (RangeFromToExpr &expr) override;

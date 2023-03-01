@@ -1,5 +1,5 @@
 /* Matching subroutines in all sizes, shapes and colors.
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2023 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -5343,6 +5343,16 @@ gfc_match_common (void)
 				   "%C can only be COMMON in BLOCK DATA",
 				   sym->name))
 		goto cleanup;
+	    }
+
+	  /* F2018:R874:  common-block-object is variable-name [ (array-spec) ]
+	     F2018:C8121: A variable-name shall not be a name made accessible
+	     by use association.  */
+	  if (sym->attr.use_assoc)
+	    {
+	      gfc_error ("Symbol %qs at %C is USE associated from module %qs "
+			 "and cannot occur in COMMON", sym->name, sym->module);
+	      goto cleanup;
 	    }
 
 	  /* Deal with an optional array specification after the

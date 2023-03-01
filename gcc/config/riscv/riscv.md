@@ -1,5 +1,5 @@
 ;; Machine description for RISC-V for GNU compiler.
-;; Copyright (C) 2011-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2011-2023 Free Software Foundation, Inc.
 ;; Contributed by Andrew Waterman (andrew@sifive.com).
 ;; Based on MIPS target for GNU compiler.
 
@@ -267,7 +267,8 @@
 ;; vicalu      vector arithmetic with carry or borrow instructions
 ;; vshift      vector single-width bit shift instructions
 ;; vnshift     vector narrowing integer shift instructions
-;; vicmp       vector integer comparison/min/max instructions
+;; viminmax    vector integer min/max instructions
+;; vicmp       vector integer comparison instructions
 ;; vimul       vector single-width integer multiply instructions
 ;; vidiv       vector single-width integer divide instructions
 ;; viwmul      vector widening integer multiply instructions
@@ -291,7 +292,8 @@
 ;; vfwmuladd   vector widening floating-point multiply-add instructions
 ;; vfsqrt      vector floating-point square-root instructions
 ;; vfrecp      vector floating-point reciprocal square-root instructions
-;; vfcmp       vector floating-point comparison/min/max instructions
+;; vfminmax    vector floating-point min/max instructions
+;; vfcmp       vector floating-point comparison instructions
 ;; vfsgnj      vector floating-point sign-injection instructions
 ;; vfclass     vector floating-point classify instruction
 ;; vfmerge     vector floating-point merge instruction
@@ -307,9 +309,9 @@
 ;; 14. Vector reduction operations
 ;; vired       vector single-width integer reduction instructions
 ;; viwred      vector widening integer reduction instructions
-;; vfred       vector single-width floating-point un-ordered reduction instruction
+;; vfredu      vector single-width floating-point un-ordered reduction instruction
 ;; vfredo      vector single-width floating-point ordered reduction instruction
-;; vfwred      vector widening floating-point un-ordered reduction instruction
+;; vfwredu      vector widening floating-point un-ordered reduction instruction
 ;; vfwredo     vector widening floating-point ordered reduction instruction
 ;; 15. Vector mask instructions
 ;; vmalu       vector mask-register logical instructions
@@ -335,14 +337,14 @@
    fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,bitmanip,rotate,
    atomic,rdvlenb,rdvl,vsetvl,vlde,vste,vldm,vstm,vlds,vsts,
    vldux,vldox,vstux,vstox,vldff,vldr,vstr,
-   vialu,viwalu,vext,vicalu,vshift,vnshift,vicmp,
+   vialu,viwalu,vext,vicalu,vshift,vnshift,vicmp,viminmax,
    vimul,vidiv,viwmul,vimuladd,viwmuladd,vimerge,vimov,
    vsalu,vaalu,vsmul,vsshift,vnclip,
    vfalu,vfwalu,vfmul,vfdiv,vfwmul,vfmuladd,vfwmuladd,vfsqrt,vfrecp,
-   vfcmp,vfsgnj,vfclass,vfmerge,vfmov,
+   vfcmp,vfminmax,vfsgnj,vfclass,vfmerge,vfmov,
    vfcvtitof,vfcvtftoi,vfwcvtitof,vfwcvtftoi,
    vfwcvtftof,vfncvtitof,vfncvtftoi,vfncvtftof,
-   vired,viwred,vfred,vfredo,vfwred,vfwredo,
+   vired,viwred,vfredu,vfredo,vfwredu,vfwredo,
    vmalu,vmpop,vmffs,vmsfs,vmiota,vmidx,vimovvx,vimovxv,vfmovvf,vfmovfv,
    vislide,vislide1,vfslide1,vgather,vcompress,vmov"
   (cond [(eq_attr "got" "load") (const_string "load")
@@ -3064,7 +3066,7 @@
 )
 
 (define_insn "prefetch"
-  [(prefetch (match_operand 0 "address_operand" "p")
+  [(prefetch (match_operand 0 "address_operand" "r")
              (match_operand 1 "imm5_operand" "i")
              (match_operand 2 "const_int_operand" "n"))]
   "TARGET_ZICBOP"
@@ -3078,7 +3080,7 @@
 })
 
 (define_insn "riscv_prefetchi_<mode>"
-  [(unspec_volatile:X [(match_operand:X 0 "address_operand" "p")
+  [(unspec_volatile:X [(match_operand:X 0 "address_operand" "r")
               (match_operand:X 1 "imm5_operand" "i")]
               UNSPECV_PREI)]
   "TARGET_ZICBOP"

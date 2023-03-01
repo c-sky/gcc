@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -19,6 +19,7 @@
 #include "rust-compile-type.h"
 #include "rust-compile-expr.h"
 #include "rust-constexpr.h"
+#include "rust-gcc.h"
 
 #include "tree.h"
 
@@ -97,9 +98,43 @@ TyTyResolveCompile::visit (const TyTy::InferType &)
 }
 
 void
-TyTyResolveCompile::visit (const TyTy::ClosureType &)
+TyTyResolveCompile::visit (const TyTy::ClosureType &type)
 {
-  gcc_unreachable ();
+  auto mappings = ctx->get_mappings ();
+
+  std::vector<Backend::typed_identifier> fields;
+
+  size_t i = 0;
+  for (const auto &capture : type.get_captures ())
+    {
+      // lookup the HirId
+      HirId ref = UNKNOWN_HIRID;
+      bool ok = mappings->lookup_node_to_hir (capture, &ref);
+      rust_assert (ok);
+
+      // lookup the var decl type
+      TyTy::BaseType *lookup = nullptr;
+      bool found = ctx->get_tyctx ()->lookup_type (ref, &lookup);
+      rust_assert (found);
+
+      // FIXME get the var pattern name
+      std::string mappings_name = "capture_" + std::to_string (i);
+
+      // FIXME
+      // this should be based on the closure move-ability
+      tree decl_type = TyTyResolveCompile::compile (ctx, lookup);
+      tree capture_type = build_reference_type (decl_type);
+      fields.push_back (Backend::typed_identifier (mappings_name, capture_type,
+						   type.get_ident ().locus));
+    }
+
+  tree type_record = ctx->get_backend ()->struct_type (fields);
+  RS_CLOSURE_FLAG (type_record) = 1;
+
+  std::string named_struct_str
+    = type.get_ident ().path.get () + "::{{closure}}";
+  translated = ctx->get_backend ()->named_type (named_struct_str, type_record,
+						type.get_ident ().locus);
 }
 
 void
@@ -370,7 +405,11 @@ TyTyResolveCompile::visit (const TyTy::ArrayType &type)
 {
   tree element_type
     = TyTyResolveCompile::compile (ctx, type.get_element_type ());
+
+  ctx->push_const_context ();
   tree capacity_expr = CompileExpr::Compile (&type.get_capacity_expr (), ctx);
+  ctx->pop_const_context ();
+
   tree folded_capacity_expr = fold_expr (capacity_expr);
 
   translated
@@ -389,7 +428,7 @@ TyTyResolveCompile::visit (const TyTy::SliceType &type)
 }
 
 void
-TyTyResolveCompile::visit (const TyTy::BoolType &type)
+TyTyResolveCompile::visit (const TyTy::BoolType &)
 {
   translated
     = ctx->get_backend ()->named_type ("bool",
@@ -493,7 +532,7 @@ TyTyResolveCompile::visit (const TyTy::FloatType &type)
 }
 
 void
-TyTyResolveCompile::visit (const TyTy::USizeType &type)
+TyTyResolveCompile::visit (const TyTy::USizeType &)
 {
   translated = ctx->get_backend ()->named_type (
     "usize",
@@ -503,7 +542,7 @@ TyTyResolveCompile::visit (const TyTy::USizeType &type)
 }
 
 void
-TyTyResolveCompile::visit (const TyTy::ISizeType &type)
+TyTyResolveCompile::visit (const TyTy::ISizeType &)
 {
   translated = ctx->get_backend ()->named_type (
     "isize",
@@ -513,7 +552,7 @@ TyTyResolveCompile::visit (const TyTy::ISizeType &type)
 }
 
 void
-TyTyResolveCompile::visit (const TyTy::CharType &type)
+TyTyResolveCompile::visit (const TyTy::CharType &)
 {
   translated
     = ctx->get_backend ()->named_type ("char",

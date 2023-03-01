@@ -1,6 +1,6 @@
 /* m2decl.cc provides an interface to GCC decl trees.
 
-Copyright (C) 2012-2022 Free Software Foundation, Inc.
+Copyright (C) 2012-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -48,7 +48,7 @@ m2decl_DeclareM2linkStaticInitialization (location_t location,
   m2block_pushGlobalScope ();
   /* Generate: int M2LINK_StaticInitialization = ScaffoldStatic;  */
   tree init = m2decl_BuildIntegerConstant (ScaffoldStatic);
-  tree static_init = m2decl_DeclareKnownVariable (location, "M2LINK_StaticInitialization",
+  tree static_init = m2decl_DeclareKnownVariable (location, "m2pim_M2LINK_StaticInitialization",
 						  integer_type_node,
 						  TRUE, FALSE, FALSE, TRUE, NULL_TREE, init);
   m2block_popGlobalScope ();
@@ -65,7 +65,7 @@ m2decl_DeclareM2linkForcedModuleInitOrder (location_t location,
   tree ptr_to_char = build_pointer_type (char_type_node);
   TYPE_READONLY (ptr_to_char) = TRUE;
   tree init = m2decl_BuildPtrToTypeString (location, RuntimeOverride, ptr_to_char);
-  tree forced_order = m2decl_DeclareKnownVariable (location, "M2LINK_ForcedModuleInitOrder",
+  tree forced_order = m2decl_DeclareKnownVariable (location, "m2pim_M2LINK_ForcedModuleInitOrder",
 						   ptr_to_char,
 						   TRUE, FALSE, FALSE, TRUE, NULL_TREE, init);
   m2block_popGlobalScope ();
@@ -211,7 +211,7 @@ tree
 m2decl_BuildEndFunctionDeclaration (location_t location_begin,
                                     location_t location_end, const char *name,
                                     tree returntype, int isexternal,
-                                    int isnested, int ispublic)
+                                    int isnested, int ispublic, int isnoreturn)
 {
   tree fntype;
   tree fndecl;
@@ -244,6 +244,7 @@ m2decl_BuildEndFunctionDeclaration (location_t location_begin,
       = build_decl (location_end, RESULT_DECL, NULL_TREE, returntype);
   DECL_CONTEXT (DECL_RESULT (fndecl)) = fndecl;
   TREE_TYPE (fndecl) = fntype;
+  TREE_THIS_VOLATILE (fndecl) = isnoreturn;
 
   DECL_SOURCE_LOCATION (fndecl) = location_begin;
 

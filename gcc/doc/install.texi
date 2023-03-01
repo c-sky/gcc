@@ -2618,18 +2618,18 @@ script provides three variables for this:
 
 @table @code
 
-@item build_configargs
 @cindex @code{build_configargs}
+@item build_configargs
 The contents of this variable is passed to all build @command{configure}
 scripts.
 
-@item host_configargs
 @cindex @code{host_configargs}
+@item host_configargs
 The contents of this variable is passed to all host @command{configure}
 scripts.
 
-@item target_configargs
 @cindex @code{target_configargs}
+@item target_configargs
 The contents of this variable is passed to all target @command{configure}
 scripts.
 
@@ -3855,7 +3855,7 @@ Instead of GNU Binutils, you will need to install LLVM 13.0.1, or later, and cop
 @file{bin/llvm-ar} to both @file{bin/amdgcn-amdhsa-ar} and
 @file{bin/amdgcn-amdhsa-ranlib}.
 
-Use Newlib (3.2.0, or newer).
+Use Newlib (4.3.0 or newer).
 
 To run the binaries, install the HSA Runtime from the
 @uref{https://rocm.github.io,,ROCm Platform}, and use
@@ -4672,7 +4672,7 @@ Instead of GNU binutils, you will need to install
 Tell GCC where to find it:
 @option{--with-build-time-tools=[install-nvptx-tools]/nvptx-none/bin}.
 
-You will need newlib 3.1.0 or later.  It can be
+You will need newlib 4.3.0 or later.  It can be
 automatically built together with GCC@.  For this, add a symbolic link
 to nvptx-newlib's @file{newlib} directory to the directory containing
 the GCC sources.
@@ -5181,9 +5181,6 @@ GCC no longer supports the Windows POSIX subsystem.  However, it does
 support the Interix subsystem.  See above.
 
 Old target names including *-*-winnt and *-*-windowsnt are no longer used.
-
-PW32 (i386-pc-pw32) support was never completed, and the project seems to
-be inactive.  See @uref{http://pw32.sourceforge.net/} for more information.
 
 UWIN support has been removed due to a lack of maintenance.
 

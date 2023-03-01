@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -69,6 +69,8 @@ public:
     rust_assert (get_type () == ItemType::TRAIT_ITEM);
     return item.trait_item;
   }
+
+  TyTy::FnType *get_context_type ();
 
 private:
   union Item
@@ -337,6 +339,63 @@ public:
     return true;
   }
 
+  void insert_unconstrained_check_marker (HirId id, bool status)
+  {
+    unconstrained[id] = status;
+  }
+
+  bool have_checked_for_unconstrained (HirId id, bool *result)
+  {
+    auto it = unconstrained.find (id);
+    bool found = it != unconstrained.end ();
+    if (!found)
+      return false;
+
+    *result = it->second;
+    return true;
+  }
+
+  void insert_resolved_predicate (HirId id, TyTy::TypeBoundPredicate predicate)
+  {
+    auto it = predicates.find (id);
+    rust_assert (it == predicates.end ());
+
+    predicates.insert ({id, predicate});
+  }
+
+  bool lookup_predicate (HirId id, TyTy::TypeBoundPredicate *result)
+  {
+    auto it = predicates.find (id);
+    bool found = it != predicates.end ();
+    if (!found)
+      return false;
+
+    *result = it->second;
+    return true;
+  }
+
+  void insert_query (HirId id) { querys_in_progress.insert (id); }
+
+  void query_completed (HirId id) { querys_in_progress.erase (id); }
+
+  bool query_in_progress (HirId id) const
+  {
+    return querys_in_progress.find (id) != querys_in_progress.end ();
+  }
+
+  void insert_trait_query (DefId id) { trait_queries_in_progress.insert (id); }
+
+  void trait_query_completed (DefId id)
+  {
+    trait_queries_in_progress.erase (id);
+  }
+
+  bool trait_query_in_progress (DefId id) const
+  {
+    return trait_queries_in_progress.find (id)
+	   != trait_queries_in_progress.end ();
+  }
+
 private:
   TypeCheckContext ();
 
@@ -365,12 +424,37 @@ private:
 
   // variants
   std::map<HirId, HirId> variants;
+
+  // unconstrained type-params check
+  std::map<HirId, bool> unconstrained;
+
+  // predicates
+  std::map<HirId, TyTy::TypeBoundPredicate> predicates;
+
+  // query context lookups
+  std::set<HirId> querys_in_progress;
+  std::set<DefId> trait_queries_in_progress;
 };
 
 class TypeResolution
 {
 public:
   static void Resolve (HIR::Crate &crate);
+};
+
+class TraitQueryGuard
+{
+public:
+  TraitQueryGuard (DefId id) : id (id), ctx (*TypeCheckContext::get ())
+  {
+    ctx.insert_trait_query (id);
+  }
+
+  ~TraitQueryGuard () { ctx.trait_query_completed (id); }
+
+private:
+  DefId id;
+  TypeCheckContext &ctx;
 };
 
 } // namespace Resolver

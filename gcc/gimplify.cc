@@ -1775,9 +1775,9 @@ gimple_add_init_for_auto_var (tree decl,
 
   else
     {
-      char *decl_name_anonymous = xasprintf ("D.%u", DECL_UID (decl));
+      char decl_name_anonymous[3 + (HOST_BITS_PER_INT + 2) / 3];
+      sprintf (decl_name_anonymous, "D.%u", DECL_UID (decl));
       decl_name = build_string_literal (decl_name_anonymous);
-      free (decl_name_anonymous);
     }
 
   tree call = build_call_expr_internal_loc (loc, IFN_DEFERRED_INIT,
@@ -6441,7 +6441,7 @@ gimplify_save_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p)
   gcc_assert (TREE_CODE (*expr_p) == SAVE_EXPR);
   val = TREE_OPERAND (*expr_p, 0);
 
-  if (TREE_TYPE (val) == error_mark_node)
+  if (val && TREE_TYPE (val) == error_mark_node)
     return GS_ERROR;
 
   /* If the SAVE_EXPR has not been resolved, then evaluate it once.  */

@@ -5180,17 +5180,17 @@ AC_DEFUN([GLIBCXX_ZONEINFO_DIR], [
 
   if test "x${with_libstdcxx_zoneinfo}" = xyes; then
     # Pick a default when no specific path is set.
-    case "$host" in
+    case "$target_os" in
       gnu* | linux* | kfreebsd*-gnu | knetbsd*-gnu)
 	# Not all distros ship tzdata.zi in this dir.
 	zoneinfo_dir="/usr/share/zoneinfo"
 	;;
-      *-*-aix*)
+      aix*)
 	# Binary tzfile files are in /usr/share/lib/zoneinfo
 	# but tzdata.zi is not present there.
 	zoneinfo_dir=none
 	;;
-      *-*-darwin2*)
+      darwin2*)
 	# Binary tzfile files are in /usr/share/lib/zoneinfo.default
 	# but tzdata.zi is not present there.
 	zoneinfo_dir=none
@@ -5201,8 +5201,12 @@ AC_DEFUN([GLIBCXX_ZONEINFO_DIR], [
 	zoneinfo_dir=none
 	;;
     esac
-    # Also embed a copy of the tzdata.zi file as a static string.
-    embed_zoneinfo=yes
+    case "$host" in
+      avr-*-* | msp430-*-* ) embed_zoneinfo=no ;;
+      *)
+	# Also embed a copy of the tzdata.zi file as a static string.
+	embed_zoneinfo=yes ;;
+    esac
   elif test "x${with_libstdcxx_zoneinfo}" = xno; then
     # Disable tzdb support completely.
     zoneinfo_dir=none
@@ -5230,7 +5234,7 @@ AC_DEFUN([GLIBCXX_ZONEINFO_DIR], [
   if test "x${zoneinfo_dir}" != xnone; then
     AC_DEFINE_UNQUOTED(_GLIBCXX_ZONEINFO_DIR, "${zoneinfo_dir}",
       [Define if a directory should be searched for tzdata files.])
-    if $GLIBCXX_IS_NATIVE -a ! test -f "$zoneinfo_dir/tzdata.zi"; then
+    if $GLIBCXX_IS_NATIVE && ! test -f "$zoneinfo_dir/tzdata.zi"; then
       AC_MSG_WARN("$zoneinfo_dir does not contain tzdata.zi file")
     fi
   fi

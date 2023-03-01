@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -52,19 +52,96 @@ public:
   void go (AST::Crate &crate);
   void go (AST::Item &item);
 
+  /**
+   * Use the AST Dump as a debugging tool
+   */
+  template <typename T> static void debug (T &instance)
+  {
+    auto dump = Dump (std::cerr);
+
+    std::cerr << '\n';
+    instance.accept_vis (dump);
+    std::cerr << '\n';
+  }
+  template <typename T> static void debug (std::unique_ptr<T> &instance)
+  {
+    debug (*instance);
+  }
+
 private:
   std::ostream &stream;
   Indent indentation;
 
-  // Format together common items of functions: Parameters, return type, block
-  void format_function_common (std::unique_ptr<Type> &return_type,
-			       std::unique_ptr<BlockExpr> &block);
+  /**
+   * Compatibility layer for using the visitor pattern on polymorphic classes
+   * with a unified overload syntax. This allows us to call `visit` both on
+   * types implementing `accept_vis` method and for classes for which the
+   * `visit` method is directly implemented.
+   */
+  template <typename T> void visit (std::unique_ptr<T> &node);
 
   /**
-   * Format a function's definition parameter
+   * @see visit<std::unique_ptr<T>>
    */
-  void format_function_param (FunctionParam &param);
-  void emit_attrib (const Attribute &attrib);
+  template <typename T> void visit (T &node);
+
+  /**
+   * Visit all items in given @collection, placing the separator in between but
+   * not at the end.
+   * Start and end offset allow to visit only a "slice" from the collection.
+   */
+  template <typename T>
+  void visit_items_joined_by_separator (T &collection,
+					const std::string &separator = "",
+					size_t start_offset = 0,
+					size_t end_offset = 0);
+
+  /**
+   * Visit item placing indentation before and trailing string + end of line
+   * after.
+   */
+  template <typename T>
+  void visit_as_line (T &item, const std::string &trailing = "");
+
+  /**
+   * Visit each item in @collection "as line".
+   *
+   * @see visit_as_line
+   */
+  template <typename T>
+  void visit_items_as_lines (T &collection, const std::string &trailing = "");
+
+  /**
+   * Visit each item in @collection as lines inside a block delimited by braces
+   * with increased indentation. Also includes special handling for empty
+   * collection to print only the delimiters with no new line inside.
+   */
+  template <typename T>
+  void visit_items_as_block (T &collection, const std::string &line_trailing,
+			     char left_brace = '{', char right_brace = '}');
+
+  /**
+   * Visit common items of functions: Parameters, return type, block
+   */
+  void visit_function_common (std::unique_ptr<Type> &return_type,
+			      std::unique_ptr<BlockExpr> &block);
+
+  void visit (FunctionParam &param);
+  void visit (Attribute &attrib);
+  void visit (Visibility &vis);
+  void visit (std::vector<std::unique_ptr<GenericParam>> &params);
+  void visit (TupleField &field);
+  void visit (StructField &field);
+  void visit (SimplePathSegment &segment);
+  void visit (NamedFunctionParam &param);
+  void visit (MacroRule &rule);
+  void visit (WhereClause &rule);
+  void visit (std::vector<LifetimeParam> &for_lifetimes);
+  void visit (FunctionQualifiers &qualifiers);
+  void visit (MaybeNamedParam &param);
+  void visit (TypePathFunction &type_path_fn);
+  void visit (GenericArgsBinding &binding);
+  void visit (GenericArg &arg);
 
   // rust-ast.h
   void visit (Token &tok);

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -57,8 +57,7 @@ public:
   // Empty visit for unused Expression HIR nodes.
   void visit (HIR::PathInExpression &) override {}
   void visit (HIR::QualifiedPathInExpression &) override {}
-  void visit (HIR::ClosureExprInner &) override {}
-  void visit (HIR::ClosureExprInnerTyped &) override {}
+  void visit (HIR::ClosureExpr &) override {}
   void visit (HIR::StructExprFieldIdentifier &) override {}
   void visit (HIR::StructExprFieldIdentifierValue &) override {}
   void visit (HIR::StructExprFieldIndexValue &) override {}
@@ -146,8 +145,7 @@ public:
   // Empty visit for unused Expression HIR nodes.
   void visit (HIR::PathInExpression &) override {}
   void visit (HIR::QualifiedPathInExpression &) override {}
-  void visit (HIR::ClosureExprInner &) override {}
-  void visit (HIR::ClosureExprInnerTyped &) override {}
+  void visit (HIR::ClosureExpr &) override {}
   void visit (HIR::StructExprFieldIdentifier &) override {}
   void visit (HIR::StructExprFieldIdentifierValue &) override {}
   void visit (HIR::StructExprFieldIndexValue &) override {}

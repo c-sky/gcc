@@ -50,7 +50,6 @@ Boston, MA 02110-1301, USA.  */
 #   include "GFIO.h"
 #   include "GSFIO.h"
 
-#   define YEAR "2021"
 static unsigned int langC;
 static unsigned int langCPP;
 static unsigned int langM2;
@@ -63,6 +62,7 @@ static unsigned int scaffoldDynamic;
 static unsigned int caseRuntime;
 static unsigned int arrayRuntime;
 static unsigned int returnRuntime;
+static unsigned int suppressNoReturn;
 static unsigned int gccConfigSystem;
 static unsigned int ignoreFQ;
 static unsigned int debugTopological;
@@ -170,6 +170,24 @@ extern "C" unsigned int mcOptions_getScaffoldMain (void);
 */
 
 extern "C" void mcOptions_writeGPLheader (FIO_File f);
+
+/*
+   setSuppressNoReturn - set suppressNoReturn to value.
+*/
+
+extern "C" void mcOptions_setSuppressNoReturn (unsigned int value);
+
+/*
+   getSuppressNoReturn - return the suppressNoReturn value.
+*/
+
+extern "C" unsigned int mcOptions_getSuppressNoReturn (void);
+
+/*
+   getYear - return the year.
+*/
+
+static unsigned int getYear (void);
 
 /*
    displayVersion - displays the version of the compiler.
@@ -294,13 +312,36 @@ static void handleOption (DynamicStrings_String arg);
 
 
 /*
+   getYear - return the year.
+*/
+
+static unsigned int getYear (void)
+{
+  libc_time_t epoch;
+  libc_ptrToTM localTime;
+
+  epoch = libc_time (NULL);
+  localTime = static_cast<libc_ptrToTM> (libc_localtime (&epoch));
+  return localTime->tm_year+1900;
+  /* static analysis guarentees a RETURN statement will be used before here.  */
+  __builtin_unreachable ();
+}
+
+
+/*
    displayVersion - displays the version of the compiler.
 */
 
 static void displayVersion (unsigned int mustExit)
 {
-  mcPrintf_printf0 ((const char *) "Copyright (C) ''2021'' Free Software Foundation, Inc.\\n", 55);
-  mcPrintf_printf0 ((const char *) "License GPLv2: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>\\n", 78);
+  unsigned int year;
+
+  year = getYear ();
+  /* These first three calls to printf hide the first line of text away from the year change script.  */
+  mcPrintf_printf0 ((const char *) "Copyright ", 10);
+  mcPrintf_printf0 ((const char *) "(C)", 3);  /* A unicode char here would be good.  */
+  mcPrintf_printf1 ((const char *) " %d Free Software Foundation, Inc.\\n", 36, (const unsigned char *) &year, (sizeof (year)-1));  /* A unicode char here would be good.  */
+  mcPrintf_printf0 ((const char *) "License GPLv3: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\\n", 78);
   mcPrintf_printf0 ((const char *) "This is free software: you are free to change and redistribute it.\\n", 68);
   mcPrintf_printf0 ((const char *) "There is NO WARRANTY, to the extent permitted by law.\\n", 55);
   if (mustExit)
@@ -348,6 +389,7 @@ static void displayHelp (void)
   mcPrintf_printf0 ((const char *) "  --automatic         generate a comment at the start of the file warning not to edit as it was automatically generated\\n", 121);
   mcPrintf_printf0 ((const char *) "  --scaffold-dynamic  generate dynamic module initialization code for C++\\n", 75);
   mcPrintf_printf0 ((const char *) "  --scaffold-main     generate main function which calls upon the dynamic initialization support in M2RTS\\n", 107);
+  mcPrintf_printf0 ((const char *) "  --suppress-noreturn suppress the emission of any attribute noreturn\\n", 71);
   mcPrintf_printf0 ((const char *) "  filename            the source file must be the last option\\n", 63);
   libc_exit (0);
 }
@@ -424,7 +466,10 @@ static void commentS (FIO_File f, DynamicStrings_String s)
 
 static void gplBody (FIO_File f)
 {
-  comment (f, (const char *) "Copyright (C) ''2021'' Free Software Foundation, Inc.", 53);
+  unsigned int year;
+
+  year = getYear ();
+  mcPrintf_printf1 ((const char *) "Copyright (C) %d Free Software Foundation, Inc.\\n", 49, (const unsigned char *) &year, (sizeof (year)-1));
   if (contributed)
     {
       FIO_WriteString (f, (const char *) "Contributed by ", 15);
@@ -464,7 +509,10 @@ static void gplBody (FIO_File f)
 
 static void glplBody (FIO_File f)
 {
-  comment (f, (const char *) "Copyright (C) ''2021'' Free Software Foundation, Inc.", 53);
+  unsigned int year;
+
+  year = getYear ();
+  mcPrintf_printf1 ((const char *) "Copyright (C) %d Free Software Foundation, Inc.\\n", 49, (const unsigned char *) &year, (sizeof (year)-1));
   if (contributed)
     {
       FIO_WriteString (f, (const char *) "Contributed by ", 15);
@@ -790,6 +838,11 @@ static void handleOption (DynamicStrings_String arg)
       /* avoid dangling else.  */
       scaffoldDynamic = TRUE;
     }
+  else if (optionIs ((const char *) "--suppress-noreturn", 19, arg))
+    {
+      /* avoid dangling else.  */
+      suppressNoReturn = TRUE;
+    }
 }
 
 
@@ -1011,6 +1064,28 @@ extern "C" void mcOptions_writeGPLheader (FIO_File f)
   issueGPL (f);
 }
 
+
+/*
+   setSuppressNoReturn - set suppressNoReturn to value.
+*/
+
+extern "C" void mcOptions_setSuppressNoReturn (unsigned int value)
+{
+  suppressNoReturn = value;
+}
+
+
+/*
+   getSuppressNoReturn - return the suppressNoReturn value.
+*/
+
+extern "C" unsigned int mcOptions_getSuppressNoReturn (void)
+{
+  return suppressNoReturn;
+  /* static analysis guarentees a RETURN statement will be used before here.  */
+  __builtin_unreachable ();
+}
+
 extern "C" void _M2_mcOptions_init (__attribute__((unused)) int argc,__attribute__((unused)) char *argv[],__attribute__((unused)) char *envp[])
 {
   langC = TRUE;
@@ -1032,6 +1107,7 @@ extern "C" void _M2_mcOptions_init (__attribute__((unused)) int argc,__attribute
   gccConfigSystem = FALSE;
   scaffoldMain = FALSE;
   scaffoldDynamic = FALSE;
+  suppressNoReturn = FALSE;
   hPrefix = DynamicStrings_InitString ((const char *) "", 0);
   cppArgs = DynamicStrings_InitString ((const char *) "", 0);
   cppProgram = DynamicStrings_InitString ((const char *) "", 0);
@@ -1041,6 +1117,6 @@ extern "C" void _M2_mcOptions_init (__attribute__((unused)) int argc,__attribute
   projectContents = DynamicStrings_InitString ((const char *) "GNU Modula-2", 12);
 }
 
-extern "C" void _M2_mcOptions_finish (__attribute__((unused)) int argc,__attribute__((unused)) char *argv[],__attribute__((unused)) char *envp[])
+extern "C" void _M2_mcOptions_fini (__attribute__((unused)) int argc,__attribute__((unused)) char *argv[],__attribute__((unused)) char *envp[])
 {
 }

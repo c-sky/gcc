@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -199,6 +199,22 @@ struct CompileOptions
   } edition
     = Edition::E2015;
 
+  enum class CompileStep
+  {
+    Ast,
+    AttributeCheck,
+    Expansion,
+    NameResolution,
+    Lowering,
+    TypeCheck,
+    Privacy,
+    Unsafety,
+    Const,
+    Compilation,
+    End,
+  } compile_until
+    = CompileStep::End;
+
   bool dump_option_enabled (DumpOption option) const
   {
     return dump_options.find (option) != dump_options.end ();
@@ -239,7 +255,14 @@ struct CompileOptions
     edition = static_cast<Edition> (raw_edition);
   }
 
-  const Edition &get_edition () { return edition; }
+  const Edition &get_edition () const { return edition; }
+
+  void set_compile_step (int raw_step)
+  {
+    compile_until = static_cast<CompileStep> (raw_step);
+  }
+
+  const CompileStep &get_compile_until () const { return compile_until; }
 
   void set_metadata_output (const std::string &path)
   {
@@ -319,7 +342,7 @@ private:
 
   void dump_lex (Parser<Lexer> &parser) const;
   void dump_ast (Parser<Lexer> &parser, AST::Crate &crate) const;
-  void dump_ast_pretty (AST::Crate &crate) const;
+  void dump_ast_pretty (AST::Crate &crate, bool expanded = false) const;
   void dump_ast_expanded (Parser<Lexer> &parser, AST::Crate &crate) const;
   void dump_hir (HIR::Crate &crate) const;
   void dump_hir_pretty (HIR::Crate &crate) const;

@@ -1,4 +1,4 @@
-(* Copyright (C) 2015-2022 Free Software Foundation, Inc. *)
+(* Copyright (C) 2015-2023 Free Software Foundation, Inc. *)
 (* This file is part of GNU Modula-2.
 
 GNU Modula-2 is free software; you can redistribute it and/or modify it under
@@ -20,8 +20,8 @@ IMPLEMENTATION MODULE mcOptions ;
 
 FROM SArgs IMPORT GetArg, Narg ;
 FROM mcSearch IMPORT prependSearchPath ;
-FROM libc IMPORT exit, printf ;
-FROM mcPrintf IMPORT printf0 ;
+FROM libc IMPORT exit, printf, time, localtime, time_t, ptrToTM ;
+FROM mcPrintf IMPORT printf0, printf1 ;
 FROM Debug IMPORT Halt ;
 FROM StrLib IMPORT StrLen ;
 FROM decl IMPORT setLangC, setLangCP, setLangM2 ;
@@ -32,9 +32,6 @@ FROM DynamicStrings IMPORT String, Length, InitString, Mark, Slice, EqualArray,
 
 IMPORT FIO ;
 IMPORT SFIO ;
-
-CONST
-   YEAR = '2021' ;
 
 VAR
    langC,
@@ -49,6 +46,7 @@ VAR
    caseRuntime,
    arrayRuntime,
    returnRuntime,
+   suppressNoReturn,
    gccConfigSystem,
    ignoreFQ,
    debugTopological,
@@ -65,14 +63,36 @@ VAR
    cppProgram       : String ;
 
 
+
+(*
+   getYear - return the year.
+*)
+
+PROCEDURE getYear () : CARDINAL ;
+VAR
+   epoch    : time_t ;
+   localTime: ptrToTM ;
+BEGIN
+   epoch := time (NIL) ;
+   localTime := localtime (epoch) ;
+   RETURN localTime^.tm_year + 1900
+END getYear ;
+
+
 (*
    displayVersion - displays the version of the compiler.
 *)
 
 PROCEDURE displayVersion (mustExit: BOOLEAN) ;
+VAR
+   year: CARDINAL ;
 BEGIN
-   printf0 ('Copyright (C) ' + YEAR + ' Free Software Foundation, Inc.\n') ;
-   printf0 ('License GPLv2: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>\n') ;
+   year := getYear () ;
+   (* These first three calls to printf hide the first line of text away from the year change script.  *)
+   printf0 ('Copyright ') ;
+   printf0 ('(C)') ;  (* A unicode char here would be good.  *)
+   printf1 (' %d Free Software Foundation, Inc.\n', year) ;
+   printf0 ('License GPLv3: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n') ;
    printf0 ('This is free software: you are free to change and redistribute it.\n') ;
    printf0 ('There is NO WARRANTY, to the extent permitted by law.\n') ;
    IF mustExit
@@ -121,7 +141,8 @@ BEGIN
    printf0 ('  --automatic         generate a comment at the start of the file warning not to edit as it was automatically generated\n') ;
    printf0 ('  --scaffold-dynamic  generate dynamic module initialization code for C++\n') ;
    printf0 ('  --scaffold-main     generate main function which calls upon the dynamic initialization support in M2RTS\n') ;
-   printf0 ("  filename            the source file must be the last option\n") ;
+   printf0 ('  --suppress-noreturn suppress the emission of any attribute noreturn\n');
+   printf0 ('  filename            the source file must be the last option\n') ;
    exit (0)
 END displayHelp ;
 
@@ -183,8 +204,11 @@ END commentS ;
 *)
 
 PROCEDURE gplBody (f: File) ;
+VAR
+   year: CARDINAL ;
 BEGIN
-   comment (f, 'Copyright (C) ' + YEAR + ' Free Software Foundation, Inc.') ;
+   year := getYear () ;
+   printf1 ('Copyright (C) %d Free Software Foundation, Inc.\n', year) ;
    IF contributed
    THEN
       FIO.WriteString (f, "Contributed by ") ;
@@ -222,8 +246,11 @@ END gplBody ;
 *)
 
 PROCEDURE glplBody (f: File) ;
+VAR
+   year: CARDINAL ;
 BEGIN
-   comment (f, 'Copyright (C) ' + YEAR + ' Free Software Foundation, Inc.') ;
+   year := getYear () ;
+   printf1 ('Copyright (C) %d Free Software Foundation, Inc.\n', year) ;
    IF contributed
    THEN
       FIO.WriteString (f, "Contributed by ") ;
@@ -412,6 +439,26 @@ PROCEDURE getExtendedOpaque () : BOOLEAN ;
 BEGIN
    RETURN extendedOpaque
 END getExtendedOpaque ;
+
+
+(*
+   setSuppressNoReturn - set suppressNoReturn to value.
+*)
+
+PROCEDURE setSuppressNoReturn (value: BOOLEAN) ;
+BEGIN
+   suppressNoReturn := value
+END setSuppressNoReturn;
+
+
+(*
+   getSuppressNoReturn - return the suppressNoReturn value.
+*)
+
+PROCEDURE getSuppressNoReturn () : BOOLEAN ;
+BEGIN
+   RETURN suppressNoReturn
+END getSuppressNoReturn ;
 
 
 (*
@@ -650,6 +697,9 @@ BEGIN
    ELSIF optionIs ('--scaffold-dynamic', arg)
    THEN
       scaffoldDynamic := TRUE
+   ELSIF optionIs ('--suppress-noreturn', arg)
+   THEN
+      suppressNoReturn := TRUE
    END
 END handleOption ;
 
@@ -708,6 +758,7 @@ BEGIN
    gccConfigSystem := FALSE ;
    scaffoldMain := FALSE ;
    scaffoldDynamic := FALSE ;
+   suppressNoReturn := FALSE ;
    hPrefix := InitString ('') ;
    cppArgs := InitString ('') ;
    cppProgram := InitString ('') ;

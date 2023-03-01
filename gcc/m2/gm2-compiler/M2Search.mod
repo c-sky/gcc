@@ -1,6 +1,6 @@
 (* M2Search.mod provides a mechanism to search selected directories.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -22,9 +22,9 @@ along with GNU Modula-2; see the file COPYING3.  If not see
 IMPLEMENTATION MODULE M2Search ;
 
 
-FROM SFIO IMPORT Exists ;
 FROM M2FileName IMPORT CalculateFileName ;
 FROM Assertion IMPORT Assert ;
+FROM PathName IMPORT FindNamedPathFile ;
 
 FROM DynamicStrings IMPORT InitString, InitStringChar,
                            KillString, ConCat, ConCatChar, Index, Slice,
@@ -35,13 +35,10 @@ FROM DynamicStrings IMPORT InitString, InitStringChar,
 
 
 CONST
-   Directory        =   '/' ;
    GarbageDebugging = FALSE ;
 
 VAR
-   Def, Mod,
-   UserPath,
-   InitialPath: String ;
+   Def, Mod: String ;
 
 (* Internal garbage collection debugging routines.  *)
 
@@ -58,7 +55,9 @@ VAR
 (*
    doDSdbEnter - called when compiled with -fcpp to enable runtime garbage
                  collection debugging.
+*)
 
+(*
 PROCEDURE doDSdbEnter ;
 BEGIN
    PushAllocation
@@ -70,7 +69,9 @@ END doDSdbEnter ;
    doDSdbExit - called when compiled with -fcpp to enable runtime garbage
                 collection debugging.  The parameter string s is exempt from
                 garbage collection analysis.
+*)
 
+(*
 PROCEDURE doDSdbExit (s: String) ;
 BEGIN
    (* Check to see whether no strings have been lost since the PushAllocation.  *)
@@ -84,16 +85,18 @@ END doDSdbExit ;
                doDSsbEnter when debugging garbage collection at runtime.
 *)
 
+(*
 PROCEDURE DSdbEnter ;
 BEGIN
 END DSdbEnter ;
-
+*)
 
 (*
    DSdbExit - dummy nop exit code which the preprocessor replaces by
               doDSsbExit when debugging garbage collection at runtime.
 *)
 
+(*
 PROCEDURE DSdbExit (s: String) ;
 BEGIN
    IF GarbageDebugging
@@ -101,30 +104,13 @@ BEGIN
       Assert (s # NIL)
    END
 END DSdbExit ;
+*)
 
 
 (*
 #define DSdbEnter doDSdbEnter
 #define DSdbExit  doDSdbExit
 *)
-
-
-(*
-   PrependSearchPath - prepends a new path to the initial search path.
-*)
-
-PROCEDURE PrependSearchPath (path: String) ;
-BEGIN
-   DSdbEnter ;
-   IF EqualArray(UserPath, '')
-   THEN
-      UserPath := KillString(UserPath) ;
-      UserPath := Dup(path)
-   ELSE
-      UserPath := ConCat(ConCatChar(UserPath, ':'), path)
-   END ;
-   DSdbExit (UserPath)
-END PrependSearchPath ;
 
 
 (*
@@ -138,60 +124,14 @@ END PrependSearchPath ;
                     is called.
                     FullPath is set to NIL if this function returns FALSE.
                     FindSourceFile sets FullPath to a new string if successful.
-                    The string, FileName, is not altered.
+                    The string FileName is not altered.
 *)
 
 PROCEDURE FindSourceFile (FileName: String;
-                          VAR FullPath: String) : BOOLEAN ;
-VAR
-   CompleteSearchPath: String ;
-   start, end        : INTEGER ;
-   newpath           : String ;
+                          VAR FullPath, named: String) : BOOLEAN ;
 BEGIN
-   IF EqualArray(UserPath, '')
-   THEN
-      IF EqualArray(InitialPath, '')
-      THEN
-         CompleteSearchPath := InitString('.')
-      ELSE
-         CompleteSearchPath := Dup(InitialPath)
-      END
-   ELSE
-      CompleteSearchPath := ConCat(ConCatChar(Dup(UserPath), ':'), InitialPath)
-   END ;
-   start := 0 ;
-   end   := Index(CompleteSearchPath, ':', CARDINAL(start)) ;
-   REPEAT
-      IF end=-1
-      THEN
-         end := 0
-      END ;
-      newpath := Slice(CompleteSearchPath, start, end) ;
-      IF EqualArray(newpath, '.')
-      THEN
-         newpath := KillString(newpath) ;
-         newpath := Dup(FileName)
-      ELSE
-         newpath := ConCat(ConCatChar(newpath, Directory), FileName)
-      END ;
-      IF Exists(newpath)
-      THEN
-         FullPath := newpath ;
-         CompleteSearchPath := KillString(CompleteSearchPath) ;
-         RETURN( TRUE )
-      END ;
-      newpath := KillString(newpath) ;
-      IF end#0
-      THEN
-         start := end+1 ;
-         end   := Index(CompleteSearchPath, ':', CARDINAL(start))
-      END
-   UNTIL end=0 ;
-
-   FullPath := NIL ;
-   newpath := KillString(newpath) ;
-   CompleteSearchPath :=  KillString(CompleteSearchPath) ;
-   RETURN( FALSE )
+   FullPath := FindNamedPathFile (FileName, named) ;
+   RETURN FullPath # NIL
 END FindSourceFile ;
 
 
@@ -202,22 +142,22 @@ END FindSourceFile ;
                        then FALSE is returned and FullPath is set to NIL.
 *)
 
-PROCEDURE FindSourceDefFile (Stem: String; VAR FullPath: String) : BOOLEAN ;
+PROCEDURE FindSourceDefFile (Stem: String; VAR FullPath, named: String) : BOOLEAN ;
 VAR
    f: String ;
 BEGIN
-   IF Def#NIL
+   IF Def # NIL
    THEN
-      f := CalculateFileName(Stem, Def) ;
-      IF FindSourceFile(f, FullPath)
+      f := CalculateFileName (Stem, Def) ;
+      IF FindSourceFile (f, FullPath, named)
       THEN
-         RETURN( TRUE )
+         RETURN TRUE
       END ;
-      f := KillString(f)
+      f := KillString (f)
    END ;
-   (* and try the GNU Modula-2 default extension *)
-   f := CalculateFileName(Stem, Mark(InitString('def'))) ;
-   RETURN( FindSourceFile(f, FullPath) )
+   (* Try the GNU Modula-2 default extension.  *)
+   f := CalculateFileName (Stem, Mark (InitString ('def'))) ;
+   RETURN FindSourceFile (f, FullPath, named)
 END FindSourceDefFile ;
 
 
@@ -228,22 +168,22 @@ END FindSourceDefFile ;
                        then FALSE is returned and FullPath is set to NIL.
 *)
 
-PROCEDURE FindSourceModFile (Stem: String; VAR FullPath: String) : BOOLEAN ;
+PROCEDURE FindSourceModFile (Stem: String; VAR FullPath, named: String) : BOOLEAN ;
 VAR
    f: String ;
 BEGIN
    IF Mod#NIL
    THEN
-      f := CalculateFileName(Stem, Mod) ;
-      IF FindSourceFile(f, FullPath)
+      f := CalculateFileName (Stem, Mod) ;
+      IF FindSourceFile (f, FullPath, named)
       THEN
-         RETURN( TRUE )
+         RETURN TRUE
       END ;
-      f := KillString(f)
+      f := KillString (f)
    END ;
-   (* and try the GNU Modula-2 default extension *)
-   f := CalculateFileName(Stem, Mark(InitString('mod'))) ;
-   RETURN( FindSourceFile(f, FullPath) )
+   (* Try the GNU Modula-2 default extension.  *)
+   f := CalculateFileName (Stem, Mark (InitString ('mod'))) ;
+   RETURN FindSourceFile (f, FullPath, named)
 END FindSourceModFile ;
 
 
@@ -255,8 +195,8 @@ END FindSourceModFile ;
 
 PROCEDURE SetDefExtension (ext: String) ;
 BEGIN
-   Def := KillString(Def) ;
-   Def := Dup(ext)
+   Def := KillString (Def) ;
+   Def := Dup (ext)
 END SetDefExtension ;
 
 
@@ -268,41 +208,17 @@ END SetDefExtension ;
 
 PROCEDURE SetModExtension (ext: String) ;
 BEGIN
-   Mod := KillString(Mod) ;
-   Mod := Dup(ext)
+   Mod := KillString (Mod) ;
+   Mod := Dup (ext)
 END SetModExtension ;
 
 
 (*
-   InitSearchPath - assigns the search path to Path.
-                    The string Path may take the form:
-
-                    Path           ::= IndividualPath { ":" IndividualPath }
-                    IndividualPath ::= "." | DirectoryPath
-                    DirectoryPath  ::= [ "/" ] Name { "/" Name }
-                    Name           ::= Letter { (Letter | Number) }
-                    Letter         ::= A..Z | a..z
-                    Number         ::= 0..9
-*)
-
-PROCEDURE InitSearchPath (Path: String) ;
-BEGIN
-   IF InitialPath#NIL
-   THEN
-      InitialPath := KillString(InitialPath)
-   END ;
-   InitialPath := Path
-END InitSearchPath ;
-
-
-(*
-   Init - initializes the search path.
+   Init - initializes the def and mod default string names to NIL.
 *)
 
 PROCEDURE Init ;
 BEGIN
-   UserPath    := InitString('') ;
-   InitialPath := InitStringChar('.') ;
    Def := NIL ;
    Mod := NIL
 END Init ;

@@ -1,5 +1,5 @@
 /* Backend function setup
-   Copyright (C) 2002-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2023 Free Software Foundation, Inc.
    Contributed by Paul Brook
 
 This file is part of GCC.
@@ -742,6 +742,7 @@ gfc_finish_var_decl (tree decl, gfc_symbol * sym)
   /* Keep variables larger than max-stack-var-size off stack.  */
   if (!(sym->ns->proc_name && sym->ns->proc_name->attr.recursive)
       && !sym->attr.automatic
+      && !sym->attr.associate_var
       && sym->attr.save != SAVE_EXPLICIT
       && sym->attr.save != SAVE_IMPLICIT
       && INTEGER_CST_P (DECL_SIZE_UNIT (decl))
@@ -812,6 +813,10 @@ gfc_finish_var_decl (tree decl, gfc_symbol * sym)
   if (sym->attr.threadprivate
       && (TREE_STATIC (decl) || DECL_EXTERNAL (decl)))
     set_decl_tls_model (decl, decl_default_tls_model (decl));
+
+  /* Mark weak variables.  */
+  if (sym->attr.ext_attr & (1 << EXT_ATTR_WEAK))
+    declare_weak (decl);
 
   gfc_finish_decl_attrs (decl, &sym->attr);
 }
@@ -2337,7 +2342,7 @@ module_sym:
     }
 
   /* Mark non-returning functions.  */
-  if (sym->attr.noreturn)
+  if (sym->attr.noreturn || sym->attr.ext_attr & (1 << EXT_ATTR_NORETURN))
       TREE_THIS_VOLATILE(fndecl) = 1;
 
   sym->backend_decl = fndecl;
@@ -2481,6 +2486,17 @@ build_function_decl (gfc_symbol * sym, bool global)
       TREE_SIDE_EFFECTS (fndecl) = 0;
     }
 
+  /* Mark noinline functions.  */
+  if (attr.ext_attr & (1 << EXT_ATTR_NOINLINE))
+    DECL_UNINLINABLE (fndecl) = 1;
+
+  /* Mark noreturn functions.  */
+  if (attr.ext_attr & (1 << EXT_ATTR_NORETURN))
+    TREE_THIS_VOLATILE (fndecl) = 1;
+
+  /* Mark weak functions.  */
+  if (attr.ext_attr & (1 << EXT_ATTR_WEAK))
+    declare_weak (fndecl);
 
   /* Layout the function declaration and put it in the binding level
      of the current function.  */
@@ -5350,7 +5366,11 @@ gfc_trans_use_stmts (gfc_namespace * ns)
 	      /* Sometimes, generic interfaces wind up being over-ruled by a
 		 local symbol (see PR41062).  */
 	      if (!st->n.sym->attr.use_assoc)
-		continue;
+		{
+		  *slot = error_mark_node;
+		  entry->decls->clear_slot (slot);
+		  continue;
+		}
 
 	      if (st->n.sym->backend_decl
 		  && DECL_P (st->n.sym->backend_decl)
@@ -5868,6 +5888,16 @@ generate_local_decl (gfc_symbol * sym)
 
       if (!sym->attr.dummy && !sym->ns->proc_name->attr.entry_master)
 	generate_dependency_declarations (sym);
+
+      if (sym->attr.ext_attr & (1 << EXT_ATTR_WEAK))
+	{
+	  if (sym->attr.dummy)
+	    gfc_error ("Symbol %qs at %L has the WEAK attribute but is a "
+		       "dummy argument", sym->name, &sym->declared_at);
+	  else
+	    gfc_error ("Symbol %qs at %L has the WEAK attribute but is a "
+		       "local variable", sym->name, &sym->declared_at);
+	}
 
       if (sym->attr.referenced)
 	gfc_get_symbol_decl (sym);

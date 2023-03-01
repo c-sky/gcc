@@ -1,7 +1,7 @@
 --
 -- m2-2.bnf grammar and associated actions for pass 2.
 --
--- Copyright (C) 2001-2022 Free Software Foundation, Inc.
+-- Copyright (C) 2001-2023 Free Software Foundation, Inc.
 -- Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 --
 -- This file is part of GNU Modula-2.
@@ -23,7 +23,7 @@
 (* output from m2-2.bnf, automatically generated do not edit if these
    are the top two lines in the file.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -97,6 +97,7 @@ FROM P2SymBuild IMPORT P2StartBuildProgramModule,
                        StartBuildProcedure,
                        EndBuildProcedure,
                        BuildFunction, BuildOptFunction,
+                       BuildNoReturnAttribute,
 
                        BuildPointerType,
                        BuildRecord, BuildFieldRecord,
@@ -1025,8 +1026,8 @@ ProcedureHeading := "PROCEDURE"                                            % M2E
                                                                            % StartBuildProcedure %
                                                                            % Assert(IsProcedure(OperandT(1))) %
                                                                            % StartBuildFormalParameters  %
-                       [ FormalParameters ] AttributeNoReturn
-                                                                           % EndBuildFormalParameters %
+                       [ FormalParameters ]                                % EndBuildFormalParameters %
+                                            AttributeNoReturn
                                                                            % BuildProcedureHeading %
                      )
                      =:
@@ -1039,8 +1040,8 @@ DefProcedureHeading := "PROCEDURE"                                         % M2E
                                                                            % StartBuildProcedure %
                                                                            % Assert(IsProcedure(OperandT(1))) %
                                                                            % StartBuildFormalParameters  %
-                          [ DefFormalParameters ] AttributeNoReturn
-                                                                           % EndBuildFormalParameters %
+                          [ DefFormalParameters ]                          % EndBuildFormalParameters %
+                                                  AttributeNoReturn
                                                                            % BuildProcedureHeading %
                         )                                                  % M2Error.LeaveErrorScope %
                     =:
@@ -1048,6 +1049,8 @@ DefProcedureHeading := "PROCEDURE"                                         % M2E
 AttributeNoReturn := [ "<*"                                                % PushAutoOn %
                             Ident                                          % PopAuto %
                                                                            % checkReturnAttribute %
+                                                                           % Assert(IsProcedure(OperandT(1))) %
+                                                                           % BuildNoReturnAttribute (OperandT(1)) %
                                    "*>" ] =:
 
 AttributeUnused := [ "<*"                                                  % PushAutoOn %

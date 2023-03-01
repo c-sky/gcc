@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -375,38 +375,40 @@ TypeCheckPattern::visit (HIR::RangePattern &pattern)
       break;
     }
 
-  infered = upper->unify (lower);
+  infered = unify_site (pattern.get_pattern_mappings ().get_hirid (),
+			TyTy::TyWithLocation (upper),
+			TyTy::TyWithLocation (lower), pattern.get_locus ());
 }
 
 void
-TypeCheckPattern::visit (HIR::IdentifierPattern &pattern)
+TypeCheckPattern::visit (HIR::IdentifierPattern &)
 {
   infered = parent;
 }
 
 void
-TypeCheckPattern::visit (HIR::GroupedPattern &pattern)
+TypeCheckPattern::visit (HIR::GroupedPattern &)
 {
   // TODO
   gcc_unreachable ();
 }
 
 void
-TypeCheckPattern::visit (HIR::QualifiedPathInExpression &pattern)
+TypeCheckPattern::visit (HIR::QualifiedPathInExpression &)
 {
   // TODO
   gcc_unreachable ();
 }
 
 void
-TypeCheckPattern::visit (HIR::ReferencePattern &pattern)
+TypeCheckPattern::visit (HIR::ReferencePattern &)
 {
   // TODO
   gcc_unreachable ();
 }
 
 void
-TypeCheckPattern::visit (HIR::SlicePattern &pattern)
+TypeCheckPattern::visit (HIR::SlicePattern &)
 {
   // TODO
   gcc_unreachable ();

@@ -1,6 +1,6 @@
 (* M2GenGCC.mod convert the quadruples into GCC trees.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -392,7 +392,7 @@ BEGIN
          END ;
          scope := GetScope(scope)
       END ;
-      Assert (FALSE)
+      InternalError ('expecting scope to eventually reach a module or defimp symbol')
    ELSE
       (* Otherwise it is public if it were exported.  *)
       RETURN IsExported (GetMainModule (), sym)
@@ -1225,13 +1225,15 @@ BEGIN
       END ;
       IF HighField = NulSym
       THEN
-         MetaError1 ('{%EkHIGH} dimension number {%1N} for array does not exist', dim)
+         MetaError1 ('{%EkHIGH} dimension number {%1N} for array does not exist', dim) ;
+         RETURN GetCardinalZero (location)
       ELSE
          (* remainingDim := dim - accessibleDim ;  --fixme-- write tests to stress this code.  *)
          HighTree := BuildHighFromStaticArray (location, (* remainingDim, *) ArrayType) ;
          IF HighTree = NIL
          THEN
-            MetaError1 ('{%EkHIGH} dimension number {%1N} for array does not exist', dim)
+            MetaError1 ('{%EkHIGH} dimension number {%1N} for array does not exist', dim) ;
+            RETURN GetCardinalZero (location)
          END ;
          RETURN HighTree
       END

@@ -1,5 +1,5 @@
 /* Declaration statement matcher
-   Copyright (C) 2002-2022 Free Software Foundation, Inc.
+   Copyright (C) 2002-2023 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -11732,6 +11732,9 @@ const ext_attr_t ext_attr_list[] = {
   { "fastcall",     EXT_ATTR_FASTCALL,     "fastcall"  },
   { "no_arg_check", EXT_ATTR_NO_ARG_CHECK, NULL        },
   { "deprecated",   EXT_ATTR_DEPRECATED,   NULL	       },
+  { "noinline",     EXT_ATTR_NOINLINE,     NULL	       },
+  { "noreturn",     EXT_ATTR_NORETURN,     NULL	       },
+  { "weak",	    EXT_ATTR_WEAK,	   NULL	       },
   { NULL,           EXT_ATTR_LAST,         NULL        }
 };
 

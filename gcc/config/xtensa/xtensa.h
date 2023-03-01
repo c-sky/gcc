@@ -1,5 +1,5 @@
 /* Definitions of Tensilica's Xtensa target machine for GNU compiler.
-   Copyright (C) 2001-2022 Free Software Foundation, Inc.
+   Copyright (C) 2001-2023 Free Software Foundation, Inc.
    Contributed by Bob Wilson (bwilson@tensilica.com) at Tensilica.
 
 This file is part of GCC.
@@ -35,6 +35,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_NSA		XCHAL_HAVE_NSA
 #define TARGET_MINMAX		XCHAL_HAVE_MINMAX
 #define TARGET_SEXT		XCHAL_HAVE_SEXT
+#define TARGET_CLAMPS		XCHAL_HAVE_CLAMPS
 #define TARGET_BOOLEANS		XCHAL_HAVE_BOOLEANS
 #define TARGET_HARD_FLOAT	XCHAL_HAVE_FP
 #define TARGET_HARD_FLOAT_DIV	XCHAL_HAVE_FP_DIV

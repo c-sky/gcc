@@ -1,5 +1,5 @@
 /* Subroutines used for code generation on IA-32.
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -6876,7 +6876,9 @@ ix86_compute_frame_layout (void)
 	 stack clash protections are enabled and the allocated frame is
 	 larger than the probe interval, then use pushes to save
 	 callee saved registers.  */
-      || (flag_stack_clash_protection && to_allocate > get_probe_interval ()))
+      || (flag_stack_clash_protection
+	  && !ix86_target_stack_probe ()
+	  && to_allocate > get_probe_interval ()))
     frame->save_regs_using_mov = false;
 
   if (ix86_using_red_zone ()
@@ -8761,8 +8763,11 @@ ix86_expand_prologue (void)
       sse_registers_saved = true;
     }
 
-  /* If stack clash protection is requested, then probe the stack.  */
-  if (allocate >= 0 && flag_stack_clash_protection)
+  /* If stack clash protection is requested, then probe the stack, unless it
+     is already probed on the target.  */
+  if (allocate >= 0
+      && flag_stack_clash_protection
+      && !ix86_target_stack_probe ())
     {
       ix86_adjust_stack_and_probe (allocate, int_registers_saved, false);
       allocate = 0;
@@ -19051,6 +19056,13 @@ ix86_vectorize_builtin_scatter (const_tree vectype,
   if (!TARGET_AVX512F)
     return NULL_TREE;
 
+  if (known_eq (TYPE_VECTOR_SUBPARTS (vectype), 2u)
+      ? !TARGET_USE_SCATTER_2PARTS
+      : (known_eq (TYPE_VECTOR_SUBPARTS (vectype), 4u)
+	 ? !TARGET_USE_SCATTER_4PARTS
+	 : !TARGET_USE_SCATTER))
+    return NULL_TREE;
+
   if ((TREE_CODE (index_type) != INTEGER_TYPE
        && !POINTER_TYPE_P (index_type))
       || (TYPE_MODE (index_type) != SImode
@@ -21473,6 +21485,7 @@ x86_output_mi_thunk (FILE *file, tree thunk_fndecl, HOST_WIDE_INT delta,
   rtx this_reg, tmp, fnaddr;
   unsigned int tmp_regno;
   rtx_insn *insn;
+  int saved_flag_force_indirect_call = flag_force_indirect_call;
 
   if (TARGET_64BIT)
     tmp_regno = R10_REG;
@@ -21485,6 +21498,9 @@ x86_output_mi_thunk (FILE *file, tree thunk_fndecl, HOST_WIDE_INT delta,
 	tmp_regno = DX_REG;
       else
 	tmp_regno = CX_REG;
+
+      if (flag_pic)
+  flag_force_indirect_call = 0;
     }
 
   emit_note (NOTE_INSN_PROLOGUE_END);
@@ -21652,6 +21668,8 @@ x86_output_mi_thunk (FILE *file, tree thunk_fndecl, HOST_WIDE_INT delta,
   final (insn, file, 1);
   final_end_function ();
   assemble_end_function (thunk_fndecl, fnname);
+
+  flag_force_indirect_call = saved_flag_force_indirect_call;
 }
 
 static void

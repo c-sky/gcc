@@ -1,6 +1,6 @@
 ## Makefile for the include subdirectory of the GNU C++ Standard library.
 ##
-## Copyright (C) 2001-2022 Free Software Foundation, Inc.
+## Copyright (C) 2001-2023 Free Software Foundation, Inc.
 ##
 ## This file is part of the libstdc++ version 3 distribution.
 ## Process this file with automake to produce Makefile.in.
@@ -798,6 +798,7 @@ experimental_headers = \
 	${experimental_srcdir}/source_location \
 	${experimental_srcdir}/string \
 	${experimental_srcdir}/string_view \
+	${experimental_srcdir}/synchronized_value \
 	${experimental_srcdir}/system_error \
 	${experimental_srcdir}/timer \
 	${experimental_srcdir}/tuple \

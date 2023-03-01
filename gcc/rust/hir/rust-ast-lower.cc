@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -22,9 +22,12 @@
 #include "rust-ast-lower-expr.h"
 #include "rust-ast-lower-block.h"
 #include "rust-ast-lower-type.h"
+#include "rust-ast-lower-pattern.h"
+#include "rust-ast-lower-struct-field-expr.h"
 
 namespace Rust {
 namespace HIR {
+using HIR::ClosureParam;
 
 Visibility
 translate_visibility (const AST::Visibility &vis)
@@ -36,7 +39,7 @@ translate_visibility (const AST::Visibility &vis)
   if (vis.is_error ())
     return Visibility::create_error ();
 
-  switch (vis.get_public_vis_type ())
+  switch (vis.get_vis_type ())
     {
     case AST::Visibility::PUB:
       return Visibility (Visibility::VisType::PUBLIC);
@@ -47,7 +50,8 @@ translate_visibility (const AST::Visibility &vis)
     case AST::Visibility::PUB_SUPER:
     case AST::Visibility::PUB_IN_PATH:
       return Visibility (Visibility::VisType::RESTRICTED,
-			 ASTLoweringSimplePath::translate (vis.get_path ()));
+			 ASTLoweringSimplePath::translate (vis.get_path ()),
+			 vis.get_locus ());
       break;
     }
 
@@ -473,5 +477,25 @@ ASTLowerQualPathInExpression::visit (AST::QualifiedPathInExpression &expr)
 						   expr.get_locus (),
 						   expr.get_outer_attrs ());
 }
+
+ClosureParam
+ASTLoweringBase::lower_closure_param (AST::ClosureParam &param)
+{
+  HIR::Pattern *param_pattern
+    = ASTLoweringPattern::translate (param.get_pattern ().get ());
+
+  HIR::Type *param_type
+    = param.has_type_given ()
+	? ASTLoweringType::translate (param.get_type ().get ())
+	: nullptr;
+
+  return HIR::ClosureParam (std::unique_ptr<HIR::Pattern> (param_pattern),
+			    param.get_locus (),
+			    param.has_type_given ()
+			      ? std::unique_ptr<HIR::Type> (param_type)
+			      : nullptr,
+			    param.get_outer_attrs ());
+}
+
 } // namespace HIR
 } // namespace Rust

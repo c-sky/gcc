@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2013-2022 Free Software Foundation, Inc.
+# Copyright (C) 2013-2023 Free Software Foundation, Inc.
 #
 # This script is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -596,6 +596,8 @@ class TestsuiteFilter (GenericFilter):
                 '.go',
                 '.inc',
                 '.java',
+                '.mod',
+                '.rs'
                 ])
 
     def skip_file (self, dir, filename):
@@ -636,8 +638,9 @@ class LibPhobosFilter (GenericFilter):
         GenericFilter.__init__ (self)
 
         self.skip_files |= set ([
-                # Source module imported from upstream.
+                # Source modules imported from upstream.
                 'object.d',
+                '__builtins.di'
                 ])
 
         self.skip_dirs |= set ([
@@ -690,6 +693,7 @@ class ContribFilter(GenericFilter):
                 'Info.plist',
                 # Contains CR (^M).
                 'repro_fail',
+                'test_patches.txt',
                 ])
 
 class GCCCopyright (Copyright):
@@ -733,6 +737,7 @@ class GCCCopyright (Copyright):
         self.add_external_author ('Stephen L. Moshier')
         self.add_external_author ('Sun Microsystems, Inc. All rights reserved.')
         self.add_external_author ('The D Language Foundation, All Rights Reserved')
+        self.add_external_author ('The fast_float authors')
         self.add_external_author ('The Go Authors.  All rights reserved.')
         self.add_external_author ('The Go Authors. All rights reserved.')
         self.add_external_author ('The Go Authors.')

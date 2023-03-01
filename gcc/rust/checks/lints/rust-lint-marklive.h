@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Free Software Foundation, Inc.
+// Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -283,6 +283,11 @@ public:
   {
     for (auto &item : module.get_items ())
       item->accept_vis (*this);
+  }
+
+  void visit (HIR::ClosureExpr &expr) override
+  {
+    expr.get_expr ()->accept_vis (*this);
   }
 
 private:

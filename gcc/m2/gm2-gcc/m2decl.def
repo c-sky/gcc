@@ -1,6 +1,6 @@
 (* m2decl.def definition module for m2decl.cc.
 
-Copyright (C) 2011-2022 Free Software Foundation, Inc.
+Copyright (C) 2011-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -149,7 +149,8 @@ PROCEDURE BuildStartFunctionDeclaration (uses_varargs: BOOLEAN) ;
 
 PROCEDURE BuildEndFunctionDeclaration (location_begin, location_end: location_t;
                                        name: ADDRESS; returntype: Tree;
-                                       isexternal, isnested, ispublic: BOOLEAN) : Tree ;
+                                       isexternal, isnested, ispublic,
+                                       isnoreturn: BOOLEAN) : Tree ;
 
 
 (*

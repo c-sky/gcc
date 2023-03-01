@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -192,10 +192,10 @@ public:
 
   BorrowExpr (Analysis::NodeMapping mappings,
 	      std::unique_ptr<Expr> borrow_lvalue, Mutability mut,
-	      bool is_double_borrow, AST::AttrVec outer_attribs, Location locus)
+	      AST::AttrVec outer_attribs, Location locus)
     : OperatorExpr (std::move (mappings), std::move (borrow_lvalue),
 		    std::move (outer_attribs), locus),
-      mut (mut), double_borrow (is_double_borrow)
+      mut (mut)
   {}
 
   void accept_vis (HIRFullVisitor &vis) override;
@@ -203,7 +203,6 @@ public:
 
   Mutability get_mut () const { return mut; }
   bool is_mut () const { return mut == Mutability::Mut; }
-  bool get_is_double_borrow () const { return double_borrow; }
 
 protected:
   /* Use covariance to implement clone function as returning this object rather
@@ -1873,7 +1872,8 @@ public:
 
   std::unique_ptr<Expr> &get_receiver () { return receiver; }
 
-  PathExprSegment get_method_name () const { return method_name; };
+  PathExprSegment &get_method_name () { return method_name; };
+  const PathExprSegment &get_method_name () const { return method_name; };
 
   size_t num_params () const { return params.size (); }
 
@@ -1986,21 +1986,22 @@ protected:
 struct ClosureParam
 {
 private:
+  std::vector<AST::Attribute> outer_attrs;
   std::unique_ptr<Pattern> pattern;
-
-  // bool has_type_given;
   std::unique_ptr<Type> type;
-
-  // TODO: should this store location data?
+  Location locus;
 
 public:
   // Returns whether the type of the parameter has been given.
   bool has_type_given () const { return type != nullptr; }
 
   // Constructor for closure parameter
-  ClosureParam (std::unique_ptr<Pattern> param_pattern,
-		std::unique_ptr<Type> param_type = nullptr)
-    : pattern (std::move (param_pattern)), type (std::move (param_type))
+  ClosureParam (std::unique_ptr<Pattern> param_pattern, Location locus,
+		std::unique_ptr<Type> param_type = nullptr,
+		std::vector<AST::Attribute> outer_attrs = {})
+    : outer_attrs (std::move (outer_attrs)),
+      pattern (std::move (param_pattern)), type (std::move (param_type)),
+      locus (locus)
   {}
 
   // Copy constructor required due to cloning as a result of unique_ptrs
@@ -2008,6 +2009,8 @@ public:
     : pattern (other.pattern->clone_pattern ())
   {
     // guard to protect from null pointer dereference
+    if (other.pattern != nullptr)
+      pattern = other.pattern->clone_pattern ();
     if (other.type != nullptr)
       type = other.type->clone_type ();
   }
@@ -2017,8 +2020,17 @@ public:
   // Assignment operator must be overloaded to clone as well
   ClosureParam &operator= (ClosureParam const &other)
   {
-    pattern = other.pattern->clone_pattern ();
-    type = other.type->clone_type ();
+    outer_attrs = other.outer_attrs;
+
+    // guard to protect from null pointer dereference
+    if (other.pattern != nullptr)
+      pattern = other.pattern->clone_pattern ();
+    else
+      pattern = nullptr;
+    if (other.type != nullptr)
+      type = other.type->clone_type ();
+    else
+      type = nullptr;
 
     return *this;
   }
@@ -2027,31 +2039,79 @@ public:
   ClosureParam (ClosureParam &&other) = default;
   ClosureParam &operator= (ClosureParam &&other) = default;
 
-  // Returns whether closure parameter is in an error state.
-  bool is_error () const { return pattern == nullptr; }
-
-  // Creates an error state closure parameter.
-  static ClosureParam create_error () { return ClosureParam (nullptr); }
-
   std::string as_string () const;
+
+  const std::vector<AST::Attribute> &get_outer_attrs () const
+  {
+    return outer_attrs;
+  }
+  std::vector<AST::Attribute> &get_outer_attrs () { return outer_attrs; }
+
+  std::unique_ptr<Pattern> &get_pattern ()
+  {
+    rust_assert (pattern != nullptr);
+    return pattern;
+  }
+
+  std::unique_ptr<Type> &get_type ()
+  {
+    rust_assert (has_type_given ());
+    return type;
+  }
+
+  Location get_locus () const { return locus; }
 };
 
 // Base closure definition expression HIR node - abstract
 class ClosureExpr : public ExprWithoutBlock
 {
+private:
   bool has_move;
   std::vector<ClosureParam> params;
   Location locus;
-
-protected:
-  ClosureExpr (Analysis::NodeMapping mappings,
-	       std::vector<ClosureParam> closure_params, bool has_move,
-	       AST::AttrVec outer_attribs, Location locus)
-    : ExprWithoutBlock (std::move (mappings), std::move (outer_attribs)),
-      has_move (has_move), params (std::move (closure_params)), locus (locus)
-  {}
+  std::unique_ptr<Type> return_type;
+  std::unique_ptr<Expr> expr;
 
 public:
+  ClosureExpr (Analysis::NodeMapping mappings,
+	       std::vector<ClosureParam> closure_params,
+	       std::unique_ptr<Type> closure_return_type,
+	       std::unique_ptr<Expr> closure_expr, bool has_move,
+	       AST::AttrVec outer_attribs, Location locus)
+    : ExprWithoutBlock (std::move (mappings), std::move (outer_attribs)),
+      has_move (has_move), params (std::move (closure_params)), locus (locus),
+      return_type (std::move (closure_return_type)),
+      expr (std::move (closure_expr))
+  {}
+
+  // Copy constructor requires cloning
+  ClosureExpr (ClosureExpr const &other)
+    : ExprWithoutBlock (other.get_mappings (), other.get_outer_attrs ())
+  {
+    return_type
+      = other.has_return_type () ? other.return_type->clone_type () : nullptr;
+    expr = other.expr->clone_expr ();
+    params = other.params;
+    has_move = other.has_move;
+  }
+
+  // Overload assignment operator to clone unique_ptrs
+  ClosureExpr &operator= (ClosureExpr const &other)
+  {
+    mappings = other.mappings;
+    return_type
+      = other.has_return_type () ? other.return_type->clone_type () : nullptr;
+    expr = other.expr->clone_expr ();
+    params = other.params;
+    has_move = other.has_move;
+
+    return *this;
+  }
+
+  // move constructors
+  ClosureExpr (ClosureExpr &&other) = default;
+  ClosureExpr &operator= (ClosureExpr &&other) = default;
+
   std::string as_string () const override;
 
   Location get_locus () const override final { return locus; }
@@ -2060,47 +2120,19 @@ public:
   {
     return ExprType::Closure;
   }
-};
 
-// Represents a non-type-specified closure expression HIR node
-class ClosureExprInner : public ClosureExpr
-{
-  std::unique_ptr<Expr> closure_inner;
+  bool get_has_move () const { return has_move; }
 
-public:
-  std::string as_string () const override;
+  bool has_return_type () const { return return_type != nullptr; }
 
-  // Constructor for a ClosureExprInner
-  ClosureExprInner (Analysis::NodeMapping mappings,
-		    std::unique_ptr<Expr> closure_inner_expr,
-		    std::vector<ClosureParam> closure_params, Location locus,
-		    bool is_move = false,
-		    AST::AttrVec outer_attribs = AST::AttrVec ())
-    : ClosureExpr (std::move (mappings), std::move (closure_params), is_move,
-		   std::move (outer_attribs), locus),
-      closure_inner (std::move (closure_inner_expr))
-  {}
-
-  // Copy constructor must be defined to allow copying via cloning of unique_ptr
-  ClosureExprInner (ClosureExprInner const &other)
-    : ClosureExpr (other), closure_inner (other.closure_inner->clone_expr ())
-  {}
-
-  // Overload assignment operator to clone closure_inner
-  ClosureExprInner &operator= (ClosureExprInner const &other)
+  std::unique_ptr<Type> &get_return_type ()
   {
-    ClosureExpr::operator= (other);
-    closure_inner = other.closure_inner->clone_expr ();
-    // params = other.params;
-    // has_move = other.has_move;
-    // outer_attrs = other.outer_attrs;
+    rust_assert (has_return_type ());
+    return return_type;
+  };
+  std::unique_ptr<Expr> &get_expr () { return expr; }
 
-    return *this;
-  }
-
-  // move constructors
-  ClosureExprInner (ClosureExprInner &&other) = default;
-  ClosureExprInner &operator= (ClosureExprInner &&other) = default;
+  std::vector<ClosureParam> &get_params () { return params; }
 
   void accept_vis (HIRFullVisitor &vis) override;
   void accept_vis (HIRExpressionVisitor &vis) override;
@@ -2108,16 +2140,16 @@ public:
 protected:
   /* Use covariance to implement clone function as returning this object rather
    * than base */
-  ClosureExprInner *clone_expr_impl () const override
+  ClosureExpr *clone_expr_impl () const override
   {
-    return new ClosureExprInner (*this);
+    return new ClosureExpr (*this);
   }
 
   /* Use covariance to implement clone function as returning this object rather
    * than base */
-  ClosureExprInner *clone_expr_without_block_impl () const override
+  ClosureExpr *clone_expr_without_block_impl () const override
   {
-    return new ClosureExprInner (*this);
+    return new ClosureExpr (*this);
   }
 };
 
@@ -2237,71 +2269,6 @@ protected:
   /*virtual*/ BlockExpr *clone_block_expr_impl () const
   {
     return new BlockExpr (*this);
-  }
-};
-
-// Represents a type-specified closure expression HIR node
-class ClosureExprInnerTyped : public ClosureExpr
-{
-  std::unique_ptr<Type> return_type;
-  std::unique_ptr<BlockExpr>
-    expr; // only used because may be polymorphic in future
-
-public:
-  std::string as_string () const override;
-
-  // Constructor potentially with a move
-  ClosureExprInnerTyped (Analysis::NodeMapping mappings,
-			 std::unique_ptr<Type> closure_return_type,
-			 std::unique_ptr<BlockExpr> closure_expr,
-			 std::vector<ClosureParam> closure_params,
-			 Location locus, bool is_move = false,
-			 AST::AttrVec outer_attribs = AST::AttrVec ())
-    : ClosureExpr (std::move (mappings), std::move (closure_params), is_move,
-		   std::move (outer_attribs), locus),
-      return_type (std::move (closure_return_type)),
-      expr (std::move (closure_expr))
-  {}
-
-  // Copy constructor requires cloning
-  ClosureExprInnerTyped (ClosureExprInnerTyped const &other)
-    : ClosureExpr (other), return_type (other.return_type->clone_type ()),
-      expr (other.expr->clone_block_expr ())
-  {}
-
-  // Overload assignment operator to clone unique_ptrs
-  ClosureExprInnerTyped &operator= (ClosureExprInnerTyped const &other)
-  {
-    ClosureExpr::operator= (other);
-    return_type = other.return_type->clone_type ();
-    expr = other.expr->clone_block_expr ();
-    // params = other.params;
-    // has_move = other.has_move;
-    // outer_attrs = other.outer_attrs;
-
-    return *this;
-  }
-
-  // move constructors
-  ClosureExprInnerTyped (ClosureExprInnerTyped &&other) = default;
-  ClosureExprInnerTyped &operator= (ClosureExprInnerTyped &&other) = default;
-
-  void accept_vis (HIRFullVisitor &vis) override;
-  void accept_vis (HIRExpressionVisitor &vis) override;
-
-protected:
-  /* Use covariance to implement clone function as returning this object rather
-   * than base */
-  ClosureExprInnerTyped *clone_expr_impl () const override
-  {
-    return new ClosureExprInnerTyped (*this);
-  }
-
-  /* Use covariance to implement clone function as returning this object rather
-   * than base */
-  ClosureExprInnerTyped *clone_expr_without_block_impl () const override
-  {
-    return new ClosureExprInnerTyped (*this);
   }
 };
 

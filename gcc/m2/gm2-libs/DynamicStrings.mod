@@ -1,6 +1,6 @@
 (* DynamicStrings.mod provides a dynamic string type and procedures.
 
-Copyright (C) 2001-2021 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -1215,14 +1215,6 @@ BEGIN
          i := 0 ;
          Assert (a^.contents.len = b^.contents.len) ;
          WHILE i<a^.contents.len DO
-            IF a^.contents.buf[i] # a^.contents.buf[i]
-            THEN
-               HALT
-            END ;
-            IF b^.contents.buf[i] # b^.contents.buf[i]
-            THEN
-               HALT
-            END ;
             IF a^.contents.buf[i] # b^.contents.buf[i]
             THEN
                RETURN FALSE

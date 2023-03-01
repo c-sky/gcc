@@ -538,6 +538,10 @@ static bool
 vect_phi_first_order_recurrence_p (loop_vec_info loop_vinfo, class loop *loop,
 				   gphi *phi)
 {
+  /* A nested cycle isn't vectorizable as first order recurrence.  */
+  if (LOOP_VINFO_LOOP (loop_vinfo) != loop)
+    return false;
+
   /* Ensure the loop latch definition is from within the loop.  */
   edge latch = loop_latch_edge (loop);
   tree ldef = PHI_ARG_DEF_FROM_EDGE (phi, latch);
@@ -2121,6 +2125,14 @@ vect_get_datarefs_in_loop (loop_p loop, basic_block *bbs,
 	    if (is_gimple_call (stmt) && loop->safelen)
 	      {
 		tree fndecl = gimple_call_fndecl (stmt), op;
+		if (fndecl == NULL_TREE
+		    && gimple_call_internal_p (stmt, IFN_MASK_CALL))
+		  {
+		    fndecl = gimple_call_arg (stmt, 0);
+		    gcc_checking_assert (TREE_CODE (fndecl) == ADDR_EXPR);
+		    fndecl = TREE_OPERAND (fndecl, 0);
+		    gcc_checking_assert (TREE_CODE (fndecl) == FUNCTION_DECL);
+		  }
 		if (fndecl != NULL_TREE)
 		  {
 		    cgraph_node *node = cgraph_node::get (fndecl);
@@ -6778,6 +6790,7 @@ vectorizable_reduction (loop_vec_info loop_vinfo,
 			stmt_vector_for_cost *cost_vec)
 {
   tree vectype_in = NULL_TREE;
+  tree vectype_op[3] = { NULL_TREE, NULL_TREE, NULL_TREE };
   class loop *loop = LOOP_VINFO_LOOP (loop_vinfo);
   enum vect_def_type cond_reduc_dt = vect_unknown_def_type;
   stmt_vec_info cond_stmt_vinfo = NULL;
@@ -6787,7 +6800,6 @@ vectorizable_reduction (loop_vec_info loop_vinfo,
   bool nested_cycle = false;
   bool double_reduc = false;
   int vec_num;
-  tree tem;
   tree cr_index_scalar_type = NULL_TREE, cr_index_vector_type = NULL_TREE;
   tree cond_reduc_val = NULL_TREE;
 
@@ -7025,7 +7037,7 @@ vectorizable_reduction (loop_vec_info loop_vinfo,
       enum vect_def_type dt;
       if (!vect_is_simple_use (loop_vinfo, stmt_info, slp_for_stmt_info,
 			       i + opno_adjust, &op.ops[i], &slp_op[i], &dt,
-			       &tem, &def_stmt_info))
+			       &vectype_op[i], &def_stmt_info))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -7040,15 +7052,20 @@ vectorizable_reduction (loop_vec_info loop_vinfo,
       if (VECTORIZABLE_CYCLE_DEF (dt))
 	return false;
 
+      if (!vectype_op[i])
+	vectype_op[i]
+	  = get_vectype_for_scalar_type (loop_vinfo,
+					 TREE_TYPE (op.ops[i]), slp_op[i]);
+
       /* To properly compute ncopies we are interested in the widest
 	 non-reduction input type in case we're looking at a widening
 	 accumulation that we later handle in vect_transform_reduction.  */
       if (lane_reduc_code_p
-	  && tem
+	  && vectype_op[i]
 	  && (!vectype_in
 	      || (GET_MODE_SIZE (SCALAR_TYPE_MODE (TREE_TYPE (vectype_in)))
-		  < GET_MODE_SIZE (SCALAR_TYPE_MODE (TREE_TYPE (tem))))))
-	vectype_in = tem;
+		  < GET_MODE_SIZE (SCALAR_TYPE_MODE (TREE_TYPE (vectype_op[i]))))))
+	vectype_in = vectype_op[i];
 
       if (op.code == COND_EXPR)
 	{
@@ -7569,7 +7586,7 @@ vectorizable_reduction (loop_vec_info loop_vinfo,
 	   && !lane_reduc_code_p
 	   && reduction_type != FOLD_LEFT_REDUCTION))
     for (i = 0; i < (int) op.num_ops; i++)
-      if (!vect_maybe_update_slp_op_vectype (slp_op[i], vectype_in))
+      if (!vect_maybe_update_slp_op_vectype (slp_op[i], vectype_op[i]))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -7755,8 +7772,6 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
   gimple_match_op op;
   if (!gimple_extract_op (stmt_info->stmt, &op))
     gcc_unreachable ();
-  gcc_assert (op.code.is_tree_code ());
-  auto code = tree_code (op.code);
 
   /* All uses but the last are expected to be defined in the loop.
      The last use is the reduction variable.  In case of nested cycle this
@@ -7778,7 +7793,8 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
       vec_num = 1;
     }
 
-  internal_fn cond_fn = get_conditional_internal_fn (code);
+  code_helper code = canonicalize_code (op.code, op.type);
+  internal_fn cond_fn = get_conditional_internal_fn (code, op.type);
   vec_loop_masks *masks = &LOOP_VINFO_MASKS (loop_vinfo);
   bool mask_by_cond_expr = use_mask_by_cond_expr_p (code, cond_fn, vectype_in);
 
@@ -7802,9 +7818,10 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
   if (reduction_type == FOLD_LEFT_REDUCTION)
     {
       internal_fn reduc_fn = STMT_VINFO_REDUC_FN (reduc_info);
+      gcc_assert (code.is_tree_code ());
       return vectorize_fold_left_reduction
-	  (loop_vinfo, stmt_info, gsi, vec_stmt, slp_node, reduc_def_phi, code,
-	   reduc_fn, op.ops, vectype_in, reduc_index, masks);
+	  (loop_vinfo, stmt_info, gsi, vec_stmt, slp_node, reduc_def_phi,
+	   tree_code (code), reduc_fn, op.ops, vectype_in, reduc_index, masks);
     }
 
   bool single_defuse_cycle = STMT_VINFO_FORCE_SINGLE_CYCLE (reduc_info);
@@ -7814,7 +7831,7 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
 	      || code == SAD_EXPR);
 
   /* Create the destination vector  */
-  tree scalar_dest = gimple_assign_lhs (stmt_info->stmt);
+  tree scalar_dest = gimple_get_lhs (stmt_info->stmt);
   tree vec_dest = vect_create_destination_var (scalar_dest, vectype_out);
 
   vect_get_vec_defs (loop_vinfo, stmt_info, slp_node, ncopies,
@@ -7849,7 +7866,7 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
 	  /* Make sure that the reduction accumulator is vop[0].  */
 	  if (reduc_index == 1)
 	    {
-	      gcc_assert (commutative_tree_code (code));
+	      gcc_assert (commutative_binary_op_p (code, op.type));
 	      std::swap (vop[0], vop[1]);
 	    }
 	  tree mask = vect_get_loop_mask (gsi, masks, vec_num * ncopies,
@@ -7877,11 +7894,15 @@ vect_transform_reduction (loop_vec_info loop_vinfo,
 	  if (emulated_mixed_dot_prod)
 	    new_stmt = vect_emulate_mixed_dot_prod (loop_vinfo, stmt_info, gsi,
 						    vec_dest, vop);
+	  else if (code.is_internal_fn ())
+	    new_stmt = gimple_build_call_internal (internal_fn (code),
+						   op.num_ops,
+						   vop[0], vop[1], vop[2]);
 	  else
-	    new_stmt = gimple_build_assign (vec_dest, code,
+	    new_stmt = gimple_build_assign (vec_dest, tree_code (op.code),
 					    vop[0], vop[1], vop[2]);
 	  new_temp = make_ssa_name (vec_dest, new_stmt);
-	  gimple_assign_set_lhs (new_stmt, new_temp);
+	  gimple_set_lhs (new_stmt, new_temp);
 	  vect_finish_stmt_generation (loop_vinfo, stmt_info, new_stmt, gsi);
 	}
 
@@ -8808,49 +8829,6 @@ vect_update_nonlinear_iv (gimple_seq* stmts, tree vectype,
 
 }
 
-/* Return true if vectorizer can peel for nonlinear iv.  */
-bool
-vect_can_peel_nonlinear_iv_p (loop_vec_info loop_vinfo,
-			      enum vect_induction_op_type induction_type)
-{
-  tree niters_skip;
-  /* Init_expr will be update by vect_update_ivs_after_vectorizer,
-     if niters is unkown:
-     For shift, when shift mount >= precision, there would be UD.
-     For mult, don't known how to generate
-     init_expr * pow (step, niters) for variable niters.
-     For neg, it should be ok, since niters of vectorized main loop
-     will always be multiple of 2.  */
-  if (!LOOP_VINFO_NITERS_KNOWN_P (loop_vinfo)
-      && induction_type != vect_step_op_neg)
-    {
-      if (dump_enabled_p ())
-	dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
-			 "Peeling for epilogue is not supported"
-			 " for nonlinear induction except neg"
-			 " when iteration count is unknown.\n");
-      return false;
-    }
-
-  /* Also doens't support peel for neg when niter is variable.
-     ??? generate something like niter_expr & 1 ? init_expr : -init_expr?  */
-  niters_skip = LOOP_VINFO_MASK_SKIP_NITERS (loop_vinfo);
-  if ((niters_skip != NULL_TREE
-       && TREE_CODE (niters_skip) != INTEGER_CST)
-      || (!vect_use_loop_mask_for_alignment_p (loop_vinfo)
-	  && LOOP_VINFO_PEELING_FOR_ALIGNMENT (loop_vinfo) < 0))
-    {
-      if (dump_enabled_p ())
-	dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
-			 "Peeling for alignement is not supported"
-			 " for nonlinear induction when niters_skip"
-			 " is not constant.\n");
-      return false;
-    }
-
-  return true;
-}
-
 /* Function vectorizable_induction
 
    Check if STMT_INFO performs an nonlinear induction computation that can be
@@ -8920,9 +8898,6 @@ vectorizable_nonlinear_induction (loop_vec_info loop_vinfo,
 			 " induction.\n");
       return false;
     }
-
-  if (!vect_can_peel_nonlinear_iv_p (loop_vinfo, induction_type))
-    return false;
 
   if (!INTEGRAL_TYPE_P (TREE_TYPE (vectype)))
     {

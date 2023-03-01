@@ -1,6 +1,6 @@
 (* M2Search.def provides a mechanism to search selected directories.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -31,31 +31,6 @@ DEFINITION MODULE M2Search ;
 *)
 
 FROM DynamicStrings IMPORT String ;
-EXPORT QUALIFIED InitSearchPath, PrependSearchPath, FindSourceFile,
-                 FindSourceDefFile, FindSourceModFile,
-                 SetDefExtension, SetModExtension ;
-
-
-(*
-   InitSearchPath - assigns the search path to Path.
-                    The string Path may take the form:
-
-                    Path           ::= IndividualPath { ":" IndividualPath }
-                    IndividualPath ::= "." | DirectoryPath
-                    DirectoryPath  ::= [ "/" ] Name { "/" Name }
-                    Name           ::= Letter { (Letter | Number) }
-                    Letter         ::= A..Z | a..z
-                    Number         ::= 0..9
-*)
-
-PROCEDURE InitSearchPath (Path: String) ;
-
-
-(*
-   PrependSearchPath - prepends a new path to the initial search path.
-*)
-
-PROCEDURE PrependSearchPath (path: String) ;
 
 
 (*
@@ -67,11 +42,13 @@ PROCEDURE PrependSearchPath (path: String) ;
                     FullPath will be totally overwritten and should
                     not be initialized by InitString before this function
                     is called.
+                    FullPath is set to NIL if this function returns FALSE.
                     FindSourceFile sets FullPath to a new string if successful.
+                    The string FileName is not altered.
 *)
 
 PROCEDURE FindSourceFile (FileName: String;
-                          VAR FullPath: String) : BOOLEAN ;
+                          VAR FullPath, named: String) : BOOLEAN ;
 
 
 (*
@@ -81,7 +58,7 @@ PROCEDURE FindSourceFile (FileName: String;
                        then FALSE is returned and FullPath is set to NIL.
 *)
 
-PROCEDURE FindSourceDefFile (Stem: String; VAR FullPath: String) : BOOLEAN ;
+PROCEDURE FindSourceDefFile (Stem: String; VAR FullPath, named: String) : BOOLEAN ;
 
 
 (*
@@ -91,7 +68,7 @@ PROCEDURE FindSourceDefFile (Stem: String; VAR FullPath: String) : BOOLEAN ;
                        then FALSE is returned and FullPath is set to NIL.
 *)
 
-PROCEDURE FindSourceModFile (Stem: String; VAR FullPath: String) : BOOLEAN ;
+PROCEDURE FindSourceModFile (Stem: String; VAR FullPath, named: String) : BOOLEAN ;
 
 
 (*
@@ -110,6 +87,8 @@ PROCEDURE SetDefExtension (ext: String) ;
 *)
 
 PROCEDURE SetModExtension (ext: String) ;
+
+
 
 
 END M2Search.

@@ -1,6 +1,6 @@
 /* Build up a list of intrinsic subroutines and functions for the
    name-resolution stage.
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2023 Free Software Foundation, Inc.
    Contributed by Andy Vaught & Katherine Holcomb
 
 This file is part of GCC.
@@ -4259,15 +4259,15 @@ remove_nullargs (gfc_actual_arglist **ap)
 }
 
 
-static gfc_dummy_arg *
-get_intrinsic_dummy_arg (gfc_intrinsic_arg *intrinsic)
+static void
+set_intrinsic_dummy_arg (gfc_dummy_arg *&dummy_arg,
+			 gfc_intrinsic_arg *intrinsic)
 {
-  gfc_dummy_arg * const dummy_arg = gfc_get_dummy_arg ();
+  if (dummy_arg == NULL)
+    dummy_arg = gfc_get_dummy_arg ();
 
   dummy_arg->intrinsicness = GFC_INTRINSIC_DUMMY_ARG;
   dummy_arg->u.intrinsic = intrinsic;
-
-  return dummy_arg;
 }
 
 
@@ -4430,7 +4430,7 @@ do_sort:
       if (a == NULL)
 	a = gfc_get_actual_arglist ();
 
-      a->associated_dummy = get_intrinsic_dummy_arg (f);
+      set_intrinsic_dummy_arg (a->associated_dummy, f);
 
       if (actual == NULL)
 	*ap = a;
@@ -5419,7 +5419,8 @@ gfc_convert_chartype (gfc_expr *expr, gfc_typespec *ts)
   gcc_assert (expr->ts.type == BT_CHARACTER && ts->type == BT_CHARACTER);
 
   sym = find_char_conv (&expr->ts, ts);
-  gcc_assert (sym);
+  if (sym == NULL)
+    return false;
 
   /* Insert a pre-resolved function call to the right function.  */
   old_where = expr->where;

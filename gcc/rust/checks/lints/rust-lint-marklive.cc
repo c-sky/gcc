@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Free Software Foundation, Inc.
+// Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -78,7 +78,7 @@ MarkLive::Analysis (HIR::Crate &crate)
 //    visited first time
 // 2. save all the live symbols in liveSymbols
 void
-MarkLive::go (HIR::Crate &crate)
+MarkLive::go (HIR::Crate &)
 {
   while (!worklist.empty ())
     {
@@ -273,8 +273,11 @@ MarkLive::find_ref_node_id (NodeId ast_node_id, NodeId &ref_node_id)
 {
   if (!resolver->lookup_resolved_name (ast_node_id, &ref_node_id))
     {
-      bool ok = resolver->lookup_resolved_type (ast_node_id, &ref_node_id);
-      rust_assert (ok);
+      if (!resolver->lookup_resolved_type (ast_node_id, &ref_node_id))
+	{
+	  bool ok = resolver->lookup_resolved_misc (ast_node_id, &ref_node_id);
+	  rust_assert (ok);
+	}
     }
 }
 

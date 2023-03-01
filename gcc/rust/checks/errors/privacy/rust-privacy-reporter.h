@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -83,8 +83,7 @@ types
 
   virtual void visit (HIR::QualifiedPathInExpression &expr);
   virtual void visit (HIR::PathInExpression &expr);
-  virtual void visit (HIR::ClosureExprInnerTyped &);
-  virtual void visit (HIR::ClosureExprInner &expr);
+  virtual void visit (HIR::ClosureExpr &expr);
   virtual void visit (HIR::StructExprStructFields &);
   virtual void visit (HIR::StructExprStruct &);
   virtual void visit (HIR::LiteralExpr &expr);

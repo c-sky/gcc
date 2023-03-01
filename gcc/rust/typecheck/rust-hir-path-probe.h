@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -80,17 +80,17 @@ struct PathProbeCandidate
 
   PathProbeCandidate (CandidateType type, TyTy::BaseType *ty, Location locus,
 		      EnumItemCandidate enum_field)
-    : type (type), ty (ty), item (enum_field)
+    : type (type), ty (ty), locus (locus), item (enum_field)
   {}
 
   PathProbeCandidate (CandidateType type, TyTy::BaseType *ty, Location locus,
 		      ImplItemCandidate impl)
-    : type (type), ty (ty), item (impl)
+    : type (type), ty (ty), locus (locus), item (impl)
   {}
 
   PathProbeCandidate (CandidateType type, TyTy::BaseType *ty, Location locus,
 		      TraitItemCandidate trait)
-    : type (type), ty (ty), item (trait)
+    : type (type), ty (ty), locus (locus), item (trait)
   {}
 
   std::string as_string () const
@@ -123,12 +123,45 @@ struct PathProbeCandidate
   }
 
   bool is_error () const { return type == ERROR; }
+
+  DefId get_defid () const
+  {
+    switch (type)
+      {
+      case ENUM_VARIANT:
+	return item.enum_field.variant->get_defid ();
+	break;
+
+      case IMPL_CONST:
+      case IMPL_TYPE_ALIAS:
+      case IMPL_FUNC:
+	return item.impl.impl_item->get_impl_mappings ().get_defid ();
+	break;
+
+      case TRAIT_ITEM_CONST:
+      case TRAIT_TYPE_ALIAS:
+      case TRAIT_FUNC:
+	return item.trait.item_ref->get_mappings ().get_defid ();
+	break;
+
+      case ERROR:
+      default:
+	return UNKNOWN_DEFID;
+      }
+
+    return UNKNOWN_DEFID;
+  }
+
+  bool operator< (const PathProbeCandidate &c) const
+  {
+    return get_defid () < c.get_defid ();
+  }
 };
 
 class PathProbeType : public TypeCheckBase, public HIR::HIRImplVisitor
 {
 public:
-  static std::vector<PathProbeCandidate>
+  static std::set<PathProbeCandidate>
   Probe (const TyTy::BaseType *receiver,
 	 const HIR::PathIdentSegment &segment_name, bool probe_impls,
 	 bool probe_bounds, bool ignore_mandatory_trait_items,
@@ -195,7 +228,7 @@ public:
       {
 	HirId tyid = alias.get_mappings ().get_hirid ();
 	TyTy::BaseType *ty = nullptr;
-	bool ok = context->lookup_type (tyid, &ty);
+	bool ok = query_type (tyid, &ty);
 	rust_assert (ok);
 
 	PathProbeCandidate::ImplItemCandidate impl_item_candidate{&alias,
@@ -203,7 +236,7 @@ public:
 	PathProbeCandidate candidate{
 	  PathProbeCandidate::CandidateType::IMPL_TYPE_ALIAS, ty,
 	  alias.get_locus (), impl_item_candidate};
-	candidates.push_back (std::move (candidate));
+	candidates.insert (std::move (candidate));
       }
   }
 
@@ -214,7 +247,7 @@ public:
       {
 	HirId tyid = constant.get_mappings ().get_hirid ();
 	TyTy::BaseType *ty = nullptr;
-	bool ok = context->lookup_type (tyid, &ty);
+	bool ok = query_type (tyid, &ty);
 	rust_assert (ok);
 
 	PathProbeCandidate::ImplItemCandidate impl_item_candidate{&constant,
@@ -222,7 +255,7 @@ public:
 	PathProbeCandidate candidate{
 	  PathProbeCandidate::CandidateType::IMPL_CONST, ty,
 	  constant.get_locus (), impl_item_candidate};
-	candidates.push_back (std::move (candidate));
+	candidates.insert (std::move (candidate));
       }
   }
 
@@ -233,7 +266,7 @@ public:
       {
 	HirId tyid = function.get_mappings ().get_hirid ();
 	TyTy::BaseType *ty = nullptr;
-	bool ok = context->lookup_type (tyid, &ty);
+	bool ok = query_type (tyid, &ty);
 	rust_assert (ok);
 
 	PathProbeCandidate::ImplItemCandidate impl_item_candidate{&function,
@@ -241,7 +274,7 @@ public:
 	PathProbeCandidate candidate{
 	  PathProbeCandidate::CandidateType::IMPL_FUNC, ty,
 	  function.get_locus (), impl_item_candidate};
-	candidates.push_back (std::move (candidate));
+	candidates.insert (std::move (candidate));
       }
   }
 
@@ -259,7 +292,7 @@ protected:
     PathProbeCandidate candidate{
       PathProbeCandidate::CandidateType::ENUM_VARIANT, receiver->clone (),
       mappings->lookup_location (adt->get_ty_ref ()), enum_item_candidate};
-    candidates.push_back (std::move (candidate));
+    candidates.insert (std::move (candidate));
   }
 
   void process_impl_items_for_candidates ()
@@ -272,23 +305,7 @@ protected:
   }
 
   void process_impl_item_candidate (HirId id, HIR::ImplItem *item,
-				    HIR::ImplBlock *impl)
-  {
-    current_impl = impl;
-    HirId impl_ty_id = impl->get_type ()->get_mappings ().get_hirid ();
-    TyTy::BaseType *impl_block_ty = nullptr;
-    if (!context->lookup_type (impl_ty_id, &impl_block_ty))
-      return;
-
-    if (!receiver->can_eq (impl_block_ty, false))
-      {
-	if (!impl_block_ty->can_eq (receiver, false))
-	  return;
-      }
-
-    // lets visit the impl_item
-    item->accept_vis (*this);
-  }
+				    HIR::ImplBlock *impl);
 
   void
   process_associated_trait_for_candidates (const TraitReference *trait_ref,
@@ -354,8 +371,9 @@ protected:
 								impl};
 
     PathProbeCandidate candidate{candidate_type, trait_item_tyty,
-				 trait_ref->get_locus (), trait_item_candidate};
-    candidates.push_back (std::move (candidate));
+				 trait_item_ref->get_locus (),
+				 trait_item_candidate};
+    candidates.insert (std::move (candidate));
   }
 
   void
@@ -399,7 +417,7 @@ protected:
     PathProbeCandidate candidate{candidate_type, trait_item_tyty,
 				 trait_item_ref->get_locus (),
 				 trait_item_candidate};
-    candidates.push_back (std::move (candidate));
+    candidates.insert (std::move (candidate));
   }
 
 protected:
@@ -444,72 +462,30 @@ protected:
 
   const TyTy::BaseType *receiver;
   const HIR::PathIdentSegment &search;
-  std::vector<PathProbeCandidate> candidates;
+  std::set<PathProbeCandidate> candidates;
   HIR::ImplBlock *current_impl;
   DefId specific_trait_id;
 };
 
-class ReportMultipleCandidateError : private TypeCheckBase,
-				     private HIR::HIRImplVisitor
+class ReportMultipleCandidateError : private TypeCheckBase
 {
 public:
-  static void Report (std::vector<PathProbeCandidate> &candidates,
+  static void Report (std::set<PathProbeCandidate> &candidates,
 		      const HIR::PathIdentSegment &query, Location query_locus)
   {
     RichLocation r (query_locus);
-    ReportMultipleCandidateError visitor (r);
     for (auto &c : candidates)
-      {
-	switch (c.type)
-	  {
-	  case PathProbeCandidate::CandidateType::ERROR:
-	  case PathProbeCandidate::CandidateType::ENUM_VARIANT:
-	    gcc_unreachable ();
-	    break;
-
-	  case PathProbeCandidate::CandidateType::IMPL_CONST:
-	  case PathProbeCandidate::CandidateType::IMPL_TYPE_ALIAS:
-	  case PathProbeCandidate::CandidateType::IMPL_FUNC:
-	    c.item.impl.impl_item->accept_vis (visitor);
-	    break;
-
-	  case PathProbeCandidate::CandidateType::TRAIT_ITEM_CONST:
-	  case PathProbeCandidate::CandidateType::TRAIT_TYPE_ALIAS:
-	  case PathProbeCandidate::CandidateType::TRAIT_FUNC:
-	    r.add_range (c.item.trait.item_ref->get_locus ());
-	    break;
-	  }
-      }
+      r.add_range (c.locus);
 
     rust_error_at (r, "multiple applicable items in scope for: %s",
 		   query.as_string ().c_str ());
   }
-
-  void visit (HIR::TypeAlias &alias) override
-  {
-    r.add_range (alias.get_locus ());
-  }
-
-  void visit (HIR::ConstantItem &constant) override
-  {
-    r.add_range (constant.get_locus ());
-  }
-
-  void visit (HIR::Function &function) override
-  {
-    r.add_range (function.get_locus ());
-  }
-
-private:
-  ReportMultipleCandidateError (RichLocation &r) : TypeCheckBase (), r (r) {}
-
-  RichLocation &r;
 };
 
 class PathProbeImplTrait : public PathProbeType
 {
 public:
-  static std::vector<PathProbeCandidate>
+  static std::set<PathProbeCandidate>
   Probe (const TyTy::BaseType *receiver,
 	 const HIR::PathIdentSegment &segment_name,
 	 const TraitReference *trait_reference)

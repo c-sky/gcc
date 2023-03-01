@@ -1,6 +1,6 @@
 /* Gtermios.c handwritten module for mc.
 
-Copyright (C) 2010-2022 Free Software Foundation, Inc.
+Copyright (C) 2010-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -1933,12 +1933,12 @@ EXPORT (SetChar) (struct termios *t, ControlChar c, char ch)
 }
 
 void
-_M2_termios_init (void)
+_M2_termios_init (int argc, char *argv[], char *envp[])
 {
 }
 
 void
-_M2_termios_finish (void)
+_M2_termios_fini (int argc, char *argv[], char *envp[])
 {
 }
 

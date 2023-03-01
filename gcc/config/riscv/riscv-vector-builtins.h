@@ -1,5 +1,5 @@
 /* Builtins definitions for RISC-V 'V' Extension for GNU compiler.
-   Copyright (C) 2022-2022 Free Software Foundation, Inc.
+   Copyright (C) 2022-2023 Free Software Foundation, Inc.
    Contributed by Ju-Zhe Zhong (juzhe.zhong@rivai.ai), RiVAI Technologies Ltd.
 
    This file is part of GCC.
@@ -106,6 +106,7 @@ static const unsigned int CP_WRITE_CSR = 1U << 5;
 #define RVV_REQUIRE_ZVE64 (1 << 1)	/* Require TARGET_MIN_VLEN > 32.  */
 #define RVV_REQUIRE_ELEN_FP_32 (1 << 2) /* Require FP ELEN >= 32.  */
 #define RVV_REQUIRE_ELEN_FP_64 (1 << 3) /* Require FP ELEN >= 64.  */
+#define RVV_REQUIRE_FULL_V (1 << 4) /* Require Full 'V' extension.  */
 
 /* Enumerates the RVV operand types.  */
 enum operand_type_index
@@ -139,6 +140,10 @@ enum rvv_base_type
 {
   RVV_BASE_vector,
   RVV_BASE_scalar,
+  RVV_BASE_mask,
+  RVV_BASE_signed_vector,
+  RVV_BASE_unsigned_vector,
+  RVV_BASE_unsigned_scalar,
   RVV_BASE_vector_ptr,
   RVV_BASE_scalar_ptr,
   RVV_BASE_scalar_const_ptr,
@@ -147,6 +152,22 @@ enum rvv_base_type
   RVV_BASE_ptrdiff,
   RVV_BASE_unsigned_long,
   RVV_BASE_long,
+  RVV_BASE_uint8_index,
+  RVV_BASE_uint16_index,
+  RVV_BASE_uint32_index,
+  RVV_BASE_uint64_index,
+  RVV_BASE_shift_vector,
+  RVV_BASE_double_trunc_vector,
+  RVV_BASE_quad_trunc_vector,
+  RVV_BASE_oct_trunc_vector,
+  RVV_BASE_double_trunc_scalar,
+  RVV_BASE_double_trunc_signed_vector,
+  RVV_BASE_double_trunc_unsigned_vector,
+  RVV_BASE_double_trunc_unsigned_scalar,
+  RVV_BASE_double_trunc_float_vector,
+  RVV_BASE_float_vector,
+  RVV_BASE_lmul1_vector,
+  RVV_BASE_widen_lmul1_vector,
   NUM_BASE_TYPES
 };
 
@@ -176,6 +197,7 @@ struct rvv_arg_type_info
   {}
   enum rvv_base_type base_type;
 
+  vector_type_index get_base_vector_type (tree type) const;
   tree get_tree_type (vector_type_index) const;
 };
 
@@ -317,17 +339,24 @@ public:
   rtx expand ();
 
   void add_input_operand (machine_mode, rtx);
-  void add_input_operand (unsigned argno);
+  void add_input_operand (unsigned);
   void add_output_operand (machine_mode, rtx);
-  void add_all_one_mask_operand (machine_mode mode);
-  void add_vundef_operand (machine_mode mode);
+  void add_all_one_mask_operand (machine_mode);
+  void add_vundef_operand (machine_mode);
   void add_fixed_operand (rtx);
-  rtx add_mem_operand (machine_mode, rtx);
+  void add_integer_operand (rtx);
+  void add_mem_operand (machine_mode, unsigned);
 
   machine_mode vector_mode (void) const;
+  machine_mode index_mode (void) const;
+  machine_mode arg_mode (int) const;
 
+  rtx use_exact_insn (insn_code);
   rtx use_contiguous_load_insn (insn_code);
   rtx use_contiguous_store_insn (insn_code);
+  rtx use_compare_insn (rtx_code, insn_code);
+  rtx use_ternop_insn (bool, insn_code);
+  rtx use_widen_ternop_insn (insn_code);
   rtx generate_insn (insn_code);
 
   /* The function call expression.  */
@@ -358,8 +387,20 @@ public:
   /* Return true if intrinsics should apply vl operand.  */
   virtual bool apply_vl_p () const;
 
+  /* Return true if intrinsics should apply tail policy operand.  */
+  virtual bool apply_tail_policy_p () const;
+
+  /* Return true if intrinsics should apply mask policy operand.  */
+  virtual bool apply_mask_policy_p () const;
+
   /* Return true if intrinsic can be overloaded.  */
   virtual bool can_be_overloaded_p (enum predication_type_index) const;
+
+  /* Return true if intrinsics use mask predication.  */
+  virtual bool use_mask_predication_p () const;
+
+  /* Return true if intrinsics has merge operand.  */
+  virtual bool has_merge_operand_p () const;
 
   /* Expand the given call into rtl.  Return the result of the function,
      or an arbitrary value if the function doesn't return a result.  */
@@ -437,11 +478,32 @@ function_expander::add_fixed_operand (rtx x)
   create_fixed_operand (&m_ops[opno++], x);
 }
 
+/* Add an integer operand X.  */
+inline void
+function_expander::add_integer_operand (rtx x)
+{
+  create_integer_operand (&m_ops[opno++], INTVAL (x));
+}
+
 /* Return the machine_mode of the corresponding vector type.  */
 inline machine_mode
 function_expander::vector_mode (void) const
 {
   return TYPE_MODE (builtin_types[type.index].vector);
+}
+
+/* Return the machine_mode of the corresponding index type.  */
+inline machine_mode
+function_expander::index_mode (void) const
+{
+  return TYPE_MODE (op_info->args[1].get_tree_type (type.index));
+}
+
+/* Return the machine_mode of the corresponding arg type.  */
+inline machine_mode
+function_expander::arg_mode (int idx) const
+{
+  return TYPE_MODE (op_info->args[idx].get_tree_type (type.index));
 }
 
 /* Default implementation of function_base::call_properties, with conservatively
@@ -459,6 +521,38 @@ function_base::call_properties (const function_instance &instance) const
    has vl operand.  */
 inline bool
 function_base::apply_vl_p () const
+{
+  return true;
+}
+
+/* We choose to apply tail policy operand by default since most of the
+   intrinsics has tail policy operand.  */
+inline bool
+function_base::apply_tail_policy_p () const
+{
+  return true;
+}
+
+/* We choose to apply mask policy operand by default since most of the
+   intrinsics has mask policy operand.  */
+inline bool
+function_base::apply_mask_policy_p () const
+{
+  return true;
+}
+
+/* We choose to return true by default since most of the intrinsics use
+   mask predication.  */
+inline bool
+function_base::use_mask_predication_p () const
+{
+  return true;
+}
+
+/* We choose to return true by default since most of the intrinsics use
+   has merge operand.  */
+inline bool
+function_base::has_merge_operand_p () const
 {
   return true;
 }

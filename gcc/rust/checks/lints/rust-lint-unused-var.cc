@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Free Software Foundation, Inc.
+// Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -53,7 +53,7 @@ check_decl (tree *t)
 }
 
 static tree
-unused_var_walk_fn (tree *t, int *walk_subtrees, void *closure)
+unused_var_walk_fn (tree *t, int *, void *)
 {
   switch (TREE_CODE (*t))
     {

@@ -1,6 +1,6 @@
 /* m2rts.h provides a C interface to M2RTS.mod.
 
-Copyright (C) 2019-2022 Free Software Foundation, Inc.
+Copyright (C) 2019-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -28,8 +28,9 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 typedef void (*proc_con) (int, char **, char **);
 typedef void (*proc_dep) (void);
 
-extern "C" void M2RTS_RequestDependant (const char *modulename, const char *dependancy);
-extern "C" void M2RTS_RegisterModule (const char *modulename,
+extern "C" void M2RTS_RequestDependant (const char *modulename, const char *libname,
+					const char *dependancy, const char *deplib);
+extern "C" void M2RTS_RegisterModule (const char *modulename, const char *libname,
 				      proc_con init, proc_con fini, proc_dep dependencies);
 extern "C" void _M2_M2RTS_init (void);
 

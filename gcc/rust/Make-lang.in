@@ -1,6 +1,6 @@
 # Make-lang.in -- Top level -*- makefile -*- fragment for GCC Rust frontend.
 
-# Copyright (C) 2009-2022 Free Software Foundation, Inc.
+# Copyright (C) 2009-2023 Free Software Foundation, Inc.
 
 # This file is part of GCC.
 
@@ -74,6 +74,7 @@ GRS_OBJS = \
     rust/rust-cfg-parser.o \
     rust/rust-parse.o \
     rust/rust-ast-full-test.o \
+    rust/rust-ast-fragment.o \
     rust/rust-ast-dump.o \
     rust/rust-hir-dump.o \
     rust/rust-session-manager.o \
@@ -93,6 +94,9 @@ GRS_OBJS = \
     rust/rust-ast-lower-base.o \
     rust/rust-ast-lower-pattern.o \
     rust/rust-ast-lower-item.o \
+    rust/rust-ast-lower-expr.o \
+    rust/rust-ast-lower-type.o \
+    rust/rust-early-name-resolver.o \
     rust/rust-name-resolver.o \
     rust/rust-ast-resolve.o \
     rust/rust-ast-resolve-base.o \
@@ -116,7 +120,6 @@ GRS_OBJS = \
     rust/rust-tyty-bounds.o \
     rust/rust-hir-type-check-util.o \
     rust/rust-hir-trait-resolve.o \
-    rust/rust-hir-type-check-toplevel.o \
     rust/rust-hir-type-check-item.o \
     rust/rust-hir-type-check-type.o \
     rust/rust-hir-type-check-struct.o \
@@ -126,6 +129,7 @@ GRS_OBJS = \
     rust/rust-hir-type-check-enumitem.o \
     rust/rust-hir-type-check-implitem.o \
     rust/rust-hir-dot-operator.o \
+    rust/rust-hir-path-probe.o \
     rust/rust-coercion.o \
     rust/rust-casts.o \
     rust/rust-hir-type-check-base.o \
@@ -156,6 +160,7 @@ GRS_OBJS = \
     rust/rust-imports.o \
     rust/rust-import-archive.o \
     rust/rust-extern-crate.o \
+    rust/rust-builtins.o \
     $(END)
 # removed object files from here
 

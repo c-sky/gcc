@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -93,8 +93,9 @@ public:
 
     HirId impl_type_id = impl->get_type ()->get_mappings ().get_hirid ();
     TyTy::BaseType *impl_type = nullptr;
-    bool ok = context->lookup_type (impl_type_id, &impl_type);
-    rust_assert (ok);
+    bool ok = query_type (impl_type_id, &impl_type);
+    if (!ok)
+      return;
 
     std::string impl_item_name;
     ok = ImplItemToName::resolve (impl_item, impl_item_name);

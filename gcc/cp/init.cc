@@ -1,5 +1,5 @@
 /* Handle initialization things in -*- C++ -*-
-   Copyright (C) 1987-2022 Free Software Foundation, Inc.
+   Copyright (C) 1987-2023 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -3799,6 +3799,8 @@ build_new_1 (vec<tree, va_gc> **placement, tree type, tree nelts,
     rval = build2 (COMPOUND_EXPR, TREE_TYPE (rval), init_expr, rval);
   if (cookie_expr)
     rval = build2 (COMPOUND_EXPR, TREE_TYPE (rval), cookie_expr, rval);
+
+  suppress_warning (rval, OPT_Wunused_value);
 
   if (rval == data_addr && TREE_CODE (alloc_expr) == TARGET_EXPR)
     /* If we don't have an initializer or a cookie, strip the TARGET_EXPR

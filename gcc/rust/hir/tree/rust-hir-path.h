@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -140,8 +140,7 @@ private:
   Location locus;
 };
 
-// Generic arguments allowed in each path expression segment - inline?
-struct GenericArgs
+class GenericArgs
 {
   std::vector<Lifetime> lifetime_args;
   std::vector<std::unique_ptr<Type> > type_args;
@@ -172,6 +171,7 @@ public:
     : lifetime_args (other.lifetime_args), binding_args (other.binding_args),
       const_args (other.const_args), locus (other.locus)
   {
+    type_args.clear ();
     type_args.reserve (other.type_args.size ());
 
     for (const auto &e : other.type_args)
@@ -188,6 +188,7 @@ public:
     const_args = other.const_args;
     locus = other.locus;
 
+    type_args.clear ();
     type_args.reserve (other.type_args.size ());
     for (const auto &e : other.type_args)
       type_args.push_back (e->clone_type ());
@@ -235,26 +236,44 @@ private:
   Location locus;
 
 public:
-  // Returns true if there are any generic arguments
-  bool has_generic_args () const { return generic_args.has_generic_args (); }
-
-  // Constructor for segment (from IdentSegment and GenericArgs)
   PathExprSegment (Analysis::NodeMapping mappings,
-		   PathIdentSegment segment_name, Location locus = Location (),
-		   GenericArgs generic_args = GenericArgs::create_empty ())
+		   PathIdentSegment segment_name, Location locus,
+		   GenericArgs generic_args)
     : mappings (std::move (mappings)), segment_name (std::move (segment_name)),
       generic_args (std::move (generic_args)), locus (locus)
   {}
+
+  PathExprSegment (PathExprSegment const &other)
+    : mappings (other.mappings), segment_name (other.segment_name),
+      generic_args (other.generic_args), locus (other.locus)
+  {}
+
+  PathExprSegment &operator= (PathExprSegment const &other)
+  {
+    mappings = other.mappings;
+    segment_name = other.segment_name;
+    generic_args = other.generic_args;
+    locus = other.locus;
+
+    return *this;
+  }
+
+  // move constructors
+  PathExprSegment (PathExprSegment &&other) = default;
+  PathExprSegment &operator= (PathExprSegment &&other) = default;
 
   std::string as_string () const;
 
   Location get_locus () const { return locus; }
 
-  PathIdentSegment get_segment () const { return segment_name; }
+  PathIdentSegment &get_segment () { return segment_name; }
+  const PathIdentSegment &get_segment () const { return segment_name; }
 
   GenericArgs &get_generic_args () { return generic_args; }
 
   const Analysis::NodeMapping &get_mappings () const { return mappings; }
+
+  bool has_generic_args () const { return generic_args.has_generic_args (); }
 };
 
 // HIR node representing a pattern that involves a "path" - abstract base class
@@ -529,23 +548,8 @@ protected:
 struct TypePathFunction
 {
 private:
-  // TODO: remove
-  /*bool has_inputs;
-  TypePathFnInputs inputs;*/
-  // inlined from TypePathFnInputs
   std::vector<std::unique_ptr<Type> > inputs;
-
-  // bool has_type;
   std::unique_ptr<Type> return_type;
-
-  // FIXME: think of better way to mark as invalid than taking up storage
-  bool is_invalid;
-
-  // TODO: should this have location info?
-
-protected:
-  // Constructor only used to create invalid type path functions.
-  TypePathFunction (bool is_invalid) : is_invalid (is_invalid) {}
 
 public:
   // Returns whether the return type of the function has been specified.
@@ -554,31 +558,19 @@ public:
   // Returns whether the function has inputs.
   bool has_inputs () const { return !inputs.empty (); }
 
-  // Returns whether function is in an error state.
-  bool is_error () const { return is_invalid; }
-
-  // Creates an error state function.
-  static TypePathFunction create_error () { return TypePathFunction (true); }
-
   // Constructor
   TypePathFunction (std::vector<std::unique_ptr<Type> > inputs,
-		    Type *type = nullptr)
-    : inputs (std::move (inputs)), return_type (type), is_invalid (false)
-  {}
-  // FIXME: deprecated
-
-  // Constructor
-  TypePathFunction (std::vector<std::unique_ptr<Type> > inputs,
-		    std::unique_ptr<Type> type = nullptr)
-    : inputs (std::move (inputs)), return_type (std::move (type)),
-      is_invalid (false)
+		    std::unique_ptr<Type> type)
+    : inputs (std::move (inputs)), return_type (std::move (type))
   {}
 
   // Copy constructor with clone
   TypePathFunction (TypePathFunction const &other)
-    : return_type (other.return_type->clone_type ()),
-      is_invalid (other.is_invalid)
   {
+    return_type = other.has_return_type ()
+		    ? other.get_return_type ()->clone_type ()
+		    : nullptr;
+
     inputs.reserve (other.inputs.size ());
     for (const auto &e : other.inputs)
       inputs.push_back (e->clone_type ());
@@ -589,8 +581,9 @@ public:
   // Overloaded assignment operator to clone type
   TypePathFunction &operator= (TypePathFunction const &other)
   {
-    return_type = other.return_type->clone_type ();
-    is_invalid = other.is_invalid;
+    return_type = other.has_return_type ()
+		    ? other.get_return_type ()->clone_type ()
+		    : nullptr;
 
     inputs.reserve (other.inputs.size ());
     for (const auto &e : other.inputs)
@@ -604,6 +597,23 @@ public:
   TypePathFunction &operator= (TypePathFunction &&other) = default;
 
   std::string as_string () const;
+
+  const std::vector<std::unique_ptr<Type> > &get_params () const
+  {
+    return inputs;
+  };
+  std::vector<std::unique_ptr<Type> > &get_params () { return inputs; };
+
+  const std::unique_ptr<Type> &get_return_type () const
+  {
+    rust_assert (has_return_type ());
+    return return_type;
+  };
+  std::unique_ptr<Type> &get_return_type ()
+  {
+    rust_assert (has_return_type ());
+    return return_type;
+  };
 };
 
 // Segment used in type path with a function argument
@@ -638,10 +648,9 @@ public:
 
   void accept_vis (HIRFullVisitor &vis) override;
 
-  virtual SegmentType get_type () const override final
-  {
-    return SegmentType::FUNCTION;
-  }
+  SegmentType get_type () const override final { return SegmentType::FUNCTION; }
+
+  TypePathFunction &get_function_path () { return function_path; }
 
 protected:
   // Use covariance to override base class method

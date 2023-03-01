@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -235,6 +235,8 @@ class TypeBoundWhereClauseItem : public WhereClauseItem
 public:
   // Returns whether the item has ForLifetimes
   bool has_for_lifetimes () const { return !for_lifetimes.empty (); }
+
+  std::vector<LifetimeParam> &get_for_lifetimes () { return for_lifetimes; }
 
   // Returns whether the item has type param bounds
   bool has_type_param_bounds () const { return !type_param_bounds.empty (); }
@@ -625,16 +627,17 @@ private:
   VisType vis_type;
   // Only assigned if vis_type is IN_PATH
   SimplePath in_path;
+  Location locus;
 
   // should this store location info?
 
 public:
   // Creates a Visibility - TODO make constructor protected or private?
-  Visibility (VisType vis_type, SimplePath in_path)
-    : vis_type (vis_type), in_path (std::move (in_path))
+  Visibility (VisType vis_type, SimplePath in_path, Location locus)
+    : vis_type (vis_type), in_path (std::move (in_path)), locus (locus)
   {}
 
-  VisType get_public_vis_type () const { return vis_type; }
+  VisType get_vis_type () const { return vis_type; }
 
   // Returns whether visibility is in an error state.
   bool is_error () const
@@ -648,10 +651,13 @@ public:
   // Returns whether visibility is public or not.
   bool is_public () const { return vis_type != PRIV && !is_error (); }
 
+  Location get_locus () const { return locus; }
+
+  // empty?
   // Creates an error visibility.
   static Visibility create_error ()
   {
-    return Visibility (PUB_IN_PATH, SimplePath::create_empty ());
+    return Visibility (PUB_IN_PATH, SimplePath::create_empty (), Location ());
   }
 
   // Unique pointer custom clone function
@@ -663,42 +669,50 @@ public:
    * is one idea but may be too resource-intensive. */
 
   // Creates a public visibility with no further features/arguments.
-  static Visibility create_public ()
+  // empty?
+  static Visibility create_public (Location pub_vis_location)
   {
-    return Visibility (PUB, SimplePath::create_empty ());
+    return Visibility (PUB, SimplePath::create_empty (), pub_vis_location);
   }
 
   // Creates a public visibility with crate-relative paths
-  static Visibility create_crate (Location crate_tok_location)
+  static Visibility create_crate (Location crate_tok_location,
+				  Location crate_vis_location)
   {
     return Visibility (PUB_CRATE,
-		       SimplePath::from_str ("crate", crate_tok_location));
+		       SimplePath::from_str ("crate", crate_tok_location),
+		       crate_vis_location);
   }
 
   // Creates a public visibility with self-relative paths
-  static Visibility create_self (Location self_tok_location)
+  static Visibility create_self (Location self_tok_location,
+				 Location self_vis_location)
   {
     return Visibility (PUB_SELF,
-		       SimplePath::from_str ("self", self_tok_location));
+		       SimplePath::from_str ("self", self_tok_location),
+		       self_vis_location);
   }
 
   // Creates a public visibility with parent module-relative paths
-  static Visibility create_super (Location super_tok_location)
+  static Visibility create_super (Location super_tok_location,
+				  Location super_vis_location)
   {
     return Visibility (PUB_SUPER,
-		       SimplePath::from_str ("super", super_tok_location));
+		       SimplePath::from_str ("super", super_tok_location),
+		       super_vis_location);
   }
 
   // Creates a private visibility
   static Visibility create_private ()
   {
-    return Visibility (PRIV, SimplePath::create_empty ());
+    return Visibility (PRIV, SimplePath::create_empty (), Location ());
   }
 
   // Creates a public visibility with a given path or whatever.
-  static Visibility create_in_path (SimplePath in_path)
+  static Visibility create_in_path (SimplePath in_path,
+				    Location in_path_vis_location)
   {
-    return Visibility (PUB_IN_PATH, std::move (in_path));
+    return Visibility (PUB_IN_PATH, std::move (in_path), in_path_vis_location);
   }
 
   std::string as_string () const;
@@ -901,6 +915,7 @@ public:
 
   FunctionQualifiers get_qualifiers () { return qualifiers; }
 
+  Visibility &get_visibility () { return vis; }
   const Visibility &get_visibility () const { return vis; }
 
 protected:
@@ -1975,6 +1990,7 @@ public:
     return field_type;
   }
 
+  Visibility &get_visibility () { return visibility; }
   const Visibility &get_visibility () const { return visibility; }
 
   NodeId get_node_id () const { return node_id; }
@@ -2109,6 +2125,7 @@ public:
 
   NodeId get_node_id () const { return node_id; }
 
+  Visibility &get_visibility () { return visibility; }
   const Visibility &get_visibility () const { return visibility; }
 
   Location get_locus () const { return locus; }
@@ -4150,6 +4167,7 @@ public:
 
   Location get_locus () const { return locus; }
 
+  Visibility &get_visibility () { return visibility; }
   const Visibility &get_visibility () const { return visibility; }
 
   ExternalFunctionItem (

@@ -1,5 +1,5 @@
 /* Language-level data type conversion for GNU C++.
-   Copyright (C) 1987-2022 Free Software Foundation, Inc.
+   Copyright (C) 1987-2023 Free Software Foundation, Inc.
    Hacked by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -711,8 +711,10 @@ ocp_convert (tree type, tree expr, int convtype, int flags,
 	return error_mark_node;
       if (e == TREE_OPERAND (expr, 1))
 	return expr;
-      return build2_loc (EXPR_LOCATION (expr), COMPOUND_EXPR, TREE_TYPE (e),
-			 TREE_OPERAND (expr, 0), e);
+      e = build2_loc (EXPR_LOCATION (expr), COMPOUND_EXPR, TREE_TYPE (e),
+		      TREE_OPERAND (expr, 0), e);
+      copy_warning (e, expr);
+      return e;
     }
 
   complete_type (type);

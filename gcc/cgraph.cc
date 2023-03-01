@@ -1548,7 +1548,8 @@ cgraph_edge::redirect_call_stmt_to_callee (cgraph_edge *e)
   else
     {
       if (flag_checking
-	  && !fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE))
+	  && !fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE)
+	  && !fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE_TRAP))
 	ipa_verify_edge_has_no_modifications (e);
       new_stmt = e->call_stmt;
       gimple_call_set_fndecl (new_stmt, e->callee->decl);
@@ -1634,7 +1635,9 @@ cgraph_update_edges_for_call_stmt_node (cgraph_node *node,
 	{
 	  /* Keep calls marked as dead dead.  */
 	  if (new_stmt && is_gimple_call (new_stmt) && e->callee
-	      && fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE))
+	      && (fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE)
+		  || fndecl_built_in_p (e->callee->decl,
+					BUILT_IN_UNREACHABLE_TRAP)))
 	    {
 	      cgraph_edge::set_call_stmt (node->get_edge (old_stmt),
 					  as_a <gcall *> (new_stmt));
@@ -1893,8 +1896,18 @@ cgraph_node::remove (void)
   else if (clone_of)
     {
       clone_of->clones = next_sibling_clone;
-      if (!clone_of->analyzed && !clone_of->clones && !clones)
-	clone_of->release_body ();
+      if (!clones)
+	{
+	  bool need_body = false;
+	  for (cgraph_node *n = clone_of; n; n = n->clone_of)
+	    if (n->analyzed || n->clones)
+	      {
+		need_body = true;
+		break;
+	      }
+	  if (!need_body)
+	    clone_of->release_body ();
+	}
     }
   if (next_sibling_clone)
     next_sibling_clone->prev_sibling_clone = prev_sibling_clone;
@@ -2754,6 +2767,9 @@ set_const_flag_1 (cgraph_node *node, bool set_const, bool looping,
       if (!set_const || alias->get_availability () > AVAIL_INTERPOSABLE)
 	set_const_flag_1 (alias, set_const, looping, changed);
     }
+  for (struct cgraph_node *n = node->simd_clones; n != NULL;
+       n = n->simdclone->next_clone)
+    set_const_flag_1 (n, set_const, looping, changed);
   for (cgraph_edge *e = node->callers; e; e = e->next_caller)
     if (e->caller->thunk
 	&& (!set_const || e->caller->get_availability () > AVAIL_INTERPOSABLE))
@@ -2866,6 +2882,9 @@ cgraph_node::set_pure_flag (bool pure, bool looping)
 {
   struct set_pure_flag_info info = {pure, looping, false};
   call_for_symbol_thunks_and_aliases (set_pure_flag_1, &info, !pure, true);
+  for (struct cgraph_node *n = simd_clones; n != NULL;
+       n = n->simdclone->next_clone)
+    set_pure_flag_1 (n, &info);
   return info.changed;
 }
 
@@ -3238,9 +3257,11 @@ cgraph_edge::verify_corresponds_to_fndecl (tree decl)
   node = node->ultimate_alias_target ();
 
   /* Optimizers can redirect unreachable calls or calls triggering undefined
-     behavior to builtin_unreachable.  */
+     behavior to __builtin_unreachable or __builtin_unreachable trap.  */
 
-  if (fndecl_built_in_p (callee->decl, BUILT_IN_UNREACHABLE))
+  if (fndecl_built_in_p (callee->decl, BUILT_IN_NORMAL)
+      && (DECL_FUNCTION_CODE (callee->decl) == BUILT_IN_UNREACHABLE
+	  || DECL_FUNCTION_CODE (callee->decl) == BUILT_IN_UNREACHABLE_TRAP))
     return false;
 
   if (callee->former_clone_of != node->decl
@@ -3580,7 +3601,9 @@ cgraph_node::verify_node (void)
 	  /* Optimized out calls are redirected to __builtin_unreachable.  */
 	  && (e->count.nonzero_p ()
 	      || ! e->callee->decl
-	      || !fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE))
+	      || !(fndecl_built_in_p (e->callee->decl, BUILT_IN_UNREACHABLE)
+		   || fndecl_built_in_p (e->callee->decl,
+					 BUILT_IN_UNREACHABLE_TRAP)))
 	  && count
 	      == ENTRY_BLOCK_PTR_FOR_FN (DECL_STRUCT_FUNCTION (decl))->count
 	  && (!e->count.ipa_p ()
@@ -4171,7 +4194,7 @@ cgraph_edge::possibly_call_in_translation_unit_p (void)
     node = node->previous_sharing_asm_name;
   if (node->previous_sharing_asm_name)
     node = symtab_node::get_for_asmname (DECL_ASSEMBLER_NAME (callee->decl));
-  gcc_assert (TREE_PUBLIC (node->decl));
+  gcc_assert (TREE_PUBLIC (node->decl) || DECL_EXTERNAL (node->decl));
   return node->get_availability () >= AVAIL_INTERPOSABLE;
 }
 

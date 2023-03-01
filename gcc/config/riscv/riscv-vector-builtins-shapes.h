@@ -1,5 +1,5 @@
 /* function_shape declaration for RISC-V 'V' Extension for GNU compiler.
-   Copyright (C) 2022-2022 Free Software Foundation, Inc.
+   Copyright (C) 2022-2023 Free Software Foundation, Inc.
    Contributed by Ju-Zhe Zhong (juzhe.zhong@rivai.ai), RiVAI Technologies Ltd.
 
    This file is part of GCC.
@@ -27,6 +27,15 @@ namespace shapes {
 extern const function_shape *const vsetvl;
 extern const function_shape *const vsetvlmax;
 extern const function_shape *const loadstore;
+extern const function_shape *const indexed_loadstore;
+extern const function_shape *const alu;
+extern const function_shape *const widen_alu;
+extern const function_shape *const no_mask_policy;
+extern const function_shape *const return_mask;
+extern const function_shape *const narrow_alu;
+extern const function_shape *const move;
+extern const function_shape *const mask_alu;
+extern const function_shape *const reduc_alu;
 }
 
 } // end namespace riscv_vector

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -56,11 +56,11 @@ public:
    * @return Either the expanded fragment or an empty errored-out fragment
    * indicating an expansion failure.
    */
-  AST::ASTFragment expand_macro_fragment_recursive ()
+  AST::Fragment expand_macro_fragment_recursive ()
   {
     auto fragment = expander.take_expanded_fragment (*this);
     unsigned int original_depth = expander.expansion_depth;
-    auto final_fragment = AST::ASTFragment ({}, true);
+    auto final_fragment = AST::Fragment::create_error ();
 
     while (fragment.should_expand ())
       {

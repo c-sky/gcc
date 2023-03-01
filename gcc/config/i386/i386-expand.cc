@@ -1,4 +1,4 @@
-/* Copyright (C) 1988-2022 Free Software Foundation, Inc.
+/* Copyright (C) 1988-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -291,7 +291,9 @@ ix86_convert_const_wide_int_to_broadcast (machine_mode mode, rtx op)
      broadcast only if vector broadcast is available.  */
   if (!TARGET_AVX
       || !CONST_WIDE_INT_P (op)
-      || standard_sse_constant_p (op, mode))
+      || standard_sse_constant_p (op, mode)
+      || (CONST_WIDE_INT_NUNITS (op) * HOST_BITS_PER_WIDE_INT
+	  != GET_MODE_BITSIZE (mode)))
     return nullptr;
 
   HOST_WIDE_INT val = CONST_WIDE_INT_ELT (op, 0);
@@ -7091,6 +7093,37 @@ ix86_expand_v1ti_ashiftrt (rtx operands[])
     }
 }
 
+/* Replace all occurrences of REG FROM with REG TO in X, including
+   occurrences with different modes.  */
+
+rtx
+ix86_replace_reg_with_reg (rtx x, rtx from, rtx to)
+{
+  gcc_checking_assert (REG_P (from)
+		       && REG_P (to)
+		       && GET_MODE (from) == GET_MODE (to));
+  if (!reg_overlap_mentioned_p (from, x))
+    return x;
+  rtx ret = copy_rtx (x);
+  subrtx_ptr_iterator::array_type array;
+  FOR_EACH_SUBRTX_PTR (iter, array, &ret, NONCONST)
+    {
+      rtx *loc = *iter;
+      x = *loc;
+      if (REG_P (x) && REGNO (x) == REGNO (from))
+	{
+	  if (x == from)
+	    *loc = to;
+	  else
+	    {
+	      gcc_checking_assert (REG_NREGS (x) == 1);
+	      *loc = gen_rtx_REG (GET_MODE (x), REGNO (to));
+	    }
+	}
+    }
+  return ret;
+}
+
 /* Return mode for the memcpy/memset loop counter.  Prefer SImode over
    DImode for constant loop counts.  */
 
@@ -13175,6 +13208,12 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget,
 
 	if (INTVAL (op3) == 1)
 	  {
+	    if (INTVAL (op2) < 2 || INTVAL (op2) > 3)
+	      {
+		error ("invalid third argument");
+		return const0_rtx;
+	      }
+
 	    if (TARGET_64BIT && TARGET_PREFETCHI
 		&& local_func_symbolic_operand (op0, GET_MODE (op0)))
 	      emit_insn (gen_prefetchi (op0, op2));
@@ -13193,6 +13232,12 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget,
 	      {
 		op0 = convert_memory_address (Pmode, op0);
 		op0 = copy_addr_to_reg (op0);
+	      }
+
+	    if (INTVAL (op2) < 0 || INTVAL (op2) > 3)
+	      {
+		warning (0, "invalid third argument to %<__builtin_ia32_prefetch%>; using zero");
+		op2 = const0_rtx;
 	      }
 
 	    if (TARGET_3DNOW || TARGET_PREFETCH_SSE

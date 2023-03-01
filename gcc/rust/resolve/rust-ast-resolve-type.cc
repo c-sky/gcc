@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -61,13 +61,13 @@ ResolveType::visit (AST::RawPointerType &type)
 }
 
 void
-ResolveType::visit (AST::InferredType &type)
+ResolveType::visit (AST::InferredType &)
 {
   // FIXME
 }
 
 void
-ResolveType::visit (AST::NeverType &type)
+ResolveType::visit (AST::NeverType &)
 {
   // FIXME
 }
@@ -149,7 +149,20 @@ ResolveRelativeTypePath::go (AST::TypePath &path, NodeId &resolved_node_id)
 	  break;
 
 	case AST::TypePathSegment::SegmentType::FUNCTION:
-	  gcc_unreachable ();
+	  AST::TypePathSegmentFunction *fnseg
+	    = static_cast<AST::TypePathSegmentFunction *> (segment.get ());
+
+	  AST::TypePathFunction &fn = fnseg->get_type_path_function ();
+	  for (auto &param : fn.get_params ())
+	    {
+	      ResolveType::go (param.get ());
+	    }
+
+	  if (fn.has_return_type ())
+	    {
+	      ResolveType::go (fn.get_return_type ().get ());
+	    }
+
 	  break;
 	}
 
@@ -492,7 +505,7 @@ ResolveTypeToCanonicalPath::visit (AST::TraitObjectTypeOneBound &type)
 }
 
 void
-ResolveTypeToCanonicalPath::visit (AST::TraitObjectType &type)
+ResolveTypeToCanonicalPath::visit (AST::TraitObjectType &)
 {
   // FIXME is this actually allowed? dyn A+B
   gcc_unreachable ();

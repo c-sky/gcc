@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -27,9 +27,24 @@
 #include "rust-substitution-mapper.h"
 #include "rust-hir-trait-ref.h"
 #include "rust-hir-type-bounds.h"
+#include "rust-hir-trait-resolve.h"
+#include "options.h"
 
 namespace Rust {
 namespace TyTy {
+
+bool autoderef_cmp_flag = false;
+
+void
+set_cmp_autoderef_mode ()
+{
+  autoderef_cmp_flag = true;
+}
+void
+reset_cmp_autoderef_mode ()
+{
+  autoderef_cmp_flag = false;
+}
 
 std::string
 TypeKindFormat::to_string (TypeKind kind)
@@ -135,22 +150,18 @@ bool
 BaseType::satisfies_bound (const TypeBoundPredicate &predicate) const
 {
   const Resolver::TraitReference *query = predicate.get ();
-  for (auto &bound : specified_bounds)
+  for (const auto &bound : specified_bounds)
     {
       const Resolver::TraitReference *item = bound.get ();
-      bool found = item->get_mappings ().get_defid ()
-		   == query->get_mappings ().get_defid ();
-      if (found)
+      if (item->satisfies_bound (*query))
 	return true;
     }
 
   auto probed = Resolver::TypeBoundsProbe::Probe (this);
-  for (auto &b : probed)
+  for (const auto &b : probed)
     {
       const Resolver::TraitReference *bound = b.first;
-      bool found = bound->get_mappings ().get_defid ()
-		   == query->get_mappings ().get_defid ();
-      if (found)
+      if (bound->satisfies_bound (*query))
 	return true;
     }
 
@@ -207,9 +218,6 @@ void
 BaseType::inherit_bounds (
   const std::vector<TyTy::TypeBoundPredicate> &specified_bounds)
 {
-  // FIXME
-  // 1. This needs to union the bounds
-  // 2. Do some checking for trait polarity to ensure compatibility
   for (auto &bound : specified_bounds)
     {
       add_bound (bound);
@@ -293,6 +301,33 @@ BaseType::destructure () const
     }
 
   return x;
+}
+
+std::string
+BaseType::mappings_str () const
+{
+  std::string buffer = "Ref: " + std::to_string (get_ref ())
+		       + " TyRef: " + std::to_string (get_ty_ref ());
+  buffer += "[";
+  for (auto &ref : combined)
+    buffer += std::to_string (ref) + ",";
+  buffer += "]";
+  return "(" + buffer + ")";
+}
+
+std::string
+BaseType::debug_str () const
+{
+  // return TypeKindFormat::to_string (get_kind ()) + ":" + as_string () + ":"
+  //        + mappings_str () + ":" + bounds_as_string ();
+  return get_name ();
+}
+
+void
+BaseType::debug () const
+{
+  rust_debug ("[%p] %s", static_cast<const void *> (this),
+	      debug_str ().c_str ());
 }
 
 TyVar::TyVar (HirId ref) : ref (ref)
@@ -559,14 +594,14 @@ StructFieldType *
 StructFieldType::clone () const
 {
   return new StructFieldType (get_ref (), get_name (),
-			      get_field_type ()->clone ());
+			      get_field_type ()->clone (), locus);
 }
 
 StructFieldType *
 StructFieldType::monomorphized_clone () const
 {
   return new StructFieldType (get_ref (), get_name (),
-			      get_field_type ()->monomorphized_clone ());
+			      get_field_type ()->monomorphized_clone (), locus);
 }
 
 bool
@@ -724,6 +759,40 @@ SubstitutionRef::get_mappings_from_generic_args (HIR::GenericArgs &args)
     }
 
   return SubstitutionArgumentMappings (mappings, args.get_locus ());
+}
+
+BaseType *
+SubstitutionRef::infer_substitions (Location locus)
+{
+  std::vector<SubstitutionArg> args;
+  std::map<std::string, BaseType *> argument_mappings;
+  for (auto &p : get_substs ())
+    {
+      if (p.needs_substitution ())
+	{
+	  const std::string &symbol = p.get_param_ty ()->get_symbol ();
+	  auto it = argument_mappings.find (symbol);
+	  bool have_mapping = it != argument_mappings.end ();
+
+	  if (have_mapping)
+	    {
+	      args.push_back (SubstitutionArg (&p, it->second));
+	    }
+	  else
+	    {
+	      TyVar infer_var = TyVar::get_implicit_infer_var (locus);
+	      args.push_back (SubstitutionArg (&p, infer_var.get_tyty ()));
+	      argument_mappings[symbol] = infer_var.get_tyty ();
+	    }
+	}
+      else
+	{
+	  args.push_back (SubstitutionArg (&p, p.get_param_ty ()->resolve ()));
+	}
+    }
+
+  SubstitutionArgumentMappings infer_arguments (std::move (args), locus);
+  return handle_substitions (std::move (infer_arguments));
 }
 
 SubstitutionArgumentMappings
@@ -1158,11 +1227,29 @@ TupleType::accept_vis (TyConstVisitor &vis) const
 std::string
 TupleType::as_string () const
 {
+  size_t i = 0;
   std::string fields_buffer;
   for (const TyVar &field : get_fields ())
     {
       fields_buffer += field.get_tyty ()->as_string ();
-      fields_buffer += ", ";
+      bool has_next = (i + 1) < get_fields ().size ();
+      fields_buffer += has_next ? ", " : "";
+      i++;
+    }
+  return "(" + fields_buffer + ")";
+}
+
+std::string
+TupleType::get_name () const
+{
+  size_t i = 0;
+  std::string fields_buffer;
+  for (const TyVar &field : get_fields ())
+    {
+      fields_buffer += field.get_tyty ()->as_string ();
+      bool has_next = (i + 1) < get_fields ().size ();
+      fields_buffer += has_next ? ", " : "";
+      i++;
     }
   return "(" + fields_buffer + ")";
 }
@@ -1587,7 +1674,8 @@ ClosureType::accept_vis (TyConstVisitor &vis) const
 std::string
 ClosureType::as_string () const
 {
-  return "TODO";
+  std::string params_buf = parameters->as_string ();
+  return "|" + params_buf + "| {" + result_type.get_tyty ()->as_string () + "}";
 }
 
 BaseType *
@@ -1607,15 +1695,26 @@ ClosureType::can_eq (const BaseType *other, bool emit_errors) const
 bool
 ClosureType::is_equal (const BaseType &other) const
 {
-  gcc_unreachable ();
-  return false;
+  if (other.get_kind () != TypeKind::CLOSURE)
+    return false;
+
+  const ClosureType &other2 = static_cast<const ClosureType &> (other);
+  if (get_def_id () != other2.get_def_id ())
+    return false;
+
+  if (!get_parameters ().is_equal (other2.get_parameters ()))
+    return false;
+
+  return get_result_type ().is_equal (other2.get_result_type ());
 }
 
 BaseType *
 ClosureType::clone () const
 {
-  return new ClosureType (get_ref (), get_ty_ref (), ident, id, parameter_types,
-			  result_type, clone_substs (), get_combined_refs ());
+  return new ClosureType (get_ref (), get_ty_ref (), ident, id,
+			  (TyTy::TupleType *) parameters->clone (), result_type,
+			  clone_substs (), captures, get_combined_refs (),
+			  specified_bounds);
 }
 
 BaseType *
@@ -1629,6 +1728,52 @@ ClosureType::handle_substitions (SubstitutionArgumentMappings mappings)
 {
   gcc_unreachable ();
   return nullptr;
+}
+
+void
+ClosureType::setup_fn_once_output () const
+{
+  // lookup the lang items
+  auto fn_once_lang_item = Analysis::RustLangItem::ItemType::FN_ONCE;
+  auto fn_once_output_lang_item
+    = Analysis::RustLangItem::ItemType::FN_ONCE_OUTPUT;
+
+  DefId trait_id = UNKNOWN_DEFID;
+  bool trait_lang_item_defined
+    = mappings->lookup_lang_item (fn_once_lang_item, &trait_id);
+  rust_assert (trait_lang_item_defined);
+
+  DefId trait_item_id = UNKNOWN_DEFID;
+  bool trait_item_lang_item_defined
+    = mappings->lookup_lang_item (fn_once_output_lang_item, &trait_item_id);
+  rust_assert (trait_item_lang_item_defined);
+
+  // resolve to the trait
+  HIR::Item *item = mappings->lookup_defid (trait_id);
+  rust_assert (item->get_item_kind () == HIR::Item::ItemKind::Trait);
+  HIR::Trait *trait = static_cast<HIR::Trait *> (item);
+
+  Resolver::TraitReference *trait_ref
+    = Resolver::TraitResolver::Resolve (*trait);
+  rust_assert (!trait_ref->is_error ());
+
+  // resolve to trait item
+  HIR::TraitItem *trait_item
+    = mappings->lookup_trait_item_defid (trait_item_id);
+  rust_assert (trait_item != nullptr);
+  rust_assert (trait_item->get_item_kind ()
+	       == HIR::TraitItem::TraitItemKind::TYPE);
+  std::string item_identifier = trait_item->trait_identifier ();
+
+  // setup associated types  #[lang = "fn_once_output"]
+  Resolver::TraitItemReference *item_reference = nullptr;
+  bool found = trait_ref->lookup_trait_item_by_type (
+    item_identifier, Resolver::TraitItemReference::TraitItemType::TYPE,
+    &item_reference);
+  rust_assert (found);
+
+  // setup
+  item_reference->associated_type_set (&get_result_type ());
 }
 
 void
@@ -2193,6 +2338,13 @@ ReferenceType::as_string () const
 	 + get_base ()->as_string ();
 }
 
+std::string
+ReferenceType::get_name () const
+{
+  return std::string ("&") + (is_mutable () ? "mut" : "") + " "
+	 + get_base ()->get_name ();
+}
+
 BaseType *
 ReferenceType::unify (BaseType *other)
 {
@@ -2274,6 +2426,13 @@ PointerType::as_string () const
 {
   return std::string ("* ") + (is_mutable () ? "mut" : "const") + " "
 	 + get_base ()->as_string ();
+}
+
+std::string
+PointerType::get_name () const
+{
+  return std::string ("* ") + (is_mutable () ? "mut" : "const") + " "
+	 + get_base ()->get_name ();
 }
 
 BaseType *
@@ -2419,7 +2578,13 @@ ParamType::resolve () const
 	break;
 
       TyVar v (rr->get_ty_ref ());
-      r = v.get_tyty ();
+      BaseType *n = v.get_tyty ();
+
+      // fix infinite loop
+      if (r == n)
+	break;
+
+      r = n;
     }
 
   if (r->get_kind () == TypeKind::PARAM && (r->get_ref () == r->get_ty_ref ()))
@@ -2859,23 +3024,15 @@ DynamicObjectType::get_object_items () const
   for (auto &bound : get_specified_bounds ())
     {
       const Resolver::TraitReference *trait = bound.get ();
-      for (auto &item : trait->get_trait_items ())
-	{
-	  if (item.get_trait_item_type ()
-		== Resolver::TraitItemReference::TraitItemType::FN
-	      && item.is_object_safe ())
-	    items.push_back ({&item, &bound});
-	}
+      std::vector<const Resolver::TraitItemReference *> trait_items;
+      trait->get_trait_items_and_supers (trait_items);
 
-      for (auto &super_trait : trait->get_super_traits ())
+      for (auto &item : trait_items)
 	{
-	  for (auto &item : super_trait->get_trait_items ())
-	    {
-	      if (item.get_trait_item_type ()
-		    == Resolver::TraitItemReference::TraitItemType::FN
-		  && item.is_object_safe ())
-		items.push_back ({&item, &bound});
-	    }
+	  if (item->get_trait_item_type ()
+		== Resolver::TraitItemReference::TraitItemType::FN
+	      && item->is_object_safe ())
+	    items.push_back ({item, &bound});
 	}
     }
   return items;

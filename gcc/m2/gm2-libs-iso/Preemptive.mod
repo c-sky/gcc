@@ -1,6 +1,6 @@
 (* Premptive.mod provides the Processes module with a premptive scheduler.
 
-Copyright (C) 2020 Free Software Foundation, Inc.
+Copyright (C) 2020-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -33,6 +33,9 @@ FROM libc IMPORT printf ;
 
 CONST
    debugging = FALSE ;
+   (* The space we request becomes part of a stack request, which generally
+      has constraints on size and alignment.  *)
+   extraWorkSpace = 10 * 1024 * 1024 ;
 
 (*
    timer - the timer process which runs at maximum scheduling priority with
@@ -107,7 +110,7 @@ BEGIN
    IF NOT init
    THEN
       init := TRUE ;
-      Create (timer, 10000000, MAX (Urgency), NIL, timerId) ;
+      Create (timer, extraWorkSpace, MAX (Urgency), NIL, timerId) ;
       Activate (timerId)
    END
 END initPreemptive ;

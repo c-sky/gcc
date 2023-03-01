@@ -1,5 +1,5 @@
 ;; GCC machine description for Tensilica's Xtensa architecture.
-;; Copyright (C) 2001-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2001-2023 Free Software Foundation, Inc.
 ;; Contributed by Bob Wilson (bwilson@tensilica.com) at Tensilica.
 
 ;; This file is part of GCC.
@@ -447,6 +447,43 @@
    (set_attr "length"	"3")])
 
 
+;; Signed clamp.
+
+(define_insn_and_split "*xtensa_clamps"
+  [(set (match_operand:SI 0 "register_operand" "=a")
+	(smax:SI (smin:SI (match_operand:SI 1 "register_operand" "r")
+			  (match_operand:SI 2 "const_int_operand" "i"))
+		 (match_operand:SI 3 "const_int_operand" "i")))]
+  "TARGET_CLAMPS
+   && xtensa_match_CLAMPS_imms_p (operands[3], operands[2])"
+  "#"
+  "&& 1"
+  [(set (match_dup 0)
+	(smin:SI (smax:SI (match_dup 1)
+			  (match_dup 3))
+		 (match_dup 2)))]
+  ""
+  [(set_attr "type"	"arith")
+   (set_attr "mode"	"SI")
+   (set_attr "length"	"3")])
+
+(define_insn "*xtensa_clamps"
+  [(set (match_operand:SI 0 "register_operand" "=a")
+	(smin:SI (smax:SI (match_operand:SI 1 "register_operand" "r")
+			  (match_operand:SI 2 "const_int_operand" "i"))
+		 (match_operand:SI 3 "const_int_operand" "i")))]
+  "TARGET_CLAMPS
+   && xtensa_match_CLAMPS_imms_p (operands[2], operands[3])"
+{
+  static char result[64];
+  sprintf (result, "clamps\t%%0, %%1, %d", floor_log2 (-INTVAL (operands[2])));
+  return result;
+}
+  [(set_attr "type"	"arith")
+   (set_attr "mode"	"SI")
+   (set_attr "length"	"3")])
+
+
 ;; Count redundant leading sign bits and leading/trailing zeros,
 ;; and find first bit.
 
@@ -736,7 +773,31 @@
    (set_attr "mode"	"SI")
    (set_attr "length"	"3")])
 
-(define_insn "xorsi3"
+(define_expand "xorsi3"
+  [(set (match_operand:SI 0 "register_operand")
+	(xor:SI (match_operand:SI 1 "register_operand")
+		(match_operand:SI 2 "nonmemory_operand")))]
+  ""
+{
+  if (register_operand (operands[2], SImode))
+    emit_insn (gen_xorsi3_internal (operands[0], operands[1],
+				    operands[2]));
+  else
+    {
+      rtx (*gen_op)(rtx, rtx, rtx);
+      if (TARGET_DENSITY
+	  && CONST_INT_P (operands[2])
+	  && INTVAL (operands[2]) == -2147483648L)
+	gen_op = gen_addsi3;
+      else
+	gen_op = gen_xorsi3_internal;
+      emit_insn (gen_op (operands[0], operands[1],
+			 force_reg (SImode, operands[2])));
+    }
+  DONE;
+})
+
+(define_insn "xorsi3_internal"
   [(set (match_operand:SI 0 "register_operand" "=a")
 	(xor:SI (match_operand:SI 1 "register_operand" "%r")
 		(match_operand:SI 2 "register_operand" "r")))]
@@ -2004,8 +2065,8 @@
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
    (set (match_operand:SI 0 "register_operand" "=a")
-	(plus (match_dup 0)
-	      (const_int -1)))
+	(plus:SI (match_dup 0)
+		 (const_int -1)))
    (unspec [(const_int 0)] UNSPEC_LSETUP_START)]
   "TARGET_LOOPS && optimize"
   "loop\t%0, %l1_LEND"
@@ -2020,8 +2081,8 @@
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
    (set (match_operand:SI 0 "nonimmediate_operand" "=a,m")
-	(plus (match_dup 0)
-	      (const_int -1)))
+	(plus:SI (match_dup 0)
+		 (const_int -1)))
    (unspec [(const_int 0)] UNSPEC_LSETUP_END)
    (clobber (match_scratch:SI 3 "=X,&r"))]
   "TARGET_LOOPS && optimize"
@@ -2037,8 +2098,8 @@
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
    (set (match_operand:SI 0 "register_operand" "=a")
-	(plus (match_dup 0)
-	      (const_int -1)))
+	(plus:SI (match_dup 0)
+		 (const_int -1)))
    (unspec [(const_int 0)] UNSPEC_LSETUP_END)]
   "TARGET_LOOPS && optimize"
 {
@@ -2309,7 +2370,8 @@
 	 (match_operand 1 "" ""))]
   ""
 {
-  xtensa_prepare_expand_call (0, operands);
+  xtensa_expand_call (0, operands);
+  DONE;
 })
 
 (define_insn "call_internal"
@@ -2329,7 +2391,8 @@
 	      (match_operand 2 "" "")))]
   ""
 {
-  xtensa_prepare_expand_call (1, operands);
+  xtensa_expand_call (1, operands);
+  DONE;
 })
 
 (define_insn "call_value_internal"
@@ -2349,7 +2412,8 @@
 	 (match_operand 1 "" ""))]
   "!TARGET_WINDOWED_ABI"
 {
-  xtensa_prepare_expand_call (0, operands);
+  xtensa_expand_call (0, operands);
+  DONE;
 })
 
 (define_insn "sibcall_internal"
@@ -2369,7 +2433,8 @@
 	      (match_operand 2 "" "")))]
   "!TARGET_WINDOWED_ABI"
 {
-  xtensa_prepare_expand_call (1, operands);
+  xtensa_expand_call (1, operands);
+  DONE;
 })
 
 (define_insn "sibcall_value_internal"
@@ -2949,45 +3014,47 @@
 {
   auto_sbitmap bmp (FIRST_PSEUDO_REGISTER);
   rtx_insn *insn;
-  rtx reg = gen_rtx_REG (SImode, 0);
+  rtx reg = gen_rtx_REG (SImode, 0), dest;
+  unsigned int regno;
+  sbitmap_iterator iter;
   bitmap_set_range (bmp, REGNO (operands[0]), REG_NREGS (operands[0]));
   for (insn = next_nonnote_nondebug_insn_bb (curr_insn);
        insn; insn = next_nonnote_nondebug_insn_bb (insn))
-    {
-      sbitmap_iterator iter;
-      unsigned int regno;
-      if (NONJUMP_INSN_P (insn))
-	{
-	  EXECUTE_IF_SET_IN_BITMAP (bmp, 2, regno, iter)
-	    {
-	      set_regno_raw (reg, regno, REG_NREGS (reg));
-	      if (reg_overlap_mentioned_p (reg, PATTERN (insn)))
-		break;
-	    }
-	  if (GET_CODE (PATTERN (insn)) == SET)
-	    {
-	      rtx x = SET_DEST (PATTERN (insn));
-	      if (REG_P (x) && HARD_REGISTER_P (x))
-		bitmap_clear_range (bmp, REGNO (x), REG_NREGS (x));
-	      else if (SUBREG_P (x) && HARD_REGISTER_P (SUBREG_REG (x)))
-		{
-		  struct subreg_info info;
-		  subreg_get_info (regno = REGNO (SUBREG_REG (x)),
-				   GET_MODE (SUBREG_REG (x)),
-				   SUBREG_BYTE (x), GET_MODE (x), &info);
-		  if (!info.representable_p)
-		    break;
-		  bitmap_clear_range (bmp, regno + info.offset, info.nregs);
-		}
-	    }
-	  if (bitmap_empty_p (bmp))
-	    goto FALLTHRU;
-	}
-      else if (CALL_P (insn))
+    if (NONJUMP_INSN_P (insn))
+      {
 	EXECUTE_IF_SET_IN_BITMAP (bmp, 2, regno, iter)
-	 if (call_used_or_fixed_reg_p (regno))
-	   break;
-    }
+	  {
+	    set_regno_raw (reg, regno, REG_NREGS (reg));
+	    if (reg_referenced_p (reg, PATTERN (insn)))
+	      goto ABORT;
+	  }
+	if (GET_CODE (PATTERN (insn)) == SET
+	    || GET_CODE (PATTERN (insn)) == CLOBBER)
+	  {
+	    dest = SET_DEST (PATTERN (insn));
+	    if (REG_P (dest) && HARD_REGISTER_P (dest))
+	      bitmap_clear_range (bmp, REGNO (dest), REG_NREGS (dest));
+	    else if (SUBREG_P (dest)
+		     && HARD_REGISTER_P (SUBREG_REG (dest)))
+	      {
+		struct subreg_info info;
+		subreg_get_info (regno = REGNO (SUBREG_REG (dest)),
+				 GET_MODE (SUBREG_REG (dest)),
+				 SUBREG_BYTE (dest), GET_MODE (dest),
+				 &info);
+		if (!info.representable_p)
+		  break;
+		bitmap_clear_range (bmp, regno + info.offset, info.nregs);
+	      }
+	  }
+	if (bitmap_empty_p (bmp))
+	  goto FALLTHRU;
+      }
+    else if (CALL_P (insn))
+      EXECUTE_IF_SET_IN_BITMAP (bmp, 2, regno, iter)
+	if (call_used_or_fixed_reg_p (regno))
+	  goto ABORT;
+ABORT:
   FAIL;
 FALLTHRU:;
 })
@@ -3023,4 +3090,50 @@ FALLTHRU:;
   imm0 = value - imm1 - 128;
   operands[1] = GEN_INT (imm0);
   operands[2] = GEN_INT (imm1);
+})
+
+(define_peephole2
+  [(set (match_operand 0 "register_operand")
+	(match_operand 1 "register_operand"))]
+  "REG_NREGS (operands[0]) == 1 && GP_REG_P (REGNO (operands[0]))
+   && REG_NREGS (operands[1]) == 1 && GP_REG_P (REGNO (operands[1]))
+   && peep2_reg_dead_p (1, operands[1])"
+  [(const_int 0)]
+{
+  basic_block bb = BLOCK_FOR_INSN (curr_insn);
+  rtx_insn *head = BB_HEAD (bb), *insn;
+  rtx dest = operands[0], src = operands[1], pattern, t_dest, dest_orig;
+  for (insn = PREV_INSN (curr_insn);
+       insn && insn != head;
+       insn = PREV_INSN (insn))
+    if (CALL_P (insn))
+      break;
+    else if (INSN_P (insn))
+      {
+	if (GET_CODE (pattern = PATTERN (insn)) == SET
+	    && REG_P (t_dest = SET_DEST (pattern))
+	    && REG_NREGS (t_dest) == 1
+	    && REGNO (t_dest) == REGNO (src))
+	{
+	  dest_orig = SET_DEST (pattern);
+	  SET_DEST (pattern) = gen_rtx_REG (GET_MODE (t_dest),
+					    REGNO (dest));
+	  extract_insn (insn);
+	  if (!constrain_operands (true, get_enabled_alternatives (insn)))
+	    {
+	      SET_DEST (pattern) = dest_orig;
+	      goto ABORT;
+	    }
+	  df_insn_rescan (insn);
+	  goto FALLTHRU;
+	}
+	if (reg_overlap_mentioned_p (dest, pattern)
+	    || reg_overlap_mentioned_p (src, pattern)
+	    || set_of (dest, insn)
+	    || set_of (src, insn))
+	  break;
+      }
+ABORT:
+  FAIL;
+FALLTHRU:;
 })

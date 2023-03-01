@@ -1,7 +1,7 @@
 // { dg-options "-std=gnu++2a" }
 // { dg-do compile { target c++2a } }
 
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -103,7 +103,7 @@ size()
 {
   using namespace std::chrono;
 
-  struct S0 { long long h; char m; char s; bool neg; };
+  struct S0 { long long h; char m; char s; bool neg; struct { } empty; };
   static_assert(sizeof(hh_mm_ss<seconds>) == sizeof(S0));
   struct S1 { long long h; char m; char s; bool neg; char ss; };
   static_assert(sizeof(hh_mm_ss<duration<int, std::centi>>) == sizeof(S1));

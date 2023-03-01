@@ -391,6 +391,46 @@ asan_memintrin (void)
 }
 
 
+/* Support for --param asan-kernel-mem-intrinsic-prefix=1.  */
+static GTY(()) rtx asan_memfn_rtls[3];
+
+rtx
+asan_memfn_rtl (tree fndecl)
+{
+  int i;
+  const char *f, *p;
+  char buf[sizeof ("__hwasan_memmove")];
+
+  switch (DECL_FUNCTION_CODE (fndecl))
+    {
+    case BUILT_IN_MEMCPY: i = 0; f = "memcpy"; break;
+    case BUILT_IN_MEMSET: i = 1; f = "memset"; break;
+    case BUILT_IN_MEMMOVE: i = 2; f = "memmove"; break;
+    default: gcc_unreachable ();
+    }
+  if (asan_memfn_rtls[i] == NULL_RTX)
+    {
+      tree save_name = DECL_NAME (fndecl);
+      tree save_assembler_name = DECL_ASSEMBLER_NAME (fndecl);
+      rtx save_rtl = DECL_RTL (fndecl);
+      if (flag_sanitize & SANITIZE_KERNEL_HWADDRESS)
+	p = "__hwasan_";
+      else
+	p = "__asan_";
+      strcpy (buf, p);
+      strcat (buf, f);
+      DECL_NAME (fndecl) = get_identifier (buf);
+      DECL_ASSEMBLER_NAME_RAW (fndecl) = NULL_TREE;
+      SET_DECL_RTL (fndecl, NULL_RTX);
+      asan_memfn_rtls[i] = DECL_RTL (fndecl);
+      DECL_NAME (fndecl) = save_name;
+      DECL_ASSEMBLER_NAME_RAW (fndecl) = save_assembler_name;
+      SET_DECL_RTL (fndecl, save_rtl);
+    }
+  return asan_memfn_rtls[i];
+}
+
+
 /* Checks whether section SEC should be sanitized.  */
 
 static bool
@@ -2951,6 +2991,7 @@ maybe_instrument_call (gimple_stmt_iterator *iter)
 	  switch (DECL_FUNCTION_CODE (callee))
 	    {
 	    case BUILT_IN_UNREACHABLE:
+	    case BUILT_IN_UNREACHABLE_TRAP:
 	    case BUILT_IN_TRAP:
 	      /* Don't instrument these.  */
 	      return false;
@@ -3246,7 +3287,17 @@ asan_add_global (tree decl, tree type, vec<constructor_elt, va_gc> *v)
     pp_string (&asan_pp, "<unknown>");
   str_cst = asan_pp_string (&asan_pp);
 
-  pp_string (&module_name_pp, main_input_filename);
+  if (!in_lto_p)
+    pp_string (&module_name_pp, main_input_filename);
+  else
+    {
+      const_tree tu = get_ultimate_context ((const_tree)decl);
+      if (tu != NULL_TREE)
+	pp_string (&module_name_pp, IDENTIFIER_POINTER (DECL_NAME (tu)));
+      else
+	pp_string (&module_name_pp, aux_base_name);
+    }
+
   module_name_cst = asan_pp_string (&module_name_pp);
 
   if (asan_needs_local_alias (decl))

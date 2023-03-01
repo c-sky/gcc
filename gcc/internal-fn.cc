@@ -4518,12 +4518,13 @@ expand_SPACESHIP (internal_fn, gcall *stmt)
 }
 
 void
-expand_TRAP (internal_fn, gcall *)
+expand_ASSUME (internal_fn, gcall *)
 {
-  expand_builtin_trap ();
 }
 
 void
-expand_ASSUME (internal_fn, gcall *)
+expand_MASK_CALL (internal_fn, gcall *)
 {
+  /* This IFN should only exist between ifcvt and vect passes.  */
+  gcc_unreachable ();
 }

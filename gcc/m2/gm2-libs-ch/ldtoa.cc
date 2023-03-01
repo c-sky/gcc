@@ -1,6 +1,6 @@
 /* ldtoa.c provide long double floating point string conversion routines.
 
-Copyright (C) 2009-2022 Free Software Foundation, Inc.
+Copyright (C) 2009-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -27,6 +27,8 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #include "config.h"
 #include "system.h"
 #include "ansidecl.h"
+
+#define LIBNAME "m2pim"
 
 #include "gm2-libs-host.h"
 #include "m2rts.h"
@@ -121,7 +123,7 @@ _M2_ldtoa_dep (void)
 extern "C" void __attribute__((__constructor__))
 _M2_ldtoa_ctor (void)
 {
-  M2RTS_RegisterModule ("ldtoa", _M2_ldtoa_init, _M2_ldtoa_finish,
+  M2RTS_RegisterModule ("ldtoa", LIBNAME, _M2_ldtoa_init, _M2_ldtoa_finish,
 			_M2_ldtoa_dep);
 }
 

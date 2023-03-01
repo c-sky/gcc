@@ -1,5 +1,5 @@
 /* Pass manager for Fortran front end.
-   Copyright (C) 2010-2022 Free Software Foundation, Inc.
+   Copyright (C) 2010-2023 Free Software Foundation, Inc.
    Contributed by Thomas König.
 
 This file is part of GCC.
@@ -2883,7 +2883,10 @@ do_subscript (gfc_expr **e)
 		have_do_end = false;
 
 	      if (!have_do_start && !have_do_end)
-		return 0;
+		{
+		  mpz_clear (do_step);
+		  return 0;
+		}
 
 	      /* No warning inside a zero-trip loop.  */
 	      if (have_do_start && have_do_end)
@@ -3049,7 +3052,8 @@ do_intent (gfc_expr **e)
 	  do_sym = dl->ext.iterator->var->symtree->n.sym;
 
 	  if (a->expr && a->expr->symtree
-	      && a->expr->symtree->n.sym == do_sym)
+	      && a->expr->symtree->n.sym == do_sym
+	      && f->sym)
 	    {
 	      if (f->sym->attr.intent == INTENT_OUT)
 		gfc_error_now ("Variable %qs at %L set to undefined value "

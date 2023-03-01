@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Free Software Foundation, Inc.
+// Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -18,6 +18,7 @@
 
 #include "rust-hir-type-bounds.h"
 #include "rust-hir-trait-resolve.h"
+#include "rust-hir-type-check-item.h"
 
 namespace Rust {
 namespace Resolver {
@@ -33,11 +34,9 @@ TypeBoundsProbe::scan ()
       if (!impl->has_trait_ref ())
 	return true;
 
+      HirId impl_ty_id = impl->get_type ()->get_mappings ().get_hirid ();
       TyTy::BaseType *impl_type = nullptr;
-      bool ok
-	= context->lookup_type (impl->get_type ()->get_mappings ().get_hirid (),
-				&impl_type);
-      if (!ok)
+      if (!query_type (impl_ty_id, &impl_type))
 	return true;
 
       if (!receiver->can_eq (impl_type, false))
@@ -69,6 +68,13 @@ TypeCheckBase::resolve_trait_path (HIR::TypePath &path)
 TyTy::TypeBoundPredicate
 TypeCheckBase::get_predicate_from_bound (HIR::TypePath &type_path)
 {
+  TyTy::TypeBoundPredicate lookup = TyTy::TypeBoundPredicate::error ();
+  bool already_resolved
+    = context->lookup_predicate (type_path.get_mappings ().get_hirid (),
+				 &lookup);
+  if (already_resolved)
+    return lookup;
+
   TraitReference *trait = resolve_trait_path (type_path);
   if (trait->is_error ())
     return TyTy::TypeBoundPredicate::error ();
@@ -78,22 +84,79 @@ TypeCheckBase::get_predicate_from_bound (HIR::TypePath &type_path)
     = HIR::GenericArgs::create_empty (type_path.get_locus ());
 
   auto &final_seg = type_path.get_final_segment ();
-  if (final_seg->is_generic_segment ())
+  switch (final_seg->get_type ())
     {
-      auto final_generic_seg
-	= static_cast<HIR::TypePathSegmentGeneric *> (final_seg.get ());
-      if (final_generic_seg->has_generic_args ())
-	{
-	  args = final_generic_seg->get_generic_args ();
-	}
+      case HIR::TypePathSegment::SegmentType::GENERIC: {
+	auto final_generic_seg
+	  = static_cast<HIR::TypePathSegmentGeneric *> (final_seg.get ());
+	if (final_generic_seg->has_generic_args ())
+	  {
+	    args = final_generic_seg->get_generic_args ();
+	  }
+      }
+      break;
+
+      case HIR::TypePathSegment::SegmentType::FUNCTION: {
+	auto final_function_seg
+	  = static_cast<HIR::TypePathSegmentFunction *> (final_seg.get ());
+	auto &fn = final_function_seg->get_function_path ();
+
+	// we need to make implicit generic args which must be an implicit Tuple
+	auto crate_num = mappings->get_current_crate ();
+	HirId implicit_args_id = mappings->get_next_hir_id ();
+	Analysis::NodeMapping mapping (crate_num,
+				       final_seg->get_mappings ().get_nodeid (),
+				       implicit_args_id, UNKNOWN_LOCAL_DEFID);
+
+	std::vector<std::unique_ptr<HIR::Type>> params_copy;
+	for (auto &p : fn.get_params ())
+	  {
+	    params_copy.push_back (p->clone_type ());
+	  }
+
+	HIR::TupleType *implicit_tuple
+	  = new HIR::TupleType (mapping, std::move (params_copy),
+				final_seg->get_locus ());
+
+	std::vector<std::unique_ptr<HIR::Type>> inputs;
+	inputs.push_back (std::unique_ptr<HIR::Type> (implicit_tuple));
+
+	args = HIR::GenericArgs ({} /* lifetimes */,
+				 std::move (inputs) /* type_args*/,
+				 {} /* binding_args*/, {} /* const_args */,
+				 final_seg->get_locus ());
+
+	// resolve the fn_once_output type
+	TyTy::BaseType *fn_once_output_ty
+	  = fn.has_return_type ()
+	      ? TypeCheckType::Resolve (fn.get_return_type ().get ())
+	      : TyTy::TupleType::get_unit_type (
+		final_seg->get_mappings ().get_hirid ());
+	context->insert_implicit_type (final_seg->get_mappings ().get_hirid (),
+				       fn_once_output_ty);
+
+	// setup the associated type.. ??
+	// fn_once_output_ty->debug ();
+      }
+      break;
+
+    default:
+      /* nothing to do */
+      break;
     }
 
+  // FIXME
+  // I think this should really be just be if the !args.is_empty() because
+  // someone might wrongly apply generic arguments where they should not and
+  // they will be missing error diagnostics
   if (predicate.requires_generic_args ())
     {
       // this is applying generic arguments to a trait reference
       predicate.apply_generic_arguments (&args);
     }
 
+  context->insert_resolved_predicate (type_path.get_mappings ().get_hirid (),
+				      predicate);
   return predicate;
 }
 
@@ -374,6 +437,21 @@ TypeBoundPredicate::requires_generic_args () const
   return substitutions.size () > 1;
 }
 
+bool
+TypeBoundPredicate::contains_associated_types () const
+{
+  auto trait_ref = get ();
+  for (const auto &trait_item : trait_ref->get_trait_items ())
+    {
+      bool is_associated_type
+	= trait_item.get_trait_item_type ()
+	  == Resolver::TraitItemReference::TraitItemType::TYPE;
+      if (is_associated_type)
+	return true;
+    }
+  return false;
+}
+
 // trait item reference
 
 const Resolver::TraitItemReference *
@@ -455,6 +533,13 @@ TypeBoundsMappings::raw_bounds_as_name () const
 void
 TypeBoundsMappings::add_bound (TypeBoundPredicate predicate)
 {
+  for (auto &bound : specified_bounds)
+    {
+      bool same_trait_ref_p = bound.get_id () == predicate.get_id ();
+      if (same_trait_ref_p)
+	return;
+    }
+
   specified_bounds.push_back (predicate);
 }
 

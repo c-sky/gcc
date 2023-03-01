@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -21,6 +21,7 @@
 
 #include "rust-system.h"
 #include "rust-ast.h"
+#include "rust-ast-fragment.h"
 #include "rust-location.h"
 
 namespace Rust {
@@ -407,6 +408,7 @@ public:
   Location get_locus () const { return locus; }
 
   DelimTokenTree &get_token_tree () { return token_tree; }
+  const DelimTokenTree &get_token_tree () const { return token_tree; }
 };
 
 // A macro rule? Matcher and transcriber pair?
@@ -455,8 +457,7 @@ class MacroRulesDefinition : public MacroItem
   std::vector<MacroRule> rules; // inlined form
   Location locus;
 
-  std::function<ASTFragment (Location, MacroInvocData &)>
-    associated_transcriber;
+  std::function<Fragment (Location, MacroInvocData &)> associated_transcriber;
   // Since we can't compare std::functions, we need to use an extra boolean
   bool is_builtin_rule;
 
@@ -467,10 +468,10 @@ class MacroRulesDefinition : public MacroItem
    * should make use of the actual rules. If the macro is builtin, then another
    * associated transcriber should be used
    */
-  static ASTFragment dummy_builtin (Location, MacroInvocData &)
+  static Fragment dummy_builtin (Location, MacroInvocData &)
   {
     gcc_unreachable ();
-    return ASTFragment::create_error ();
+    return Fragment::create_error ();
   }
 
   /* NOTE: in rustc, macro definitions are considered (and parsed as) a type
@@ -490,9 +491,9 @@ public:
       associated_transcriber (dummy_builtin), is_builtin_rule (false)
   {}
 
-  MacroRulesDefinition (Identifier builtin_name, DelimType delim_type,
-			std::function<ASTFragment (Location, MacroInvocData &)>
-			  associated_transcriber)
+  MacroRulesDefinition (
+    Identifier builtin_name, DelimType delim_type,
+    std::function<Fragment (Location, MacroInvocData &)> associated_transcriber)
     : outer_attrs (std::vector<Attribute> ()), rule_name (builtin_name),
       delim_type (delim_type), rules (std::vector<MacroRule> ()),
       locus (Location ()), associated_transcriber (associated_transcriber),
@@ -520,14 +521,14 @@ public:
   const std::vector<MacroRule> &get_rules () const { return rules; }
 
   bool is_builtin () const { return is_builtin_rule; }
-  const std::function<ASTFragment (Location, MacroInvocData &)> &
+  const std::function<Fragment (Location, MacroInvocData &)> &
   get_builtin_transcriber () const
   {
     rust_assert (is_builtin ());
     return associated_transcriber;
   }
   void set_builtin_transcriber (
-    std::function<ASTFragment (Location, MacroInvocData &)> transcriber)
+    std::function<Fragment (Location, MacroInvocData &)> transcriber)
   {
     associated_transcriber = transcriber;
     is_builtin_rule = true;

@@ -1,6 +1,6 @@
 ## Makefile for the C++20 sources of the GNU C++ Standard library.
 ##
-## Copyright (C) 1997-2022 Free Software Foundation, Inc.
+## Copyright (C) 1997-2023 Free Software Foundation, Inc.
 ##
 ## This file is part of the libstdc++ version 3 distribution.
 ## Process this file with automake to produce Makefile.in.
@@ -53,7 +53,11 @@ tzdb.o: tzdb.cc tzdata.zi.h
 	$(CXXCOMPILE) -I. -c $<
 endif
 
+if GLIBCXX_HOSTED
 libc__20convenience_la_SOURCES = $(sources)  $(inst_sources)
+else
+libc__20convenience_la_SOURCES =
+endif
 
 # AM_CXXFLAGS needs to be in each subdirectory so that it can be
 # modified in a per-library or per-sub-library way.  Need to manually

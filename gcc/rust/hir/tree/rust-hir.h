@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -238,6 +238,7 @@ class ExprWithoutBlock;
 // Base expression HIR node - abstract
 class Expr : public Node
 {
+protected:
   AST::AttrVec outer_attrs;
   Analysis::NodeMapping mappings;
 
@@ -796,7 +797,9 @@ public:
 
   virtual const std::string trait_identifier () const = 0;
 
-  const Analysis::NodeMapping get_mappings () const { return mappings; }
+  const Analysis::NodeMapping &get_mappings () const { return mappings; }
+
+  virtual Location get_trait_locus () const = 0;
 
   virtual TraitItemKind get_item_kind () const = 0;
 

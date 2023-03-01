@@ -1,6 +1,6 @@
 // Internal macros for the simd implementation -*- C++ -*-
 
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -254,9 +254,11 @@
 
 #ifdef __clang__
 #define _GLIBCXX_SIMD_NORMAL_MATH
+#define _GLIBCXX_SIMD_ALWAYS_INLINE_LAMBDA
 #else
 #define _GLIBCXX_SIMD_NORMAL_MATH                                              \
   [[__gnu__::__optimize__("finite-math-only,no-signed-zeros")]]
+#define _GLIBCXX_SIMD_ALWAYS_INLINE_LAMBDA __attribute__((__always_inline__))
 #endif
 #define _GLIBCXX_SIMD_NEVER_INLINE [[__gnu__::__noinline__]]
 #define _GLIBCXX_SIMD_INTRINSIC                                                \
@@ -294,6 +296,8 @@
 #ifdef _GLIBCXX_SIMD_NO_ALWAYS_INLINE
 #undef _GLIBCXX_SIMD_ALWAYS_INLINE
 #define _GLIBCXX_SIMD_ALWAYS_INLINE inline
+#undef _GLIBCXX_SIMD_ALWAYS_INLINE_LAMBDA
+#define _GLIBCXX_SIMD_ALWAYS_INLINE_LAMBDA
 #undef _GLIBCXX_SIMD_INTRINSIC
 #define _GLIBCXX_SIMD_INTRINSIC inline
 #endif

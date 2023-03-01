@@ -1,6 +1,6 @@
 /* init.cc initializes the modules of the GNU Modula-2 front end.
 
-Copyright (C) 2012-2022 Free Software Foundation, Inc.
+Copyright (C) 2012-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -55,6 +55,8 @@ EXTERN void _M2_CmdArgs_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_M2Preprocess_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_M2Error_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_M2Search_init (int argc, char *argv[], char *envp[]);
+EXTERN void _M2_DynamicPath_init (int argc, char *argv[], char *envp[]);
+EXTERN void _M2_PathName_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_Indexing_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_NameKey_init (int argc, char *argv[], char *envp[]);
 EXTERN void _M2_NumberIO_init (int argc, char *argv[], char *envp[]);
@@ -141,6 +143,8 @@ init_FrontEndInit (void)
   _M2_StrLib_init (0, NULL, NULL);
   _M2_dtoa_init (0, NULL, NULL);
   _M2_ldtoa_init (0, NULL, NULL);
+  _M2_DynamicPath_init (0, NULL, NULL);
+  _M2_PathName_init (0, NULL, NULL);
   _M2_M2Search_init (0, NULL, NULL);
   _M2_M2Options_init (0, NULL, NULL);
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -140,6 +140,53 @@ Context::type_hasher (tree type)
     }
 
   return hstate.end ();
+}
+
+void
+Context::push_closure_context (HirId id)
+{
+  auto it = closure_bindings.find (id);
+  rust_assert (it == closure_bindings.end ());
+
+  closure_bindings.insert ({id, {}});
+  closure_scope_bindings.push_back (id);
+}
+
+void
+Context::pop_closure_context ()
+{
+  rust_assert (!closure_scope_bindings.empty ());
+
+  HirId ref = closure_scope_bindings.back ();
+  closure_scope_bindings.pop_back ();
+  closure_bindings.erase (ref);
+}
+
+void
+Context::insert_closure_binding (HirId id, tree expr)
+{
+  rust_assert (!closure_scope_bindings.empty ());
+
+  HirId ref = closure_scope_bindings.back ();
+  closure_bindings[ref].insert ({id, expr});
+}
+
+bool
+Context::lookup_closure_binding (HirId id, tree *expr)
+{
+  if (closure_scope_bindings.empty ())
+    return false;
+
+  HirId ref = closure_scope_bindings.back ();
+  auto it = closure_bindings.find (ref);
+  rust_assert (it != closure_bindings.end ());
+
+  auto iy = it->second.find (id);
+  if (iy == it->second.end ())
+    return false;
+
+  *expr = iy->second;
+  return true;
 }
 
 } // namespace Compile

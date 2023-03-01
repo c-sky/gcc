@@ -1,5 +1,5 @@
 /* General AST-related method implementations for Rust frontend.
-   Copyright (C) 2009-2022 Free Software Foundation, Inc.
+   Copyright (C) 2009-2023 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -3071,7 +3071,7 @@ BareFunctionType::as_string () const
     }
 
   str += "\n Is variadic: ";
-  if (is_variadic)
+  if (_is_variadic)
     str += "true";
   else
     str += "false";

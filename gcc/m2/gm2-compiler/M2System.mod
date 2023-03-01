@@ -1,6 +1,6 @@
 (* M2System.mod defines the SYSTEM builtin types.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -47,6 +47,7 @@ FROM SymbolTable IMPORT NulSym,
       	       	     	PutSet, PutVar,
       	       	     	PutSubrange,
                         PutExportQualified,
+                        PutProcedureNoReturn,
                         GetSym, GetSymName,
                         GetCurrentModule, SetCurrentModule,
                         IsLegal,
@@ -418,6 +419,7 @@ BEGIN
 
    Throw := MakeProcedure(BuiltinTokenNo,
                           MakeKey('THROW')) ;       (* Procedure       *)
+   PutProcedureNoReturn (Throw, TRUE) ;
 
    CreateMinMaxFor(Word, 'MinWord', 'MaxWord', GetWordType()) ;
    CreateMinMaxFor(Address, 'MinAddress', 'MaxAddress', GetPointerType()) ;

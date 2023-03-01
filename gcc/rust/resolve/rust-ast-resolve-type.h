@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -177,7 +177,7 @@ public:
     auto seg = CanonicalPath::new_seg (param.get_node_id (),
 				       param.get_type_representation ());
     resolver->get_type_scope ().insert (
-      seg, param.get_node_id (), param.get_locus (), false,
+      seg, param.get_node_id (), param.get_locus (), false, Rib::ItemType::Type,
       [&] (const CanonicalPath &, NodeId, Location locus) -> void {
 	rust_error_at (param.get_locus (),
 		       "generic param redefined multiple times");

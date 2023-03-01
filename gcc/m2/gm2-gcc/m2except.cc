@@ -1,6 +1,6 @@
 /* m2except.cc implements the construction of exception trees.
 
-Copyright (C) 2012-2022 Free Software Foundation, Inc.
+Copyright (C) 2012-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -103,18 +103,19 @@ m2except_InitExceptions (location_t location)
 
   m2decl_BuildStartFunctionDeclaration (FALSE);
   fn_rethrow_tree = m2decl_BuildEndFunctionDeclaration (
-      location, location, "__cxa_rethrow", void_type_node, TRUE, FALSE, TRUE);
+     location, location, "__cxa_rethrow", void_type_node, TRUE, FALSE,
+     TRUE, FALSE);
   TREE_NOTHROW (fn_rethrow_tree) = 0;
 
   m2decl_BuildStartFunctionDeclaration (FALSE);
   m2decl_BuildParameterDeclaration (location, NULL, ptr_type_node, FALSE);
   fn_begin_catch_tree = m2decl_BuildEndFunctionDeclaration (
       location, location, "__cxa_begin_catch", ptr_type_node, TRUE, FALSE,
-      TRUE);
+      TRUE, FALSE);
   m2decl_BuildStartFunctionDeclaration (FALSE);
   fn_end_catch_tree = m2decl_BuildEndFunctionDeclaration (
       location, location, "__cxa_end_catch", void_type_node, TRUE, FALSE,
-      TRUE);
+      TRUE, FALSE);
   /* This can throw if the destructor for the exception throws.  */
   TREE_NOTHROW (fn_end_catch_tree) = 0;
 
@@ -130,26 +131,28 @@ m2except_InitExceptions (location_t location)
   m2decl_BuildParameterDeclaration (location, NULL, ptr_type_node, FALSE);
   m2decl_BuildParameterDeclaration (location, NULL, ptr_type_node, FALSE);
   fn_throw_tree = m2decl_BuildEndFunctionDeclaration (
-      location, location, "__cxa_throw", void_type_node, TRUE, FALSE, TRUE);
+      location, location, "__cxa_throw", void_type_node, TRUE, FALSE, TRUE,
+      TRUE);
 
   /* Declare void __cxa_rethrow (void).  */
   m2decl_BuildStartFunctionDeclaration (FALSE);
   fn_rethrow_tree = m2decl_BuildEndFunctionDeclaration (
-      location, location, "__cxa_rethrow", void_type_node, TRUE, FALSE, TRUE);
+     location, location, "__cxa_rethrow", void_type_node, TRUE, FALSE, TRUE,
+     TRUE);
 
   /* Declare void *__cxa_allocate_exception (size_t).  */
   m2decl_BuildStartFunctionDeclaration (FALSE);
   m2decl_BuildParameterDeclaration (location, NULL, size_type_node, FALSE);
   fn_allocate_exception_tree = m2decl_BuildEndFunctionDeclaration (
       location, location, "__cxa_allocate_exception", ptr_type_node, TRUE,
-      FALSE, TRUE);
+      FALSE, TRUE, FALSE);
 
   /* Declare void *__cxa_free_exception (void *).  */
   m2decl_BuildStartFunctionDeclaration (FALSE);
   m2decl_BuildParameterDeclaration (location, NULL, ptr_type_node, FALSE);
   fn_free_exception_tree = m2decl_BuildEndFunctionDeclaration (
       location, location, "__cxa_free_exception", ptr_type_node, TRUE, FALSE,
-      TRUE);
+      TRUE, FALSE);
 
   /* Define integer type exception type which will match C++ int type
      in the C++ runtime library.  */
@@ -414,7 +417,7 @@ gm2_build_throw (location_t location, tree exp)
       exp = build2 (COMPOUND_EXPR, TREE_TYPE (exp), allocate_expr, exp);
 
       /* Force all the cleanups to be evaluated here so that we don't have
-      to do them during unwinding.  */
+	 to do them during unwinding.  */
       exp = build1 (CLEANUP_POINT_EXPR, void_type_node, exp);
 
       tmp = do_throw (location, ptr);

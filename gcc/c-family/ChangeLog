@@ -1,3 +1,69 @@
+2023-02-28  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/107938
+	* c-warn.cc (check_address_or_pointer_of_packed_member): Check
+	POINTER_TYPE_P.
+
+2023-02-28  Jakub Jelinek  <jakub@redhat.com>
+
+	PR sanitizer/108894
+	* c-common.h (c_strict_flex_array_level_of): Declare.
+	* c-common.cc (c_strict_flex_array_level_of): New function,
+	moved and renamed from c-decl.cc's strict_flex_array_level_of.
+	* c-ubsan.cc (ubsan_instrument_bounds): Fix comment typo.  For
+	C check c_strict_flex_array_level_of whether a trailing array
+	should be treated as flexible member like.  Handle C [0] arrays.
+	Add 1 + index_off_by_one rather than index_off_by_one to bounds
+	and use tree_int_cst_lt rather than tree_int_cst_le for idx vs.
+	bounds comparison.
+
+2023-02-23  Jakub Jelinek  <jakub@redhat.com>
+
+	PR translation/108890
+	* c.opt (fcontracts): Fix description.
+
+2023-02-22  Marek Polacek  <polacek@redhat.com>
+
+	PR c/108880
+	* c-gimplify.cc (c_genericize_control_stmt) <case STATEMENT_LIST>: Pass
+	pset to walk_tree_1.
+	(c_genericize): Call walk_tree with an explicit pset.
+
+2023-02-18  Martin Uecker  <uecker@tugraz.at>
+
+	PR c/105660
+	* c-attribs.cc (append_access_attr): Use order of arguments when
+	construction string.
+	(append_access_attr_idxs): Rename and make static.
+	* c-warn.cc (warn_parm_array_mismatch): Add assertion.
+
+2023-02-16  Patrick Palka  <ppalka@redhat.com>
+
+	* c-common.h: Mechanically drop static from static inline
+	functions via s/^static inline/inline/g.
+
+2023-02-01  Jason Merrill  <jason@redhat.com>
+
+	* c.opt: Add -Wno-changes-meaning.
+
+2023-01-31  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/107593
+	PR c++/108597
+	* c-common.h (instantiation_dependent_expression_p): Declare.
+	* c-warn.cc (warn_duplicated_cond_add_or_warn): If the condition
+	is dependent, invalidate the chain.
+
+2023-01-26  Marek Polacek  <polacek@redhat.com>
+
+	PR c++/105300
+	* c-pragma.cc (handle_pragma_message): Warn for CPP_STRING_USERDEF.
+
+2023-01-18  Marek Polacek  <polacek@redhat.com>
+
+	PR c/108424
+	* c-common.cc (check_case_value): Check INTEGRAL_TYPE_P.
+
 2023-01-14  Jakub Jelinek  <jakub@redhat.com>
 
 	PR c++/108365

@@ -165,7 +165,7 @@ extern "C" void * mcStack_pop (mcStack_stack s)
       Indexing_DeleteIndice (s->list, Indexing_HighIndice (s->list));
       return a;
     }
-  ReturnException ("../../gcc-git-devel-modula2/gcc/m2/mc/mcStack.def", 20, 1);
+  ReturnException ("../../gcc-read-write/gcc/m2/mc/mcStack.def", 20, 1);
   __builtin_unreachable ();
 }
 
@@ -215,7 +215,7 @@ extern "C" void * mcStack_access (mcStack_stack s, unsigned int i)
     {
       return Indexing_GetIndice (s->list, i);
     }
-  ReturnException ("../../gcc-git-devel-modula2/gcc/m2/mc/mcStack.def", 20, 1);
+  ReturnException ("../../gcc-read-write/gcc/m2/mc/mcStack.def", 20, 1);
   __builtin_unreachable ();
 }
 
@@ -223,6 +223,6 @@ extern "C" void _M2_mcStack_init (__attribute__((unused)) int argc,__attribute__
 {
 }
 
-extern "C" void _M2_mcStack_finish (__attribute__((unused)) int argc,__attribute__((unused)) char *argv[],__attribute__((unused)) char *envp[])
+extern "C" void _M2_mcStack_fini (__attribute__((unused)) int argc,__attribute__((unused)) char *argv[],__attribute__((unused)) char *envp[])
 {
 }

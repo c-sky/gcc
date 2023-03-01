@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -52,44 +52,105 @@ ConstChecker::is_const_extern_fn (HIR::ExternalFunctionItem &fn)
     });
 }
 
+const char *
+ConstChecker::ctx_to_str (ConstGenericCtx ctx)
+{
+  switch (ctx)
+    {
+    case ConstGenericCtx::Function:
+      return "function";
+    case ConstGenericCtx::TypeAlias:
+      return "type alias";
+    case ConstGenericCtx::Struct:
+      return "struct";
+    case ConstGenericCtx::Enum:
+      return "enum";
+    case ConstGenericCtx::Union:
+      return "union";
+    case ConstGenericCtx::Trait:
+      return "trait";
+    case ConstGenericCtx::Impl:
+      return "impl";
+    default:
+      gcc_unreachable ();
+    }
+}
+
+bool
+ConstChecker::ctx_allows_default (ConstGenericCtx ctx)
+{
+  switch (ctx)
+    {
+    case ConstGenericCtx::TypeAlias:
+    case ConstGenericCtx::Struct:
+    case ConstGenericCtx::Enum:
+    case ConstGenericCtx::Trait:
+      return true;
+    default:
+      return false;
+    }
+}
+
 void
-ConstChecker::visit (Lifetime &lifetime)
+ConstChecker::check_default_const_generics (
+  std::vector<std::unique_ptr<GenericParam>> &params, ConstGenericCtx context)
+{
+  if (ctx_allows_default (context))
+    return;
+
+  for (auto &param : params)
+    {
+      if (param->get_kind () == GenericParam::GenericKind::CONST)
+	{
+	  auto const_param = static_cast<ConstGenericParam *> (param.get ());
+	  if (const_param->has_default_expression ())
+	    rust_error_at (
+	      param->get_locus (),
+	      "default values for const generic parameters are not "
+	      "allowed in %qs items",
+	      ctx_to_str (context));
+	}
+    }
+}
+
+void
+ConstChecker::visit (Lifetime &)
 {}
 
 void
-ConstChecker::visit (LifetimeParam &lifetime_param)
+ConstChecker::visit (LifetimeParam &)
 {}
 
 void
-ConstChecker::visit (PathInExpression &path)
+ConstChecker::visit (PathInExpression &)
 {}
 
 void
-ConstChecker::visit (TypePathSegment &segment)
+ConstChecker::visit (TypePathSegment &)
 {}
 
 void
-ConstChecker::visit (TypePathSegmentGeneric &segment)
+ConstChecker::visit (TypePathSegmentGeneric &)
 {}
 
 void
-ConstChecker::visit (TypePathSegmentFunction &segment)
+ConstChecker::visit (TypePathSegmentFunction &)
 {}
 
 void
-ConstChecker::visit (TypePath &path)
+ConstChecker::visit (TypePath &)
 {}
 
 void
-ConstChecker::visit (QualifiedPathInExpression &path)
+ConstChecker::visit (QualifiedPathInExpression &)
 {}
 
 void
-ConstChecker::visit (QualifiedPathInType &path)
+ConstChecker::visit (QualifiedPathInType &)
 {}
 
 void
-ConstChecker::visit (LiteralExpr &expr)
+ConstChecker::visit (LiteralExpr &)
 {}
 
 void
@@ -209,11 +270,11 @@ ConstChecker::visit (TupleIndexExpr &expr)
 }
 
 void
-ConstChecker::visit (StructExprStruct &expr)
+ConstChecker::visit (StructExprStruct &)
 {}
 
 void
-ConstChecker::visit (StructExprFieldIdentifier &field)
+ConstChecker::visit (StructExprFieldIdentifier &)
 {}
 
 void
@@ -236,7 +297,7 @@ ConstChecker::visit (StructExprStructFields &expr)
 }
 
 void
-ConstChecker::visit (StructExprStructBase &expr)
+ConstChecker::visit (StructExprStructBase &)
 {}
 
 void
@@ -321,8 +382,10 @@ ConstChecker::visit (FieldAccessExpr &expr)
 }
 
 void
-ConstChecker::visit (ClosureExprInner &expr)
-{}
+ConstChecker::visit (ClosureExpr &expr)
+{
+  expr.get_expr ()->accept_vis (*this);
+}
 
 void
 ConstChecker::visit (BlockExpr &expr)
@@ -335,11 +398,7 @@ ConstChecker::visit (BlockExpr &expr)
 }
 
 void
-ConstChecker::visit (ClosureExprInnerTyped &expr)
-{}
-
-void
-ConstChecker::visit (ContinueExpr &expr)
+ConstChecker::visit (ContinueExpr &)
 {}
 
 void
@@ -369,7 +428,7 @@ ConstChecker::visit (RangeToExpr &expr)
 }
 
 void
-ConstChecker::visit (RangeFullExpr &expr)
+ConstChecker::visit (RangeFullExpr &)
 {}
 
 void
@@ -380,7 +439,7 @@ ConstChecker::visit (RangeFromToInclExpr &expr)
 }
 
 void
-ConstChecker::visit (RangeToInclExpr &expr)
+ConstChecker::visit (RangeToInclExpr &)
 {
   // FIXME: Visit to_expr
 }
@@ -499,31 +558,31 @@ ConstChecker::visit (MatchExpr &expr)
 }
 
 void
-ConstChecker::visit (AwaitExpr &expr)
+ConstChecker::visit (AwaitExpr &)
 {
   // TODO: Visit expression
 }
 
 void
-ConstChecker::visit (AsyncBlockExpr &expr)
+ConstChecker::visit (AsyncBlockExpr &)
 {
   // TODO: Visit block expression
 }
 
 void
-ConstChecker::visit (TypeParam &param)
+ConstChecker::visit (TypeParam &)
 {}
 
 void
-ConstChecker::visit (ConstGenericParam &param)
+ConstChecker::visit (ConstGenericParam &)
 {}
 
 void
-ConstChecker::visit (LifetimeWhereClauseItem &item)
+ConstChecker::visit (LifetimeWhereClauseItem &)
 {}
 
 void
-ConstChecker::visit (TypeBoundWhereClauseItem &item)
+ConstChecker::visit (TypeBoundWhereClauseItem &)
 {}
 
 void
@@ -534,23 +593,23 @@ ConstChecker::visit (Module &module)
 }
 
 void
-ConstChecker::visit (ExternCrate &crate)
+ConstChecker::visit (ExternCrate &)
 {}
 
 void
-ConstChecker::visit (UseTreeGlob &use_tree)
+ConstChecker::visit (UseTreeGlob &)
 {}
 
 void
-ConstChecker::visit (UseTreeList &use_tree)
+ConstChecker::visit (UseTreeList &)
 {}
 
 void
-ConstChecker::visit (UseTreeRebind &use_tree)
+ConstChecker::visit (UseTreeRebind &)
 {}
 
 void
-ConstChecker::visit (UseDeclaration &use_decl)
+ConstChecker::visit (UseDeclaration &)
 {}
 
 void
@@ -559,6 +618,9 @@ ConstChecker::visit (Function &function)
   auto const_fn = function.get_qualifiers ().is_const ();
   if (const_fn)
     const_context.enter (function.get_mappings ().get_hirid ());
+
+  check_default_const_generics (function.get_generic_params (),
+				ConstGenericCtx::Function);
 
   for (auto &param : function.get_function_params ())
     param.get_type ()->accept_vis (*this);
@@ -571,26 +633,35 @@ ConstChecker::visit (Function &function)
 
 void
 ConstChecker::visit (TypeAlias &type_alias)
-{}
+{
+  check_default_const_generics (type_alias.get_generic_params (),
+				ConstGenericCtx::TypeAlias);
+}
 
 void
 ConstChecker::visit (StructStruct &struct_item)
-{}
+{
+  check_default_const_generics (struct_item.get_generic_params (),
+				ConstGenericCtx::Struct);
+}
 
 void
 ConstChecker::visit (TupleStruct &tuple_struct)
+{
+  check_default_const_generics (tuple_struct.get_generic_params (),
+				ConstGenericCtx::Struct);
+}
+
+void
+ConstChecker::visit (EnumItem &)
 {}
 
 void
-ConstChecker::visit (EnumItem &item)
+ConstChecker::visit (EnumItemTuple &)
 {}
 
 void
-ConstChecker::visit (EnumItemTuple &item)
-{}
-
-void
-ConstChecker::visit (EnumItemStruct &item)
+ConstChecker::visit (EnumItemStruct &)
 {}
 
 void
@@ -605,11 +676,17 @@ ConstChecker::visit (EnumItemDiscriminant &item)
 
 void
 ConstChecker::visit (Enum &enum_item)
-{}
+{
+  check_default_const_generics (enum_item.get_generic_params (),
+				ConstGenericCtx::Enum);
+}
 
 void
 ConstChecker::visit (Union &union_item)
-{}
+{
+  check_default_const_generics (union_item.get_generic_params (),
+				ConstGenericCtx::Union);
+}
 
 void
 ConstChecker::visit (ConstantItem &const_item)
@@ -646,12 +723,15 @@ ConstChecker::visit (TraitItemConst &item)
 }
 
 void
-ConstChecker::visit (TraitItemType &item)
+ConstChecker::visit (TraitItemType &)
 {}
 
 void
 ConstChecker::visit (Trait &trait)
 {
+  check_default_const_generics (trait.get_generic_params (),
+				ConstGenericCtx::Trait);
+
   for (auto &item : trait.get_trait_items ())
     item->accept_vis (*this);
 }
@@ -659,16 +739,19 @@ ConstChecker::visit (Trait &trait)
 void
 ConstChecker::visit (ImplBlock &impl)
 {
+  check_default_const_generics (impl.get_generic_params (),
+				ConstGenericCtx::Impl);
+
   for (auto &item : impl.get_impl_items ())
     item->accept_vis (*this);
 }
 
 void
-ConstChecker::visit (ExternalStaticItem &item)
+ConstChecker::visit (ExternalStaticItem &)
 {}
 
 void
-ConstChecker::visit (ExternalFunctionItem &item)
+ConstChecker::visit (ExternalFunctionItem &)
 {}
 
 void
@@ -680,87 +763,87 @@ ConstChecker::visit (ExternBlock &block)
 }
 
 void
-ConstChecker::visit (LiteralPattern &pattern)
+ConstChecker::visit (LiteralPattern &)
 {}
 
 void
-ConstChecker::visit (IdentifierPattern &pattern)
+ConstChecker::visit (IdentifierPattern &)
 {}
 
 void
-ConstChecker::visit (WildcardPattern &pattern)
+ConstChecker::visit (WildcardPattern &)
 {}
 
 void
-ConstChecker::visit (RangePatternBoundLiteral &bound)
+ConstChecker::visit (RangePatternBoundLiteral &)
 {}
 
 void
-ConstChecker::visit (RangePatternBoundPath &bound)
+ConstChecker::visit (RangePatternBoundPath &)
 {}
 
 void
-ConstChecker::visit (RangePatternBoundQualPath &bound)
+ConstChecker::visit (RangePatternBoundQualPath &)
 {}
 
 void
-ConstChecker::visit (RangePattern &pattern)
+ConstChecker::visit (RangePattern &)
 {}
 
 void
-ConstChecker::visit (ReferencePattern &pattern)
+ConstChecker::visit (ReferencePattern &)
 {}
 
 void
-ConstChecker::visit (StructPatternFieldTuplePat &field)
+ConstChecker::visit (StructPatternFieldTuplePat &)
 {}
 
 void
-ConstChecker::visit (StructPatternFieldIdentPat &field)
+ConstChecker::visit (StructPatternFieldIdentPat &)
 {}
 
 void
-ConstChecker::visit (StructPatternFieldIdent &field)
+ConstChecker::visit (StructPatternFieldIdent &)
 {}
 
 void
-ConstChecker::visit (StructPattern &pattern)
+ConstChecker::visit (StructPattern &)
 {}
 
 void
-ConstChecker::visit (TupleStructItemsNoRange &tuple_items)
+ConstChecker::visit (TupleStructItemsNoRange &)
 {}
 
 void
-ConstChecker::visit (TupleStructItemsRange &tuple_items)
+ConstChecker::visit (TupleStructItemsRange &)
 {}
 
 void
-ConstChecker::visit (TupleStructPattern &pattern)
+ConstChecker::visit (TupleStructPattern &)
 {}
 
 void
-ConstChecker::visit (TuplePatternItemsMultiple &tuple_items)
+ConstChecker::visit (TuplePatternItemsMultiple &)
 {}
 
 void
-ConstChecker::visit (TuplePatternItemsRanged &tuple_items)
+ConstChecker::visit (TuplePatternItemsRanged &)
 {}
 
 void
-ConstChecker::visit (TuplePattern &pattern)
+ConstChecker::visit (TuplePattern &)
 {}
 
 void
-ConstChecker::visit (GroupedPattern &pattern)
+ConstChecker::visit (GroupedPattern &)
 {}
 
 void
-ConstChecker::visit (SlicePattern &pattern)
+ConstChecker::visit (SlicePattern &)
 {}
 
 void
-ConstChecker::visit (EmptyStmt &stmt)
+ConstChecker::visit (EmptyStmt &)
 {}
 
 void
@@ -783,39 +866,39 @@ ConstChecker::visit (ExprStmtWithBlock &stmt)
 }
 
 void
-ConstChecker::visit (TraitBound &bound)
+ConstChecker::visit (TraitBound &)
 {}
 
 void
-ConstChecker::visit (ImplTraitType &type)
+ConstChecker::visit (ImplTraitType &)
 {}
 
 void
-ConstChecker::visit (TraitObjectType &type)
+ConstChecker::visit (TraitObjectType &)
 {}
 
 void
-ConstChecker::visit (ParenthesisedType &type)
+ConstChecker::visit (ParenthesisedType &)
 {}
 
 void
-ConstChecker::visit (ImplTraitTypeOneBound &type)
+ConstChecker::visit (ImplTraitTypeOneBound &)
 {}
 
 void
-ConstChecker::visit (TupleType &type)
+ConstChecker::visit (TupleType &)
 {}
 
 void
-ConstChecker::visit (NeverType &type)
+ConstChecker::visit (NeverType &)
 {}
 
 void
-ConstChecker::visit (RawPointerType &type)
+ConstChecker::visit (RawPointerType &)
 {}
 
 void
-ConstChecker::visit (ReferenceType &type)
+ConstChecker::visit (ReferenceType &)
 {}
 
 void
@@ -829,15 +912,15 @@ ConstChecker::visit (ArrayType &type)
 }
 
 void
-ConstChecker::visit (SliceType &type)
+ConstChecker::visit (SliceType &)
 {}
 
 void
-ConstChecker::visit (InferredType &type)
+ConstChecker::visit (InferredType &)
 {}
 
 void
-ConstChecker::visit (BareFunctionType &type)
+ConstChecker::visit (BareFunctionType &)
 {}
 
 } // namespace HIR

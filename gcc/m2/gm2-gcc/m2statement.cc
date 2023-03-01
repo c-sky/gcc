@@ -1,6 +1,6 @@
 /* m2statement.cc provides an interface to GCC statement trees.
 
-Copyright (C) 2012-2022 Free Software Foundation, Inc.
+Copyright (C) 2012-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -82,23 +82,6 @@ m2statement_BuildStartFunctionCode (location_t location, tree fndecl,
      or type PROC used on this function.  --fixme--  */
   TREE_ADDRESSABLE (fndecl) = 1;
   DECL_DECLARED_INLINE_P (fndecl) = 0; /* isinline;  */
-}
-
-static void
-gm2_gimplify_function_node (tree fndecl)
-{
-  /* Convert all nested functions to GIMPLE now.  We do things in this
-     order so that items like VLA sizes are expanded properly in the
-     context of the correct function.  */
-  struct cgraph_node *cgn;
-
-  dump_function (TDI_original, fndecl);
-  gimplify_function_tree (fndecl);
-
-  cgn = cgraph_node::get_create (fndecl);
-  for (cgn = first_nested_function (cgn);
-       cgn != NULL; cgn = next_nested_function (cgn))
-    gm2_gimplify_function_node (cgn->decl);
 }
 
 /* BuildEndFunctionCode - generates the function epilogue.  */

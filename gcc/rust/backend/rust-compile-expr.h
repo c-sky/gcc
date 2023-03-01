@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -67,24 +67,30 @@ public:
   void visit (HIR::RangeToExpr &expr) override;
   void visit (HIR::RangeFullExpr &expr) override;
   void visit (HIR::RangeFromToInclExpr &expr) override;
+  void visit (HIR::ClosureExpr &expr) override;
 
-  // Empty visit for unused Expression HIR nodes.
-  void visit (HIR::ClosureExprInner &) override {}
-  void visit (HIR::ClosureExprInnerTyped &) override {}
-  void visit (HIR::StructExprFieldIdentifier &) override {}
-  void visit (HIR::StructExprFieldIdentifierValue &) override {}
-  void visit (HIR::StructExprFieldIndexValue &) override {}
+  // TODO
   void visit (HIR::ErrorPropagationExpr &) override {}
   void visit (HIR::RangeToInclExpr &) override {}
-  void visit (HIR::WhileLetLoopExpr &) override {}
   void visit (HIR::ForLoopExpr &) override {}
+
+  // TODO
+  // these need to be sugared in the HIR to if statements and a match
+  void visit (HIR::WhileLetLoopExpr &) override {}
   void visit (HIR::IfExprConseqIfLet &) override {}
   void visit (HIR::IfLetExpr &) override {}
   void visit (HIR::IfLetExprConseqElse &) override {}
   void visit (HIR::IfLetExprConseqIf &) override {}
   void visit (HIR::IfLetExprConseqIfLet &) override {}
+
+  // lets not worry about async yet....
   void visit (HIR::AwaitExpr &) override {}
   void visit (HIR::AsyncBlockExpr &) override {}
+
+  // nothing to do for these
+  void visit (HIR::StructExprFieldIdentifier &) override {}
+  void visit (HIR::StructExprFieldIdentifierValue &) override {}
+  void visit (HIR::StructExprFieldIndexValue &) override {}
 
 protected:
   tree get_fn_addr_from_dyn (const TyTy::DynamicObjectType *dyn,
@@ -135,6 +141,19 @@ protected:
   tree array_copied_expr (Location expr_locus,
 			  const TyTy::ArrayType &array_tyty, tree array_type,
 			  HIR::ArrayElemsCopied &elems);
+
+protected:
+  tree generate_closure_function (HIR::ClosureExpr &expr,
+				  TyTy::ClosureType &closure_tyty,
+				  tree compiled_closure_tyty);
+
+  tree generate_closure_fntype (HIR::ClosureExpr &expr,
+				const TyTy::ClosureType &closure_tyty,
+				tree compiled_closure_tyty,
+				TyTy::FnType **fn_tyty);
+
+  bool generate_possible_fn_trait_call (HIR::CallExpr &expr, tree receiver,
+					tree *result);
 
 private:
   CompileExpr (Context *ctx);

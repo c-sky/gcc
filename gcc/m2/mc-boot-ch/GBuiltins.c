@@ -1,6 +1,6 @@
 /* GBuiltins.c dummy module to aid linking mc projects.
 
-Copyright (C) 2016-2022 Free Software Foundation, Inc.
+Copyright (C) 2016-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -38,6 +38,6 @@ _M2_Builtins_init (void)
 
 EXTERN
 void
-_M2_Builtins_finish (void)
+_M2_Builtins_fini (void)
 {
 }

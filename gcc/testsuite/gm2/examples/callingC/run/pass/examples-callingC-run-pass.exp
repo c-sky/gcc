@@ -1,5 +1,5 @@
 # Expect driver script for GCC Regression Tests
-# Copyright (C) 2008-2021 Free Software Foundation, Inc.
+# Copyright (C) 2008-2023 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ load_lib gm2-torture.exp
 
 set gm2src ${srcdir}/../m2
 
-gm2_init_iso "$srcdir/$subdir"
+gm2_init_iso "${srcdir}/${subdir}"
 gm2_link_obj "c.o"
 
 set output [target_compile $srcdir/$subdir/c.c c.o object "-g"]

@@ -1,5 +1,5 @@
 /* Process declarations and variables for -*- C++ -*- compiler.
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2023 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -4305,9 +4305,10 @@ make_typename_type (tree context, tree name, enum tag_types tag_type,
      member of the current instantiation or a non-dependent base;
      lookup will stop when we hit a dependent base.  */
   if (!dependent_scope_p (context))
-    /* We should only set WANT_TYPE when we're a nested typename type.
-       Then we can give better diagnostics if we find a non-type.  */
-    t = lookup_field (context, name, 2, /*want_type=*/true);
+    {
+      bool want_type = (complain & tf_qualifying_scope);
+      t = lookup_member (context, name, /*protect=*/2, want_type, complain);
+    }
   else
     t = NULL_TREE;
 
@@ -4359,7 +4360,7 @@ make_typename_type (tree context, tree name, enum tag_types tag_type,
       else
 	{
 	  if (complain & tf_error)
-	    error ("%<typename %T::%D%> names %q#T, which is not a type",
+	    error ("%<typename %T::%D%> names %q#D, which is not a type",
 		   context, name, t);
 	  return error_mark_node;
 	}
@@ -8407,7 +8408,7 @@ cp_finish_decl (tree decl, tree init, bool init_const_expr_p,
       if (!DECL_EXTERNAL (decl)
 	  && !TREE_STATIC (decl)
 	  && decl == tree_strip_any_location_wrapper (init)
-	  && !warn_init_self)
+	  && !warning_enabled_at (DECL_SOURCE_LOCATION (decl), OPT_Winit_self))
 	suppress_warning (decl, OPT_Winit_self);
     }
 
@@ -11372,7 +11373,7 @@ compute_array_index_type_loc (location_t name_loc, tree name, tree size,
 				    cp_convert (ssizetype, integer_one_node,
 						complain),
 				    complain);
-	itype = maybe_constant_value (itype, NULL_TREE, true);
+	itype = maybe_constant_value (itype, NULL_TREE, mce_true);
       }
 
       if (!TREE_CONSTANT (itype))
@@ -14776,7 +14777,9 @@ grokdeclarator (const cp_declarator *declarator,
       {
 	/* If we saw a return type, record its location.  */
 	location_t loc = declspecs->locations[ds_type_spec];
-	if (loc != UNKNOWN_LOCATION)
+	if (loc == UNKNOWN_LOCATION)
+	  /* Build DECL_RESULT in start_preparsed_function.  */;
+	else if (!DECL_RESULT (decl))
 	  {
 	    tree restype = TREE_TYPE (TREE_TYPE (decl));
 	    tree resdecl = build_decl (loc, RESULT_DECL, 0, restype);
@@ -14784,6 +14787,8 @@ grokdeclarator (const cp_declarator *declarator,
 	    DECL_IGNORED_P (resdecl) = 1;
 	    DECL_RESULT (decl) = resdecl;
 	  }
+	else if (funcdef_flag)
+	  DECL_SOURCE_LOCATION (DECL_RESULT (decl)) = loc;
       }
 
     /* Record constancy and volatility on the DECL itself .  There's

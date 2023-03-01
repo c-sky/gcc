@@ -1,5 +1,5 @@
 /* Name mangling for the 3.0 -*- C++ -*- ABI.
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2023 Free Software Foundation, Inc.
    Written by Alex Samuel <samuel@codesourcery.com>
 
    This file is part of GCC.
@@ -1816,7 +1816,7 @@ write_closure_type_name (const tree type)
       if (abi_warn_or_compat_version_crosses (18))
 	G.need_abi_warning = true;
 
-  write_method_parms (parms, /*method_p=*/1, fn);
+  write_method_parms (parms, TREE_CODE (TREE_TYPE (fn)) == METHOD_TYPE, fn);
   write_char ('E');
   if ((LAMBDA_EXPR_SCOPE_SIG_DISCRIMINATOR (lambda)
        != LAMBDA_EXPR_SCOPE_ONLY_DISCRIMINATOR (lambda))
@@ -3107,6 +3107,10 @@ write_expression (tree expr)
   else if (TREE_CODE_CLASS (code) == tcc_constant
 	   || code == CONST_DECL)
     write_template_arg_literal (expr);
+  else if (code == EXCESS_PRECISION_EXPR
+	   && TREE_CODE (TREE_OPERAND (expr, 0)) == REAL_CST)
+    write_template_arg_literal (fold_convert (TREE_TYPE (expr),
+					      TREE_OPERAND (expr, 0)));
   else if (code == PARM_DECL && DECL_ARTIFICIAL (expr))
     {
       gcc_assert (id_equal (DECL_NAME (expr), "this"));
@@ -3815,6 +3819,10 @@ write_template_arg (tree node)
 	   || code == CONST_DECL
 	   || null_member_pointer_value_p (node))
     write_template_arg_literal (node);
+  else if (code == EXCESS_PRECISION_EXPR
+	   && TREE_CODE (TREE_OPERAND (node, 0)) == REAL_CST)
+    write_template_arg_literal (fold_convert (TREE_TYPE (node),
+					      TREE_OPERAND (node, 0)));
   else if (DECL_P (node))
     {
       write_char ('L');

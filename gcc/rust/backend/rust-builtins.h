@@ -18,8 +18,9 @@
 #define RUST_BUILTINS_H
 
 #include "rust-system.h"
-#include "tree.h"
+#include "rust-tree.h"
 #include "langhooks.h"
+#include "tree.h"
 
 namespace Rust {
 namespace Compile {
@@ -77,60 +78,18 @@ namespace Compile {
 class BuiltinsContext
 {
 public:
-  static BuiltinsContext &get ()
-  {
-    static BuiltinsContext instance;
-    return instance;
-  }
+  static BuiltinsContext &get ();
 
-  bool lookup_simple_builtin (const std::string &name, tree *builtin)
-  {
-    auto it = rust_intrinsic_to_gcc_builtin.find (name);
-    if (it == rust_intrinsic_to_gcc_builtin.end ())
-      return false;
-
-    return lookup_gcc_builtin (it->second, builtin);
-  }
+  bool lookup_simple_builtin (const std::string &name, tree *builtin);
 
 private:
-  static const int builtin_const = 1 << 0;
-  static const int builtin_noreturn = 1 << 1;
-  static const int builtin_novops = 1 << 2;
+  BuiltinsContext ();
 
-  BuiltinsContext () { setup (); }
+  void setup_overflow_fns ();
+  void setup_math_fns ();
+  void setup_atomic_fns ();
 
-  void setup ()
-  {
-    tree math_function_type_f32
-      = build_function_type_list (float_type_node, float_type_node, NULL_TREE);
-
-    define_builtin ("sinf32", BUILT_IN_SINF, "__builtin_sinf", "sinf",
-		    math_function_type_f32, builtin_const);
-
-    define_builtin ("sqrtf32", BUILT_IN_SQRTF, "__builtin_sqrtf", "sqrtf",
-		    math_function_type_f32, builtin_const);
-
-    define_builtin ("unreachable", BUILT_IN_UNREACHABLE,
-		    "__builtin_unreachable", NULL,
-		    build_function_type (void_type_node, void_list_node),
-		    builtin_const | builtin_noreturn);
-
-    define_builtin ("abort", BUILT_IN_ABORT, "__builtin_abort", "abort",
-		    build_function_type (void_type_node, void_list_node),
-		    builtin_const | builtin_noreturn);
-
-    define_builtin ("breakpoint", BUILT_IN_TRAP, "__builtin_trap", "breakpoint",
-		    build_function_type (void_type_node, void_list_node),
-		    builtin_const | builtin_noreturn);
-
-    define_builtin (
-      "memcpy", BUILT_IN_MEMCPY, "__builtin_memcpy", "memcpy",
-      build_function_type_list (build_pointer_type (void_type_node),
-				build_pointer_type (void_type_node),
-				build_pointer_type (void_type_node),
-				size_type_node, NULL_TREE),
-      0);
-  }
+  void setup ();
 
   // Define a builtin function.  BCODE is the builtin function code
   // defined by builtins.def.  NAME is the name of the builtin function.
@@ -140,43 +99,9 @@ private:
   // NORETURN_P is true if the function has the noreturn attribute.
   void define_builtin (const std::string rust_name, built_in_function bcode,
 		       const char *name, const char *libname, tree fntype,
-		       int flags)
-  {
-    tree decl = add_builtin_function (name, fntype, bcode, BUILT_IN_NORMAL,
-				      libname, NULL_TREE);
-    if ((flags & builtin_const) != 0)
-      TREE_READONLY (decl) = 1;
-    if ((flags & builtin_noreturn) != 0)
-      TREE_THIS_VOLATILE (decl) = 1;
-    if ((flags & builtin_novops) != 0)
-      DECL_IS_NOVOPS (decl) = 1;
-    set_builtin_decl (bcode, decl, true);
-    this->builtin_functions_[name] = decl;
-    if (libname != NULL)
-      {
-	decl = add_builtin_function (libname, fntype, bcode, BUILT_IN_NORMAL,
-				     NULL, NULL_TREE);
-	if ((flags & builtin_const) != 0)
-	  TREE_READONLY (decl) = 1;
-	if ((flags & builtin_noreturn) != 0)
-	  TREE_THIS_VOLATILE (decl) = 1;
-	if ((flags & builtin_novops) != 0)
-	  DECL_IS_NOVOPS (decl) = 1;
-	this->builtin_functions_[libname] = decl;
-      }
+		       int flags);
 
-    rust_intrinsic_to_gcc_builtin[rust_name] = name;
-  }
-
-  bool lookup_gcc_builtin (const std::string &name, tree *builtin)
-  {
-    auto it = builtin_functions_.find (name);
-    if (it == builtin_functions_.end ())
-      return false;
-
-    *builtin = it->second;
-    return true;
-  }
+  bool lookup_gcc_builtin (const std::string &name, tree *builtin);
 
   // A mapping of the GCC built-ins exposed to GCC Rust.
   std::map<std::string, tree> builtin_functions_;

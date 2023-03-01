@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -194,6 +194,7 @@ private:
 public:
   Optional (const Optional &other) = default;
   Optional (Optional &&other) = default;
+  Optional &operator= (Optional &&other) = default;
 
   static Optional<T &> some (T &value)
   {

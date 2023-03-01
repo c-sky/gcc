@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -43,12 +43,17 @@ CompileItem::visit (HIR::StaticItem &var)
   rust_assert (ok);
 
   tree type = TyTyResolveCompile::compile (ctx, resolved_type);
-  tree value = CompileExpr::Compile (var.get_expr (), ctx);
 
   const Resolver::CanonicalPath *canonical_path = nullptr;
   ok = ctx->get_mappings ()->lookup_canonical_path (
     var.get_mappings ().get_nodeid (), &canonical_path);
   rust_assert (ok);
+
+  HIR::Expr *const_value_expr = var.get_expr ();
+  ctx->push_const_context ();
+  tree value = compile_constant_item (ctx, resolved_type, canonical_path,
+				      const_value_expr, var.get_locus ());
+  ctx->pop_const_context ();
 
   std::string name = canonical_path->get ();
   std::string asm_name = ctx->mangle_item (resolved_type, *canonical_path);
@@ -129,11 +134,18 @@ CompileItem::visit (HIR::Function &function)
 	}
     }
 
+  const Resolver::CanonicalPath *canonical_path = nullptr;
+  bool ok = ctx->get_mappings ()->lookup_canonical_path (
+    function.get_mappings ().get_nodeid (), &canonical_path);
+  rust_assert (ok);
+
+  const std::string asm_name = ctx->mangle_item (fntype, *canonical_path);
+
   // items can be forward compiled which means we may not need to invoke this
   // code. We might also have already compiled this generic function as well.
   tree lookup = NULL_TREE;
   if (ctx->lookup_function_decl (fntype->get_ty_ref (), &lookup,
-				 fntype->get_id (), fntype))
+				 fntype->get_id (), fntype, asm_name))
     {
       // has this been added to the list then it must be finished
       if (ctx->function_completed (lookup))
@@ -155,10 +167,8 @@ CompileItem::visit (HIR::Function &function)
       fntype->override_context ();
     }
 
-  const Resolver::CanonicalPath *canonical_path = nullptr;
-  bool ok = ctx->get_mappings ()->lookup_canonical_path (
-    function.get_mappings ().get_nodeid (), &canonical_path);
-  rust_assert (ok);
+  if (function.get_qualifiers ().is_const ())
+    ctx->push_const_context ();
 
   tree fndecl
     = compile_function (ctx, function.get_function_name (),
@@ -169,6 +179,9 @@ CompileItem::visit (HIR::Function &function)
 			function.get_definition ().get (), canonical_path,
 			fntype, function.has_function_return_type ());
   reference = address_expression (fndecl, ref_locus);
+
+  if (function.get_qualifiers ().is_const ())
+    ctx->pop_const_context ();
 }
 
 void

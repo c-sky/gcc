@@ -1,5 +1,5 @@
 # Makefile for GNU Ada Compiler (GNAT).
-#   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+#   Copyright (C) 1994-2023 Free Software Foundation, Inc.
 
 #This file is part of GCC.
 
@@ -616,7 +616,7 @@ OSCONS_EXTRACT=$(GCC_FOR_ADA_RTS) $(GNATLIBCFLAGS_FOR_C) -S s-oscons-tmplt.i
 	-$(MKDIR) ./bldtools/oscons
 	$(RM) $(addprefix ./bldtools/oscons/,$(notdir $^))
 	$(CP) $^ ./bldtools/oscons
-	(cd ./bldtools/oscons ; gnatmake -q xoscons)
+	(cd ./bldtools/oscons ; $(GNATMAKE) -q xoscons)
 
 $(RTSDIR)/s-oscons.ads: ../stamp-gnatlib1-$(RTSDIR) s-oscons-tmplt.c gsocket.h ./bldtools/oscons/xoscons
 	$(RM) $(RTSDIR)/s-oscons-tmplt.i $(RTSDIR)/s-oscons-tmplt.s

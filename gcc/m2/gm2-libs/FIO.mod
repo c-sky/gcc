@@ -1,6 +1,6 @@
 (* FIO.mod provides a simple buffered file input/output library.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -738,14 +738,11 @@ BEGIN
                   END
                END ;
                RETURN( total )
-            ELSE
-               RETURN( -1 )
             END
          END
       END
-   ELSE
-      RETURN( -1 )
-   END
+   END ;
+   RETURN( -1 )
 END BufferedRead ;
 
 
@@ -1606,7 +1603,8 @@ BEGIN
       ELSE
          RETURN fd^.name.address
       END
-   END
+   END ;
+   RETURN NIL
 END getFileName ;
 
 
@@ -1628,7 +1626,8 @@ BEGIN
       ELSE
          RETURN fd^.name.size
       END
-   END
+   END ;
+   RETURN 0
 END getFileNameLength ;
 
 

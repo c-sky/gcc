@@ -1,5 +1,5 @@
 /* Internals of libgccjit: classes for recording calls made to the JIT API.
-   Copyright (C) 2013-2022 Free Software Foundation, Inc.
+   Copyright (C) 2013-2023 Free Software Foundation, Inc.
    Contributed by David Malcolm <dmalcolm@redhat.com>.
 
 This file is part of GCC.
@@ -2556,7 +2556,7 @@ types_kinda_same_internal (recording::type *a,
 
    For array and vector types the number of element also
    has to match, aswell as the element types themself.  */
-static inline bool
+inline bool
 types_kinda_same (recording::type *a, recording::type *b)
 {
   /* Handle trivial case here, to allow for inlining.  */

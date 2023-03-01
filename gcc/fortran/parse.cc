@@ -1,5 +1,5 @@
 /* Main parser.
-   Copyright (C) 2000-2022 Free Software Foundation, Inc.
+   Copyright (C) 2000-2023 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -885,6 +885,9 @@ decode_omp_directive (void)
   switch (c)
     {
     case 'a':
+      /* For -fopenmp-simd, ignore 'assumes'; note no clause starts with 's'. */
+      if (!flag_openmp && gfc_match ("assumes") == MATCH_YES)
+	break;
       matcho ("assumes", gfc_match_omp_assumes, ST_OMP_ASSUMES);
       matchs ("assume", gfc_match_omp_assume, ST_OMP_ASSUME);
       matcho ("atomic", gfc_match_omp_atomic, ST_OMP_ATOMIC);
@@ -3971,21 +3974,30 @@ match_deferred_characteristics (gfc_typespec * ts)
    For return types specified in a FUNCTION prefix, the IMPLICIT rules of the
    scope are not yet parsed so this has to be delayed up to parse_spec.  */
 
-static void
+static bool
 check_function_result_typed (void)
 {
   gfc_typespec ts;
 
   gcc_assert (gfc_current_state () == COMP_FUNCTION);
 
-  if (!gfc_current_ns->proc_name->result) return;
+  if (!gfc_current_ns->proc_name->result)
+    return true;
 
   ts = gfc_current_ns->proc_name->result->ts;
 
   /* Check type-parameters, at the moment only CHARACTER lengths possible.  */
   /* TODO:  Extend when KIND type parameters are implemented.  */
   if (ts.type == BT_CHARACTER && ts.u.cl && ts.u.cl->length)
-    gfc_expr_check_typed (ts.u.cl->length, gfc_current_ns, true);
+    {
+      /* Reject invalid type of specification expression for length.  */
+      if (ts.u.cl->length->ts.type != BT_INTEGER)
+	  return false;
+
+      gfc_expr_check_typed (ts.u.cl->length, gfc_current_ns, true);
+    }
+
+  return true;
 }
 
 
@@ -4093,10 +4105,7 @@ loop:
 	}
 
       if (verify_now)
-	{
-	  check_function_result_typed ();
-	  function_result_typed = true;
-	}
+	function_result_typed = check_function_result_typed ();
     }
 
   switch (st)
@@ -4107,10 +4116,7 @@ loop:
     case ST_IMPLICIT_NONE:
     case ST_IMPLICIT:
       if (!function_result_typed)
-	{
-	  check_function_result_typed ();
-	  function_result_typed = true;
-	}
+	function_result_typed = check_function_result_typed ();
       goto declSt;
 
     case ST_FORMAT:
@@ -6502,7 +6508,6 @@ parse_module (void)
 {
   gfc_statement st;
   gfc_gsymbol *s;
-  bool error;
 
   s = gfc_get_gsymbol (gfc_new_block->name, false);
   if (s->defined || (s->type != GSYM_UNKNOWN && s->type != GSYM_MODULE))
@@ -6525,7 +6530,6 @@ parse_module (void)
 
   st = parse_spec (ST_NONE);
 
-  error = false;
 loop:
   switch (st)
     {
@@ -6544,16 +6548,11 @@ loop:
     default:
       gfc_error ("Unexpected %s statement in MODULE at %C",
 		 gfc_ascii_statement (st));
-
-      error = true;
       reject_statement ();
       st = next_statement ();
       goto loop;
     }
-
-  /* Make sure not to free the namespace twice on error.  */
-  if (!error)
-    s->ns = gfc_current_ns;
+  s->ns = gfc_current_ns;
 }
 
 

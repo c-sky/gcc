@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -25,499 +25,499 @@ namespace Rust {
 namespace HIR {
 
 void
-ASTLoweringBase::visit (AST::Token &tok)
+ASTLoweringBase::visit (AST::Token &)
 {}
 void
-ASTLoweringBase::visit (AST::DelimTokenTree &delim_tok_tree)
+ASTLoweringBase::visit (AST::DelimTokenTree &)
 {}
 void
-ASTLoweringBase::visit (AST::AttrInputMetaItemContainer &input)
+ASTLoweringBase::visit (AST::AttrInputMetaItemContainer &)
 {}
-//  void ASTLoweringBase::visit(MetaItem& meta_item) {}
-//  void vsit(Stmt& stmt) {}
-//  void ASTLoweringBase::visit(Expr& expr) {}
+//  void ASTLoweringBase::visit(MetaItemmeta_item) {}
+//  void vsit(Stmtstmt) {}
+//  void ASTLoweringBase::visit(Exprexpr) {}
 void
-ASTLoweringBase::visit (AST::IdentifierExpr &ident_expr)
+ASTLoweringBase::visit (AST::IdentifierExpr &)
 {}
-//  void ASTLoweringBase::visit(Pattern& pattern) {}
-//  void ASTLoweringBase::visit(Type& type) {}
-//  void ASTLoweringBase::visit(TypeParamBound& type_param_bound) {}
+//  void ASTLoweringBase::visit(Patternpattern) {}
+//  void ASTLoweringBase::visit(Typetype) {}
+//  void ASTLoweringBase::visit(TypeParamBoundtype_param_bound) {}
 void
-ASTLoweringBase::visit (AST::Lifetime &lifetime)
+ASTLoweringBase::visit (AST::Lifetime &)
 {}
-//  void ASTLoweringBase::visit(GenericParam& generic_param) {}
+//  void ASTLoweringBase::visit(GenericParamgeneric_param) {}
 void
-ASTLoweringBase::visit (AST::LifetimeParam &lifetime_param)
+ASTLoweringBase::visit (AST::LifetimeParam &)
 {}
 void
-ASTLoweringBase::visit (AST::ConstGenericParam &const_param)
+ASTLoweringBase::visit (AST::ConstGenericParam &)
 {}
-//  void ASTLoweringBase::visit(TraitItem& trait_item) {}
-//  void ASTLoweringBase::visit(InherentImplItem& inherent_impl_item) {}
-//  void ASTLoweringBase::visit(TraitImplItem& trait_impl_item) {}
+//  void ASTLoweringBase::visit(TraitItemtrait_item) {}
+//  void ASTLoweringBase::visit(InherentImplIteminherent_impl_item) {}
+//  void ASTLoweringBase::visit(TraitImplItemtrait_impl_item) {}
 
 // rust-path.h
 void
-ASTLoweringBase::visit (AST::PathInExpression &path)
+ASTLoweringBase::visit (AST::PathInExpression &)
 {}
 void
-ASTLoweringBase::visit (AST::TypePathSegment &segment)
+ASTLoweringBase::visit (AST::TypePathSegment &)
 {}
 void
-ASTLoweringBase::visit (AST::TypePathSegmentGeneric &segment)
+ASTLoweringBase::visit (AST::TypePathSegmentGeneric &)
 {}
 void
-ASTLoweringBase::visit (AST::TypePathSegmentFunction &segment)
+ASTLoweringBase::visit (AST::TypePathSegmentFunction &)
 {}
 void
-ASTLoweringBase::visit (AST::TypePath &path)
+ASTLoweringBase::visit (AST::TypePath &)
 {}
 void
-ASTLoweringBase::visit (AST::QualifiedPathInExpression &path)
+ASTLoweringBase::visit (AST::QualifiedPathInExpression &)
 {}
 void
-ASTLoweringBase::visit (AST::QualifiedPathInType &path)
+ASTLoweringBase::visit (AST::QualifiedPathInType &)
 {}
 
 // rust-expr.h
 void
-ASTLoweringBase::visit (AST::LiteralExpr &expr)
+ASTLoweringBase::visit (AST::LiteralExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::AttrInputLiteral &attr_input)
+ASTLoweringBase::visit (AST::AttrInputLiteral &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaItemLitExpr &meta_item)
+ASTLoweringBase::visit (AST::MetaItemLitExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaItemPathLit &meta_item)
+ASTLoweringBase::visit (AST::MetaItemPathLit &)
 {}
 void
-ASTLoweringBase::visit (AST::BorrowExpr &expr)
+ASTLoweringBase::visit (AST::BorrowExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::DereferenceExpr &expr)
+ASTLoweringBase::visit (AST::DereferenceExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ErrorPropagationExpr &expr)
+ASTLoweringBase::visit (AST::ErrorPropagationExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::NegationExpr &expr)
+ASTLoweringBase::visit (AST::NegationExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ArithmeticOrLogicalExpr &expr)
+ASTLoweringBase::visit (AST::ArithmeticOrLogicalExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ComparisonExpr &expr)
+ASTLoweringBase::visit (AST::ComparisonExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::LazyBooleanExpr &expr)
+ASTLoweringBase::visit (AST::LazyBooleanExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::TypeCastExpr &expr)
+ASTLoweringBase::visit (AST::TypeCastExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::AssignmentExpr &expr)
+ASTLoweringBase::visit (AST::AssignmentExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::CompoundAssignmentExpr &expr)
+ASTLoweringBase::visit (AST::CompoundAssignmentExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::GroupedExpr &expr)
+ASTLoweringBase::visit (AST::GroupedExpr &)
 {}
-//  void ASTLoweringBase::visit(ArrayElems& elems) {}
+//  void ASTLoweringBase::visit(ArrayElemselems) {}
 void
-ASTLoweringBase::visit (AST::ArrayElemsValues &elems)
-{}
-void
-ASTLoweringBase::visit (AST::ArrayElemsCopied &elems)
+ASTLoweringBase::visit (AST::ArrayElemsValues &)
 {}
 void
-ASTLoweringBase::visit (AST::ArrayExpr &expr)
+ASTLoweringBase::visit (AST::ArrayElemsCopied &)
 {}
 void
-ASTLoweringBase::visit (AST::ArrayIndexExpr &expr)
+ASTLoweringBase::visit (AST::ArrayExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleExpr &expr)
+ASTLoweringBase::visit (AST::ArrayIndexExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleIndexExpr &expr)
+ASTLoweringBase::visit (AST::TupleExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::StructExprStruct &expr)
-{}
-//  void ASTLoweringBase::visit(StructExprField& field) {}
-void
-ASTLoweringBase::visit (AST::StructExprFieldIdentifier &field)
+ASTLoweringBase::visit (AST::TupleIndexExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::StructExprFieldIdentifierValue &field)
+ASTLoweringBase::visit (AST::StructExprStruct &)
+{}
+//  void ASTLoweringBase::visit(StructExprFieldfield) {}
+void
+ASTLoweringBase::visit (AST::StructExprFieldIdentifier &)
 {}
 void
-ASTLoweringBase::visit (AST::StructExprFieldIndexValue &field)
+ASTLoweringBase::visit (AST::StructExprFieldIdentifierValue &)
 {}
 void
-ASTLoweringBase::visit (AST::StructExprStructFields &expr)
+ASTLoweringBase::visit (AST::StructExprFieldIndexValue &)
 {}
 void
-ASTLoweringBase::visit (AST::StructExprStructBase &expr)
+ASTLoweringBase::visit (AST::StructExprStructFields &)
 {}
 void
-ASTLoweringBase::visit (AST::CallExpr &expr)
+ASTLoweringBase::visit (AST::StructExprStructBase &)
 {}
 void
-ASTLoweringBase::visit (AST::MethodCallExpr &expr)
+ASTLoweringBase::visit (AST::CallExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::FieldAccessExpr &expr)
+ASTLoweringBase::visit (AST::MethodCallExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ClosureExprInner &expr)
+ASTLoweringBase::visit (AST::FieldAccessExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::BlockExpr &expr)
+ASTLoweringBase::visit (AST::ClosureExprInner &)
 {}
 void
-ASTLoweringBase::visit (AST::ClosureExprInnerTyped &expr)
+ASTLoweringBase::visit (AST::BlockExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ContinueExpr &expr)
+ASTLoweringBase::visit (AST::ClosureExprInnerTyped &)
 {}
 void
-ASTLoweringBase::visit (AST::BreakExpr &expr)
+ASTLoweringBase::visit (AST::ContinueExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeFromToExpr &expr)
+ASTLoweringBase::visit (AST::BreakExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeFromExpr &expr)
+ASTLoweringBase::visit (AST::RangeFromToExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeToExpr &expr)
+ASTLoweringBase::visit (AST::RangeFromExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeFullExpr &expr)
+ASTLoweringBase::visit (AST::RangeToExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeFromToInclExpr &expr)
+ASTLoweringBase::visit (AST::RangeFullExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::RangeToInclExpr &expr)
+ASTLoweringBase::visit (AST::RangeFromToInclExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ReturnExpr &expr)
+ASTLoweringBase::visit (AST::RangeToInclExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::UnsafeBlockExpr &expr)
+ASTLoweringBase::visit (AST::ReturnExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::LoopExpr &expr)
+ASTLoweringBase::visit (AST::UnsafeBlockExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::WhileLoopExpr &expr)
+ASTLoweringBase::visit (AST::LoopExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::WhileLetLoopExpr &expr)
+ASTLoweringBase::visit (AST::WhileLoopExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::ForLoopExpr &expr)
+ASTLoweringBase::visit (AST::WhileLetLoopExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::IfExpr &expr)
+ASTLoweringBase::visit (AST::ForLoopExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::IfExprConseqElse &expr)
+ASTLoweringBase::visit (AST::IfExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::IfExprConseqIf &expr)
+ASTLoweringBase::visit (AST::IfExprConseqElse &)
 {}
 void
-ASTLoweringBase::visit (AST::IfExprConseqIfLet &expr)
+ASTLoweringBase::visit (AST::IfExprConseqIf &)
 {}
 void
-ASTLoweringBase::visit (AST::IfLetExpr &expr)
+ASTLoweringBase::visit (AST::IfExprConseqIfLet &)
 {}
 void
-ASTLoweringBase::visit (AST::IfLetExprConseqElse &expr)
+ASTLoweringBase::visit (AST::IfLetExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::IfLetExprConseqIf &expr)
+ASTLoweringBase::visit (AST::IfLetExprConseqElse &)
 {}
 void
-ASTLoweringBase::visit (AST::IfLetExprConseqIfLet &expr)
-{}
-//  void ASTLoweringBase::visit(MatchCase& match_case) {}
-// void ASTLoweringBase:: (AST::MatchCaseBlockExpr &match_case) {}
-// void ASTLoweringBase:: (AST::MatchCaseExpr &match_case) {}
-void
-ASTLoweringBase::visit (AST::MatchExpr &expr)
+ASTLoweringBase::visit (AST::IfLetExprConseqIf &)
 {}
 void
-ASTLoweringBase::visit (AST::AwaitExpr &expr)
+ASTLoweringBase::visit (AST::IfLetExprConseqIfLet &)
+{}
+//  void ASTLoweringBase::visit(MatchCasematch_case) {}
+// void ASTLoweringBase:: (AST::MatchCaseBlockExpr &) {}
+// void ASTLoweringBase:: (AST::MatchCaseExpr &) {}
+void
+ASTLoweringBase::visit (AST::MatchExpr &)
 {}
 void
-ASTLoweringBase::visit (AST::AsyncBlockExpr &expr)
+ASTLoweringBase::visit (AST::AwaitExpr &)
+{}
+void
+ASTLoweringBase::visit (AST::AsyncBlockExpr &)
 {}
 
 // rust-item.h
 void
-ASTLoweringBase::visit (AST::TypeParam &param)
+ASTLoweringBase::visit (AST::TypeParam &)
 {}
-//  void ASTLoweringBase::visit(WhereClauseItem& item) {}
+//  void ASTLoweringBase::visit(WhereClauseItemitem) {}
 void
-ASTLoweringBase::visit (AST::LifetimeWhereClauseItem &item)
-{}
-void
-ASTLoweringBase::visit (AST::TypeBoundWhereClauseItem &item)
+ASTLoweringBase::visit (AST::LifetimeWhereClauseItem &)
 {}
 void
-ASTLoweringBase::visit (AST::Method &method)
+ASTLoweringBase::visit (AST::TypeBoundWhereClauseItem &)
 {}
 void
-ASTLoweringBase::visit (AST::Module &module)
+ASTLoweringBase::visit (AST::Method &)
 {}
 void
-ASTLoweringBase::visit (AST::ExternCrate &crate)
-{}
-//  void ASTLoweringBase::visit(UseTree& use_tree) {}
-void
-ASTLoweringBase::visit (AST::UseTreeGlob &use_tree)
+ASTLoweringBase::visit (AST::Module &)
 {}
 void
-ASTLoweringBase::visit (AST::UseTreeList &use_tree)
+ASTLoweringBase::visit (AST::ExternCrate &)
+{}
+//  void ASTLoweringBase::visit(UseTreeuse_tree) {}
+void
+ASTLoweringBase::visit (AST::UseTreeGlob &)
 {}
 void
-ASTLoweringBase::visit (AST::UseTreeRebind &use_tree)
+ASTLoweringBase::visit (AST::UseTreeList &)
 {}
 void
-ASTLoweringBase::visit (AST::UseDeclaration &use_decl)
+ASTLoweringBase::visit (AST::UseTreeRebind &)
 {}
 void
-ASTLoweringBase::visit (AST::Function &function)
+ASTLoweringBase::visit (AST::UseDeclaration &)
 {}
 void
-ASTLoweringBase::visit (AST::TypeAlias &type_alias)
+ASTLoweringBase::visit (AST::Function &)
 {}
 void
-ASTLoweringBase::visit (AST::StructStruct &struct_item)
+ASTLoweringBase::visit (AST::TypeAlias &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleStruct &tuple_struct)
+ASTLoweringBase::visit (AST::StructStruct &)
 {}
 void
-ASTLoweringBase::visit (AST::EnumItem &item)
+ASTLoweringBase::visit (AST::TupleStruct &)
 {}
 void
-ASTLoweringBase::visit (AST::EnumItemTuple &item)
+ASTLoweringBase::visit (AST::EnumItem &)
 {}
 void
-ASTLoweringBase::visit (AST::EnumItemStruct &item)
+ASTLoweringBase::visit (AST::EnumItemTuple &)
 {}
 void
-ASTLoweringBase::visit (AST::EnumItemDiscriminant &item)
+ASTLoweringBase::visit (AST::EnumItemStruct &)
 {}
 void
-ASTLoweringBase::visit (AST::Enum &enum_item)
+ASTLoweringBase::visit (AST::EnumItemDiscriminant &)
 {}
 void
-ASTLoweringBase::visit (AST::Union &union_item)
+ASTLoweringBase::visit (AST::Enum &)
 {}
 void
-ASTLoweringBase::visit (AST::ConstantItem &const_item)
+ASTLoweringBase::visit (AST::Union &)
 {}
 void
-ASTLoweringBase::visit (AST::StaticItem &static_item)
+ASTLoweringBase::visit (AST::ConstantItem &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitItemFunc &item)
+ASTLoweringBase::visit (AST::StaticItem &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitItemMethod &item)
+ASTLoweringBase::visit (AST::TraitItemFunc &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitItemConst &item)
+ASTLoweringBase::visit (AST::TraitItemMethod &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitItemType &item)
+ASTLoweringBase::visit (AST::TraitItemConst &)
 {}
 void
-ASTLoweringBase::visit (AST::Trait &trait)
+ASTLoweringBase::visit (AST::TraitItemType &)
 {}
 void
-ASTLoweringBase::visit (AST::InherentImpl &impl)
+ASTLoweringBase::visit (AST::Trait &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitImpl &impl)
-{}
-//  void ASTLoweringBase::visit(ExternalItem& item) {}
-void
-ASTLoweringBase::visit (AST::ExternalStaticItem &item)
+ASTLoweringBase::visit (AST::InherentImpl &)
 {}
 void
-ASTLoweringBase::visit (AST::ExternalFunctionItem &item)
+ASTLoweringBase::visit (AST::TraitImpl &)
+{}
+//  void ASTLoweringBase::visit(ExternalItemitem) {}
+void
+ASTLoweringBase::visit (AST::ExternalStaticItem &)
 {}
 void
-ASTLoweringBase::visit (AST::ExternBlock &block)
+ASTLoweringBase::visit (AST::ExternalFunctionItem &)
+{}
+void
+ASTLoweringBase::visit (AST::ExternBlock &)
 {}
 
 // rust-macro.h
 void
-ASTLoweringBase::visit (AST::MacroMatchFragment &match)
+ASTLoweringBase::visit (AST::MacroMatchFragment &)
 {}
 void
-ASTLoweringBase::visit (AST::MacroMatchRepetition &match)
+ASTLoweringBase::visit (AST::MacroMatchRepetition &)
 {}
 void
-ASTLoweringBase::visit (AST::MacroMatcher &matcher)
+ASTLoweringBase::visit (AST::MacroMatcher &)
 {}
 void
-ASTLoweringBase::visit (AST::MacroRulesDefinition &rules_def)
+ASTLoweringBase::visit (AST::MacroRulesDefinition &)
 {}
 void
-ASTLoweringBase::visit (AST::MacroInvocation &macro_invoc)
+ASTLoweringBase::visit (AST::MacroInvocation &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaItemPath &meta_item)
+ASTLoweringBase::visit (AST::MetaItemPath &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaItemSeq &meta_item)
+ASTLoweringBase::visit (AST::MetaItemSeq &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaWord &meta_item)
+ASTLoweringBase::visit (AST::MetaWord &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaNameValueStr &meta_item)
+ASTLoweringBase::visit (AST::MetaNameValueStr &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaListPaths &meta_item)
+ASTLoweringBase::visit (AST::MetaListPaths &)
 {}
 void
-ASTLoweringBase::visit (AST::MetaListNameValueStr &meta_item)
+ASTLoweringBase::visit (AST::MetaListNameValueStr &)
 {}
 
 // rust-pattern.h
 void
-ASTLoweringBase::visit (AST::LiteralPattern &pattern)
+ASTLoweringBase::visit (AST::LiteralPattern &)
 {}
 void
-ASTLoweringBase::visit (AST::IdentifierPattern &pattern)
+ASTLoweringBase::visit (AST::IdentifierPattern &)
 {}
 void
-ASTLoweringBase::visit (AST::WildcardPattern &pattern)
+ASTLoweringBase::visit (AST::WildcardPattern &)
 {}
-//  void ASTLoweringBase::visit(RangePatternBound& bound) {}
+//  void ASTLoweringBase::visit(RangePatternBoundbound) {}
 void
-ASTLoweringBase::visit (AST::RangePatternBoundLiteral &bound)
-{}
-void
-ASTLoweringBase::visit (AST::RangePatternBoundPath &bound)
+ASTLoweringBase::visit (AST::RangePatternBoundLiteral &)
 {}
 void
-ASTLoweringBase::visit (AST::RangePatternBoundQualPath &bound)
+ASTLoweringBase::visit (AST::RangePatternBoundPath &)
 {}
 void
-ASTLoweringBase::visit (AST::RangePattern &pattern)
+ASTLoweringBase::visit (AST::RangePatternBoundQualPath &)
 {}
 void
-ASTLoweringBase::visit (AST::ReferencePattern &pattern)
-{}
-//  void ASTLoweringBase::visit(StructPatternField& field) {}
-void
-ASTLoweringBase::visit (AST::StructPatternFieldTuplePat &field)
+ASTLoweringBase::visit (AST::RangePattern &)
 {}
 void
-ASTLoweringBase::visit (AST::StructPatternFieldIdentPat &field)
+ASTLoweringBase::visit (AST::ReferencePattern &)
+{}
+//  void ASTLoweringBase::visit(StructPatternFieldfield) {}
+void
+ASTLoweringBase::visit (AST::StructPatternFieldTuplePat &)
 {}
 void
-ASTLoweringBase::visit (AST::StructPatternFieldIdent &field)
+ASTLoweringBase::visit (AST::StructPatternFieldIdentPat &)
 {}
 void
-ASTLoweringBase::visit (AST::StructPattern &pattern)
-{}
-//  void ASTLoweringBase::visit(TupleStructItems& tuple_items) {}
-void
-ASTLoweringBase::visit (AST::TupleStructItemsNoRange &tuple_items)
+ASTLoweringBase::visit (AST::StructPatternFieldIdent &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleStructItemsRange &tuple_items)
+ASTLoweringBase::visit (AST::StructPattern &)
+{}
+//  void ASTLoweringBase::visit(TupleStructItemstuple_items) {}
+void
+ASTLoweringBase::visit (AST::TupleStructItemsNoRange &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleStructPattern &pattern)
-{}
-//  void ASTLoweringBase::visit(TuplePatternItems& tuple_items) {}
-void
-ASTLoweringBase::visit (AST::TuplePatternItemsMultiple &tuple_items)
+ASTLoweringBase::visit (AST::TupleStructItemsRange &)
 {}
 void
-ASTLoweringBase::visit (AST::TuplePatternItemsRanged &tuple_items)
+ASTLoweringBase::visit (AST::TupleStructPattern &)
+{}
+//  void ASTLoweringBase::visit(TuplePatternItemstuple_items) {}
+void
+ASTLoweringBase::visit (AST::TuplePatternItemsMultiple &)
 {}
 void
-ASTLoweringBase::visit (AST::TuplePattern &pattern)
+ASTLoweringBase::visit (AST::TuplePatternItemsRanged &)
 {}
 void
-ASTLoweringBase::visit (AST::GroupedPattern &pattern)
+ASTLoweringBase::visit (AST::TuplePattern &)
 {}
 void
-ASTLoweringBase::visit (AST::SlicePattern &pattern)
+ASTLoweringBase::visit (AST::GroupedPattern &)
+{}
+void
+ASTLoweringBase::visit (AST::SlicePattern &)
 {}
 
 // rust-stmt.h
 void
-ASTLoweringBase::visit (AST::EmptyStmt &stmt)
+ASTLoweringBase::visit (AST::EmptyStmt &)
 {}
 void
-ASTLoweringBase::visit (AST::LetStmt &stmt)
+ASTLoweringBase::visit (AST::LetStmt &)
 {}
 void
-ASTLoweringBase::visit (AST::ExprStmtWithoutBlock &stmt)
+ASTLoweringBase::visit (AST::ExprStmtWithoutBlock &)
 {}
 void
-ASTLoweringBase::visit (AST::ExprStmtWithBlock &stmt)
+ASTLoweringBase::visit (AST::ExprStmtWithBlock &)
 {}
 
 // rust-type.h
 void
-ASTLoweringBase::visit (AST::TraitBound &bound)
+ASTLoweringBase::visit (AST::TraitBound &)
 {}
 void
-ASTLoweringBase::visit (AST::ImplTraitType &type)
+ASTLoweringBase::visit (AST::ImplTraitType &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitObjectType &type)
+ASTLoweringBase::visit (AST::TraitObjectType &)
 {}
 void
-ASTLoweringBase::visit (AST::ParenthesisedType &type)
+ASTLoweringBase::visit (AST::ParenthesisedType &)
 {}
 void
-ASTLoweringBase::visit (AST::ImplTraitTypeOneBound &type)
+ASTLoweringBase::visit (AST::ImplTraitTypeOneBound &)
 {}
 void
-ASTLoweringBase::visit (AST::TraitObjectTypeOneBound &type)
+ASTLoweringBase::visit (AST::TraitObjectTypeOneBound &)
 {}
 void
-ASTLoweringBase::visit (AST::TupleType &type)
+ASTLoweringBase::visit (AST::TupleType &)
 {}
 void
-ASTLoweringBase::visit (AST::NeverType &type)
+ASTLoweringBase::visit (AST::NeverType &)
 {}
 void
-ASTLoweringBase::visit (AST::RawPointerType &type)
+ASTLoweringBase::visit (AST::RawPointerType &)
 {}
 void
-ASTLoweringBase::visit (AST::ReferenceType &type)
+ASTLoweringBase::visit (AST::ReferenceType &)
 {}
 void
-ASTLoweringBase::visit (AST::ArrayType &type)
+ASTLoweringBase::visit (AST::ArrayType &)
 {}
 void
-ASTLoweringBase::visit (AST::SliceType &type)
+ASTLoweringBase::visit (AST::SliceType &)
 {}
 void
-ASTLoweringBase::visit (AST::InferredType &type)
+ASTLoweringBase::visit (AST::InferredType &)
 {}
 void
-ASTLoweringBase::visit (AST::BareFunctionType &type)
+ASTLoweringBase::visit (AST::BareFunctionType &)
 {}
 
 HIR::Lifetime
@@ -658,119 +658,6 @@ ASTLoweringBase::lower_self (AST::SelfParam &self)
 			 self.get_locus ());
 }
 
-void
-ASTLowerTypePath::visit (AST::TypePathSegmentGeneric &segment)
-{
-  std::vector<HIR::GenericArgsBinding> binding_args; // TODO
-
-  std::string segment_name = segment.get_ident_segment ().as_string ();
-  bool has_separating_scope_resolution
-    = segment.get_separating_scope_resolution ();
-
-  auto generic_args = lower_generic_args (segment.get_generic_args ());
-
-  auto crate_num = mappings->get_current_crate ();
-  auto hirid = mappings->get_next_hir_id (crate_num);
-  Analysis::NodeMapping mapping (crate_num, segment.get_node_id (), hirid,
-				 UNKNOWN_LOCAL_DEFID);
-
-  translated_segment
-    = new HIR::TypePathSegmentGeneric (std::move (mapping), segment_name,
-				       has_separating_scope_resolution,
-				       generic_args, segment.get_locus ());
-}
-
-void
-ASTLowerQualifiedPathInType::visit (AST::QualifiedPathInType &path)
-{
-  auto crate_num = mappings->get_current_crate ();
-  auto hirid = mappings->get_next_hir_id (crate_num);
-  Analysis::NodeMapping qual_mappings (
-    crate_num, path.get_qualified_path_type ().get_node_id (), hirid,
-    UNKNOWN_LOCAL_DEFID);
-
-  HIR::Type *qual_type = ASTLoweringType::translate (
-    path.get_qualified_path_type ().get_type ().get ());
-  HIR::TypePath *qual_trait = ASTLowerTypePath::translate (
-    path.get_qualified_path_type ().get_as_type_path ());
-
-  HIR::QualifiedPathType qual_path_type (
-    qual_mappings, std::unique_ptr<HIR::Type> (qual_type),
-    std::unique_ptr<HIR::TypePath> (qual_trait),
-    path.get_qualified_path_type ().get_locus ());
-
-  translated_segment = nullptr;
-  path.get_associated_segment ()->accept_vis (*this);
-  if (translated_segment == nullptr)
-    {
-      rust_fatal_error (path.get_associated_segment ()->get_locus (),
-			"failed to translate AST TypePathSegment");
-      return;
-    }
-  std::unique_ptr<HIR::TypePathSegment> associated_segment (translated_segment);
-
-  std::vector<std::unique_ptr<HIR::TypePathSegment>> translated_segments;
-  for (auto &seg : path.get_segments ())
-    {
-      translated_segment = nullptr;
-      seg->accept_vis (*this);
-      if (translated_segment == nullptr)
-	{
-	  rust_fatal_error (seg->get_locus (),
-			    "failed to translte AST TypePathSegment");
-	}
-      translated_segments.push_back (
-	std::unique_ptr<HIR::TypePathSegment> (translated_segment));
-    }
-
-  Analysis::NodeMapping mapping (crate_num, path.get_node_id (), hirid,
-				 mappings->get_next_localdef_id (crate_num));
-  translated = new HIR::QualifiedPathInType (std::move (mapping),
-					     std::move (qual_path_type),
-					     std::move (associated_segment),
-					     std::move (translated_segments),
-					     path.get_locus ());
-}
-
-void
-ASTLoweringType::visit (AST::TraitObjectTypeOneBound &type)
-{
-  std::vector<std::unique_ptr<HIR::TypeParamBound>> bounds;
-  HIR::TypeParamBound *translated_bound
-    = ASTLoweringTypeBounds::translate (&type.get_trait_bound ());
-  bounds.push_back (std::unique_ptr<HIR::TypeParamBound> (translated_bound));
-
-  auto crate_num = mappings->get_current_crate ();
-  Analysis::NodeMapping mapping (crate_num, type.get_node_id (),
-				 mappings->get_next_hir_id (crate_num),
-				 mappings->get_next_localdef_id (crate_num));
-
-  translated = new HIR::TraitObjectType (mapping, std::move (bounds),
-					 type.get_locus (), type.is_dyn ());
-}
-
-void
-ASTLoweringType::visit (AST::TraitObjectType &type)
-{
-  std::vector<std::unique_ptr<HIR::TypeParamBound>> bounds;
-
-  for (auto &bound : type.get_type_param_bounds ())
-    {
-      HIR::TypeParamBound *translated_bound
-	= ASTLoweringTypeBounds::translate (bound.get ());
-      bounds.push_back (
-	std::unique_ptr<HIR::TypeParamBound> (translated_bound));
-    }
-
-  auto crate_num = mappings->get_current_crate ();
-  Analysis::NodeMapping mapping (crate_num, type.get_node_id (),
-				 mappings->get_next_hir_id (crate_num),
-				 mappings->get_next_localdef_id (crate_num));
-
-  translated = new HIR::TraitObjectType (mapping, std::move (bounds),
-					 type.get_locus (), type.is_dyn ());
-}
-
 HIR::Type *
 ASTLoweringBase::lower_type_no_bounds (AST::TypeNoBounds *type)
 {
@@ -824,7 +711,7 @@ ASTLoweringBase::lower_qualifiers (const AST::FunctionQualifiers &qualifiers)
 }
 
 void
-ASTLoweringBase::handle_outer_attributes (const HIR::Item &item)
+ASTLoweringBase::handle_outer_attributes (const ItemWrapper &item)
 {
   for (const auto &attr : item.get_outer_attrs ())
     {
@@ -855,7 +742,7 @@ ASTLoweringBase::handle_outer_attributes (const HIR::Item &item)
 }
 
 void
-ASTLoweringBase::handle_doc_item_attribute (const HIR::Item &item,
+ASTLoweringBase::handle_doc_item_attribute (const ItemWrapper &,
 					    const AST::Attribute &attr)
 {
   auto simple_doc_comment = attr.has_attr_input ()
@@ -878,7 +765,7 @@ ASTLoweringBase::handle_doc_item_attribute (const HIR::Item &item,
 }
 
 void
-ASTLoweringBase::handle_lang_item_attribute (const HIR::Item &item,
+ASTLoweringBase::handle_lang_item_attribute (const ItemWrapper &item,
 					     const AST::Attribute &attr)
 {
   auto &literal = static_cast<AST::AttrInputLiteral &> (attr.get_attr_input ());

@@ -1,6 +1,6 @@
 /* mklink.c creates startup code and the link command line.
 
-Copyright (C) 2000-2022 Free Software Foundation, Inc.
+Copyright (C) 2000-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -361,7 +361,7 @@ GenerateFinishCalls (functList *p)
 {
   if (p->next != NULL)
     GenerateFinishCalls (p->next);
-  printf ("   _M2_%s_finish (argc, argv, envp);\n", p->functname);
+  printf ("   _M2_%s_fini (argc, argv, envp);\n", p->functname);
 }
 
 static void
@@ -373,14 +373,14 @@ GeneratePrototypes (functList *p)
         {
           printf ("extern void _M2_%s_init (int argc, char *argv[], char *envp[]);\n",
                   p->functname);
-          printf ("extern void _M2_%s_finish (int argc, char *argv[], char *envp[]);\n",
+          printf ("extern void _M2_%s_fini (int argc, char *argv[], char *envp[]);\n",
                   p->functname);
         }
       else
         {
           printf ("extern \"C\" void _M2_%s_init (int argc, char *argv[], char *envp[]);\n",
                   p->functname);
-          printf ("extern \"C\" void _M2_%s_finish (int argc, char *argv[], char *envp[]);\n",
+          printf ("extern \"C\" void _M2_%s_fini (int argc, char *argv[], char *envp[]);\n",
                   p->functname);
         }
       p = p->next;

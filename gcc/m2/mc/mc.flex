@@ -1,7 +1,7 @@
 %{
 /* mc.flex implements lexical analysis for Modula-2.
 
-Copyright (C) 2004-2022 Free Software Foundation, Inc.
+Copyright (C) 2004-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -729,6 +729,11 @@ yywrap (void)
 
 void
 _M2_mcflex_init (void)
+{
+}
+
+void
+_M2_mcflex_fini (void)
 {
 }
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -247,6 +247,8 @@ HIRCompileBase::compute_address_for_trait_item (
   // Algo:
   // check if there is an impl-item for this trait-item-ref first
   // else assert that the trait-item-ref has an implementation
+  //
+  // FIXME this does not support super traits
 
   TyTy::TypeBoundPredicateItem predicate_item
     = predicate->lookup_associated_item (ref->get_identifier ());

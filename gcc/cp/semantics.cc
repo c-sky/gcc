@@ -3,7 +3,7 @@
    building RTL.  These routines are used both during actual parsing
    and during the instantiation of template functions.
 
-   Copyright (C) 1998-2022 Free Software Foundation, Inc.
+   Copyright (C) 1998-2023 Free Software Foundation, Inc.
    Written by Mark Mitchell (mmitchell@usa.net) based on code found
    formerly in parse.y and pt.cc.
 
@@ -2957,13 +2957,18 @@ finish_call_expr (tree fn, vec<tree, va_gc> **args, bool disallow_virtual,
       if (TREE_CODE (result) == CALL_EXPR
 	  && really_overloaded_fn (orig_fn))
 	{
-	  orig_fn = CALL_EXPR_FN (result);
-	  if (TREE_CODE (orig_fn) == COMPONENT_REF)
+	  tree sel_fn = CALL_EXPR_FN (result);
+	  if (TREE_CODE (sel_fn) == COMPONENT_REF)
 	    {
 	      /* The non-dependent result of build_new_method_call.  */
-	      orig_fn = TREE_OPERAND (orig_fn, 1);
-	      gcc_assert (BASELINK_P (orig_fn));
+	      sel_fn = TREE_OPERAND (sel_fn, 1);
+	      gcc_assert (BASELINK_P (sel_fn));
 	    }
+	  else if (TREE_CODE (sel_fn) == ADDR_EXPR)
+	    /* Our original callee wasn't wrapped in an ADDR_EXPR,
+	       so strip this ADDR_EXPR added by build_over_call.  */
+	    sel_fn = TREE_OPERAND (sel_fn, 0);
+	  orig_fn = sel_fn;
 	}
 
       result = build_call_vec (TREE_TYPE (result), orig_fn, orig_args);
@@ -4203,6 +4208,16 @@ finish_id_expression_1 (tree id_expression,
     }
   else
     {
+      if (TREE_CODE (decl) == TEMPLATE_ID_EXPR
+	  && variable_template_p (TREE_OPERAND (decl, 0))
+	  && !concept_check_p (decl))
+	/* Try resolving this variable TEMPLATE_ID_EXPR (which is always
+	   considered type-dependent) now, so that the dependence test that
+	   follows gives us the right answer: if it represents a non-dependent
+	   variable template-id then finish_template_variable will yield the
+	   corresponding non-dependent VAR_DECL.  */
+	decl = finish_template_variable (decl);
+
       bool dependent_p = type_dependent_expression_p (decl);
 
       /* If the declaration was explicitly qualified indicate
@@ -4270,15 +4285,6 @@ finish_id_expression_1 (tree id_expression,
 	/* Replace an evaluated use of the thread_local variable with
 	   a call to its wrapper.  */
 	decl = wrap;
-      else if (TREE_CODE (decl) == TEMPLATE_ID_EXPR
-	       && !dependent_p
-	       && variable_template_p (TREE_OPERAND (decl, 0))
-	       && !concept_check_p (decl))
-	{
-	  decl = finish_template_variable (decl);
-	  mark_used (decl);
-	  decl = convert_from_reference (decl);
-	}
       else if (concept_check_p (decl))
 	{
 	  /* Nothing more to do. All of the analysis for concept checks
@@ -11227,14 +11233,16 @@ finish_static_assert (tree condition, tree message, location_t location,
   if (check_for_bare_parameter_packs (condition))
     condition = error_mark_node;
 
+  /* Save the condition in case it was a concept check.  */
+  tree orig_condition = condition;
+
   if (instantiation_dependent_expression_p (condition))
     {
       /* We're in a template; build a STATIC_ASSERT and put it in
          the right place. */
-      tree assertion;
-
-      assertion = make_node (STATIC_ASSERT);
-      STATIC_ASSERT_CONDITION (assertion) = condition;
+    defer:
+      tree assertion = make_node (STATIC_ASSERT);
+      STATIC_ASSERT_CONDITION (assertion) = orig_condition;
       STATIC_ASSERT_MESSAGE (assertion) = message;
       STATIC_ASSERT_SOURCE_LOCATION (assertion) = location;
 
@@ -11247,9 +11255,6 @@ finish_static_assert (tree condition, tree message, location_t location,
 
       return;
     }
-
-  /* Save the condition in case it was a concept check.  */
-  tree orig_condition = condition;
 
   /* Fold the expression and convert it to a boolean value. */
   condition = contextual_conv_bool (condition, complain);
@@ -11265,6 +11270,10 @@ finish_static_assert (tree condition, tree message, location_t location,
 
       if (integer_zerop (condition))
 	{
+	  /* CWG2518: static_assert failure in a template is not IFNDR.  */
+	  if (processing_template_decl)
+	    goto defer;
+
 	  int sz = TREE_INT_CST_LOW (TYPE_SIZE_UNIT
 				     (TREE_TYPE (TREE_TYPE (message))));
 	  int len = TREE_STRING_LENGTH (message) / sz - 1;

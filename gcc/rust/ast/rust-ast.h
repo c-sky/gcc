@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -24,12 +24,14 @@
 #include "rust-hir-map.h"
 #include "rust-token.h"
 #include "rust-location.h"
+#include "rust-diagnostics.h"
 
 namespace Rust {
 // TODO: remove typedefs and make actual types for these
 typedef std::string Identifier;
 typedef int TupleIndex;
 struct Session;
+struct MacroExpander;
 
 namespace AST {
 // foward decl: ast visitor
@@ -950,6 +952,8 @@ public:
 
   virtual Location get_locus () const = 0;
 
+  virtual bool is_literal () const { return false; }
+
   // HACK: strictly not needed, but faster than full downcast clone
   virtual bool is_expr_without_block () const = 0;
 
@@ -1306,6 +1310,8 @@ public:
   // Returns whether the lifetime param has any lifetime bounds.
   bool has_lifetime_bounds () const { return !lifetime_bounds.empty (); }
 
+  std::vector<Lifetime> &get_lifetime_bounds () { return lifetime_bounds; }
+
   // Returns whether the lifetime param has an outer attribute.
   bool has_outer_attribute () const { return !outer_attr.is_empty (); }
 
@@ -1470,6 +1476,7 @@ private:
   // One way of parsing the macro. Probably not applicable for all macros.
   std::vector<std::unique_ptr<MetaItemInner> > parsed_items;
   bool parsed_to_meta_item = false;
+  MacroExpander *expander = nullptr;
 
 public:
   std::string as_string () const;
@@ -1494,6 +1501,7 @@ public:
     path = other.path;
     token_tree = other.token_tree;
     parsed_to_meta_item = other.parsed_to_meta_item;
+    expander = other.expander;
 
     parsed_items.reserve (other.parsed_items.size ());
     for (const auto &e : other.parsed_items)
@@ -1521,6 +1529,13 @@ public:
   // TODO: this mutable getter seems kinda dodgy
   SimplePath &get_path () { return path; }
   const SimplePath &get_path () const { return path; }
+
+  void set_expander (MacroExpander *new_expander) { expander = new_expander; }
+  MacroExpander *get_expander ()
+  {
+    rust_assert (expander);
+    return expander;
+  }
 
   void
   set_meta_item_output (std::vector<std::unique_ptr<MetaItemInner> > new_items)
@@ -1818,7 +1833,7 @@ public:
     return true;
   }
 
-  std::string as_string ()
+  std::string as_string () const
   {
     switch (kind)
       {
@@ -1842,93 +1857,6 @@ public:
 
     gcc_unreachable ();
     return "";
-  }
-};
-
-/* Basically, a "fragment" that can be incorporated into the AST, created as
- * a result of macro expansion. Really annoying to work with due to the fact
- * that macros can really expand to anything. As such, horrible representation
- * at the moment. */
-class ASTFragment
-{
-private:
-  /* basic idea: essentially, a vector of tagged unions of different AST node
-   * types. Now, this could actually be stored without a tagged union if the
-   * different AST node types had a unified parent, but that would create
-   * issues with the diamond problem or significant performance penalties. So
-   * a tagged union had to be used instead. A vector is used to represent the
-   * ability for a macro to expand to two statements, for instance. */
-
-  std::vector<SingleASTNode> nodes;
-  bool fragment_is_error;
-
-  /**
-   * We need to make a special case for Expression and Type fragments as only
-   * one Node will be extracted from the `nodes` vector
-   */
-
-  bool is_single_fragment () const { return nodes.size () == 1; }
-
-  bool is_single_fragment_kind (SingleASTNode::NodeType kind) const
-  {
-    return is_single_fragment () && nodes[0].get_kind () == kind;
-  }
-
-public:
-  ASTFragment (std::vector<SingleASTNode> nodes, bool fragment_is_error = false)
-    : nodes (std::move (nodes)), fragment_is_error (fragment_is_error)
-  {
-    if (fragment_is_error)
-      rust_assert (nodes.empty ());
-  }
-
-  ASTFragment (ASTFragment const &other)
-    : fragment_is_error (other.fragment_is_error)
-  {
-    nodes.clear ();
-    nodes.reserve (other.nodes.size ());
-    for (auto &n : other.nodes)
-      {
-	nodes.push_back (n);
-      }
-  }
-
-  ASTFragment &operator= (ASTFragment const &other)
-  {
-    fragment_is_error = other.fragment_is_error;
-    nodes.clear ();
-    nodes.reserve (other.nodes.size ());
-    for (auto &n : other.nodes)
-      {
-	nodes.push_back (n);
-      }
-
-    return *this;
-  }
-
-  static ASTFragment create_error () { return ASTFragment ({}, true); }
-
-  std::vector<SingleASTNode> &get_nodes () { return nodes; }
-  bool is_error () const { return fragment_is_error; }
-
-  bool should_expand () const { return !is_error (); }
-
-  std::unique_ptr<Expr> take_expression_fragment ()
-  {
-    rust_assert (is_single_fragment_kind (SingleASTNode::NodeType::EXPRESSION));
-    return nodes[0].take_expr ();
-  }
-
-  std::unique_ptr<Type> take_type_fragment ()
-  {
-    rust_assert (is_single_fragment_kind (SingleASTNode::NodeType::TYPE));
-    return nodes[0].take_type ();
-  }
-
-  void accept_vis (ASTVisitor &vis)
-  {
-    for (auto &node : nodes)
-      node.accept_vis (vis);
   }
 };
 

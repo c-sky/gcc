@@ -1,5 +1,5 @@
 /* The analysis "engine".
-   Copyright (C) 2019-2022 Free Software Foundation, Inc.
+   Copyright (C) 2019-2023 Free Software Foundation, Inc.
    Contributed by David Malcolm <dmalcolm@redhat.com>.
 
 This file is part of GCC.
@@ -125,11 +125,20 @@ impl_region_model_context::warn (std::unique_ptr<pending_diagnostic> d)
       return false;
     }
   if (m_eg)
-    return m_eg->get_diagnostic_manager ().add_diagnostic
-      (m_enode_for_diag, m_enode_for_diag->get_supernode (),
-       m_stmt, m_stmt_finder, std::move (d));
-  else
-    return false;
+    {
+      bool terminate_path = d->terminate_path_p ();
+      if (m_eg->get_diagnostic_manager ().add_diagnostic
+	  (m_enode_for_diag, m_enode_for_diag->get_supernode (),
+	   m_stmt, m_stmt_finder, std::move (d)))
+	{
+	  if (m_path_ctxt
+	      && terminate_path
+	      && flag_analyzer_suppress_followups)
+	    m_path_ctxt->terminate_path ();
+	  return true;
+	}
+    }
+  return false;
 }
 
 void
@@ -378,9 +387,14 @@ public:
       = (var
 	 ? m_old_smap->get_state (var_old_sval, m_eg.get_ext_state ())
 	 : m_old_smap->get_global_state ());
+    bool terminate_path = d->terminate_path_p ();
     m_eg.get_diagnostic_manager ().add_diagnostic
       (&m_sm, m_enode_for_diag, snode, stmt, m_stmt_finder,
        var, var_old_sval, current, std::move (d));
+    if (m_path_ctxt
+	&& terminate_path
+	&& flag_analyzer_suppress_followups)
+      m_path_ctxt->terminate_path ();
   }
 
   void warn (const supernode *snode, const gimple *stmt,
@@ -393,9 +407,14 @@ public:
       = (sval
 	 ? m_old_smap->get_state (sval, m_eg.get_ext_state ())
 	 : m_old_smap->get_global_state ());
+    bool terminate_path = d->terminate_path_p ();
     m_eg.get_diagnostic_manager ().add_diagnostic
       (&m_sm, m_enode_for_diag, snode, stmt, m_stmt_finder,
        NULL_TREE, sval, current, std::move (d));
+    if (m_path_ctxt
+	&& terminate_path
+	&& flag_analyzer_suppress_followups)
+      m_path_ctxt->terminate_path ();
   }
 
   /* Hook for picking more readable trees for SSA names of temporaries,
@@ -4823,17 +4842,7 @@ feasibility_state::maybe_update_for_edge (logger *logger,
       auto_cfun sentinel (src_point.get_function ());
       input_location = stmt->location;
 
-      if (const gassign *assign = dyn_cast <const gassign *> (stmt))
-	m_model.on_assignment (assign, NULL);
-      else if (const gasm *asm_stmt = dyn_cast <const gasm *> (stmt))
-	m_model.on_asm_stmt (asm_stmt, NULL);
-      else if (const gcall *call = dyn_cast <const gcall *> (stmt))
-	{
-	  bool unknown_side_effects = m_model.on_call_pre (call, NULL);
-	  m_model.on_call_post (call, unknown_side_effects, NULL);
-	}
-      else if (const greturn *return_ = dyn_cast <const greturn *> (stmt))
-	m_model.on_return (return_, NULL);
+      update_for_stmt (stmt);
     }
 
   const superedge *sedge = eedge->m_sedge;
@@ -4908,6 +4917,24 @@ feasibility_state::maybe_update_for_edge (logger *logger,
       bitmap_set_bit (m_snodes_visited, dst_snode_idx);
     }
   return true;
+}
+
+/* Update this object for the effects of STMT.  */
+
+void
+feasibility_state::update_for_stmt (const gimple *stmt)
+{
+  if (const gassign *assign = dyn_cast <const gassign *> (stmt))
+    m_model.on_assignment (assign, NULL);
+  else if (const gasm *asm_stmt = dyn_cast <const gasm *> (stmt))
+    m_model.on_asm_stmt (asm_stmt, NULL);
+  else if (const gcall *call = dyn_cast <const gcall *> (stmt))
+    {
+      bool unknown_side_effects = m_model.on_call_pre (call, NULL);
+      m_model.on_call_post (call, unknown_side_effects, NULL);
+    }
+  else if (const greturn *return_ = dyn_cast <const greturn *> (stmt))
+    m_model.on_return (return_, NULL);
 }
 
 /* Dump this object to PP.  */

@@ -1,5 +1,5 @@
 /* Classes for analyzer diagnostics.
-   Copyright (C) 2019-2022 Free Software Foundation, Inc.
+   Copyright (C) 2019-2023 Free Software Foundation, Inc.
    Contributed by David Malcolm <dmalcolm@redhat.com>.
 
 This file is part of GCC.
@@ -131,13 +131,15 @@ struct return_of_state : public event_desc
 struct final_event : public event_desc
 {
   final_event (bool colorize,
-	       tree expr, state_machine::state_t state)
+	       tree expr, state_machine::state_t state,
+	       const warning_event &event)
   : event_desc (colorize),
-    m_expr (expr), m_state (state)
+    m_expr (expr), m_state (state), m_event (event)
   {}
 
   tree m_expr;
   state_machine::state_t m_state;
+  const warning_event &m_event;
 };
 
 } /* end of namespace evdesc */
@@ -170,6 +172,10 @@ class pending_diagnostic
      Used by diagnostic_manager for early rejection of diagnostics (to avoid
      having to generate feasible execution paths for them).  */
   virtual int get_controlling_option () const = 0;
+
+  /* Vfunc to give the diagnostic the chance to terminate the execution
+     path being explored.  By default, don't terminate the path.  */
+  virtual bool terminate_path_p () const { return false; }
 
   /* Vfunc for emitting the diagnostic.  The rich_location will have been
      populated with a diagnostic_path.
@@ -344,6 +350,16 @@ class pending_diagnostic
   virtual void mark_interesting_stuff (interesting_t *)
   {
     /* Default no-op implementation.  */
+  }
+
+  /* Vfunc to give diagnostic subclasses the opportunity to reject diagnostics
+     by imposing their own additional feasibility checks on the path to a
+     given feasible_node.  */
+  virtual bool check_valid_fpath_p (const feasible_node &,
+				    const gimple *) const
+  {
+    /* Default implementation: accept this path.  */
+    return true;
   }
 };
 

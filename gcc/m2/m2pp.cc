@@ -1,6 +1,6 @@
 /* m2pp.c pretty print trees, output in Modula-2 where possible.
 
-Copyright (C) 2007-2022 Free Software Foundation, Inc.
+Copyright (C) 2007-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -547,6 +547,7 @@ m2pp_types (pretty *s)
     }
 }
 
+#ifdef DEBUGGING
 /* hextree displays the critical fields for function, block and
    bind_expr trees in raw hex.  */
 
@@ -607,6 +608,7 @@ hextree (tree t)
       killPretty (state);
     }
 }
+#endif
 
 /* translation produce a pseudo implementation module from the tree t.  */
 
@@ -2066,7 +2068,7 @@ m2pp_integer_cst (pretty *s, tree t)
 {
   char val[100];
 
-  snprintf (val, 100, "%lud", TREE_INT_CST_LOW (t));
+  snprintf (val, 100, HOST_WIDE_INT_PRINT_UNSIGNED, TREE_INT_CST_LOW (t));
   m2pp_print (s, val);
 }
 

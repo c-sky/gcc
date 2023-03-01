@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -147,8 +147,38 @@ public:
     mono_fns[dId].push_back ({ref, fn});
   }
 
+  void insert_closure_decl (const TyTy::ClosureType *ref, tree fn)
+  {
+    auto dId = ref->get_def_id ();
+    auto it = mono_closure_fns.find (dId);
+    if (it == mono_closure_fns.end ())
+      mono_closure_fns[dId] = {};
+
+    mono_closure_fns[dId].push_back ({ref, fn});
+  }
+
+  tree lookup_closure_decl (const TyTy::ClosureType *ref)
+  {
+    auto dId = ref->get_def_id ();
+    auto it = mono_closure_fns.find (dId);
+    if (it == mono_closure_fns.end ())
+      return error_mark_node;
+
+    for (auto &i : it->second)
+      {
+	const TyTy::ClosureType *t = i.first;
+	tree fn = i.second;
+
+	if (ref->is_equal (*t))
+	  return fn;
+      }
+
+    return error_mark_node;
+  }
+
   bool lookup_function_decl (HirId id, tree *fn, DefId dId = UNKNOWN_DEFID,
-			     const TyTy::BaseType *ref = nullptr)
+			     const TyTy::BaseType *ref = nullptr,
+			     const std::string &asm_name = std::string ())
   {
     // for for any monomorphized fns
     if (ref != nullptr)
@@ -163,10 +193,28 @@ public:
 	  {
 	    const TyTy::BaseType *r = e.first;
 	    tree f = e.second;
+
 	    if (ref->is_equal (*r))
 	      {
 		*fn = f;
 		return true;
+	      }
+
+	    if (DECL_ASSEMBLER_NAME_SET_P (f) && !asm_name.empty ())
+	      {
+		tree raw = DECL_ASSEMBLER_NAME_RAW (f);
+		const char *rptr = IDENTIFIER_POINTER (raw);
+
+		bool lengths_match_p
+		  = IDENTIFIER_LENGTH (raw) == asm_name.size ();
+		if (lengths_match_p
+		    && strncmp (rptr, asm_name.c_str (),
+				IDENTIFIER_LENGTH (raw))
+			 == 0)
+		  {
+		    *fn = f;
+		    return true;
+		  }
 	      }
 	  }
 	return false;
@@ -297,6 +345,11 @@ public:
     return mangler.mangle_item (ty, path);
   }
 
+  void push_closure_context (HirId id);
+  void pop_closure_context ();
+  void insert_closure_binding (HirId id, tree expr);
+  bool lookup_closure_binding (HirId id, tree *expr);
+
   std::vector<tree> &get_type_decls () { return type_decls; }
   std::vector<::Bvariable *> &get_var_decls () { return var_decls; }
   std::vector<tree> &get_const_decls () { return const_decls; }
@@ -324,8 +377,14 @@ private:
   std::vector<tree> loop_begin_labels;
   std::map<DefId, std::vector<std::pair<const TyTy::BaseType *, tree>>>
     mono_fns;
+  std::map<DefId, std::vector<std::pair<const TyTy::ClosureType *, tree>>>
+    mono_closure_fns;
   std::map<HirId, tree> implicit_pattern_bindings;
   std::map<hashval_t, tree> main_variants;
+
+  // closure bindings
+  std::vector<HirId> closure_scope_bindings;
+  std::map<HirId, std::map<HirId, tree>> closure_bindings;
 
   // To GCC middle-end
   std::vector<tree> type_decls;

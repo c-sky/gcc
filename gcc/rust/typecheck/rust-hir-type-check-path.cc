@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -235,7 +235,7 @@ TypeCheckExpr::resolve_root_path (HIR::PathInExpression &expr, size_t *offset,
 	}
 
       TyTy::BaseType *lookup = nullptr;
-      if (!context->lookup_type (ref, &lookup))
+      if (!query_type (ref, &lookup))
 	{
 	  if (is_root)
 	    {
@@ -337,7 +337,7 @@ TypeCheckExpr::resolve_segments (NodeId root_resolved_node_id,
 	  return;
 	}
 
-      auto &candidate = candidates.at (0);
+      auto &candidate = *candidates.begin ();
       prev_segment = tyseg;
       tyseg = candidate.ty;
 
@@ -383,14 +383,17 @@ TypeCheckExpr::resolve_segments (NodeId root_resolved_node_id,
 	  HirId impl_ty_id
 	    = associated_impl_block->get_type ()->get_mappings ().get_hirid ();
 	  TyTy::BaseType *impl_block_ty = nullptr;
-	  bool ok = context->lookup_type (impl_ty_id, &impl_block_ty);
+	  bool ok = query_type (impl_ty_id, &impl_block_ty);
 	  rust_assert (ok);
 
 	  if (impl_block_ty->needs_generic_substitutions ())
 	    impl_block_ty
 	      = SubstMapper::InferSubst (impl_block_ty, seg.get_locus ());
 
-	  prev_segment = prev_segment->unify (impl_block_ty);
+	  prev_segment = unify_site (seg.get_mappings ().get_hirid (),
+				     TyTy::TyWithLocation (prev_segment),
+				     TyTy::TyWithLocation (impl_block_ty),
+				     seg.get_locus ());
 	}
 
       if (tyseg->needs_generic_substitutions ())
@@ -457,6 +460,11 @@ TypeCheckExpr::resolve_segments (NodeId root_resolved_node_id,
 	     resolved_node_id))
     {
       resolver->insert_resolved_type (expr_mappings.get_nodeid (),
+				      resolved_node_id);
+    }
+  else
+    {
+      resolver->insert_resolved_misc (expr_mappings.get_nodeid (),
 				      resolved_node_id);
     }
 

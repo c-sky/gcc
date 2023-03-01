@@ -1,6 +1,6 @@
 (* M2Options.mod initializes the user options.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -24,12 +24,15 @@ IMPLEMENTATION MODULE M2Options ;
 
 IMPORT CmdArgs ;
 FROM SArgs IMPORT GetArg, Narg ;
-FROM M2Search IMPORT PrependSearchPath, SetDefExtension, SetModExtension ;
-FROM M2Printf IMPORT printf0, printf1 ;
+FROM M2Search IMPORT SetDefExtension, SetModExtension ;
+FROM PathName IMPORT DumpPathName, AddInclude ;
+FROM M2Printf IMPORT printf0, printf1, fprintf1 ;
+FROM FIO IMPORT StdErr ;
 FROM libc IMPORT exit ;
 FROM Debug IMPORT Halt ;
 FROM m2linemap IMPORT location_t ;
 FROM m2configure IMPORT FullPathCPP ;
+
 
 FROM DynamicStrings IMPORT String, Length, InitString, Mark, Slice, EqualArray,
                            InitStringCharStar, ConCatChar, ConCat, KillString,
@@ -49,10 +52,18 @@ FROM DynamicStrings IMPORT String, Length, InitString, Mark, Slice, EqualArray,
 
 CONST
    Debugging = FALSE ;
+   DefaultRuntimeModuleOverride = "m2iso:RTentity,m2iso:Storage,m2iso:SYSTEM,m2iso:M2RTS,m2iso:RTExceptions,m2iso:IOLink" ;
 
 VAR
+   M2Prefix,
+   M2PathName,
    Barg,
+   MDarg,
+   MMDarg,
+   MQarg,
+   CmdLineObj,
    SaveTempsDir,
+   DumpDir,
    GenModuleListFilename,
    UselistFilename,
    RuntimeModuleOverride,
@@ -110,6 +121,49 @@ END DSdbExit ;
 
 
 (*
+   SetM2Prefix - assign arg to M2Prefix.
+*)
+
+PROCEDURE SetM2Prefix (arg: ADDRESS) ;
+BEGIN
+   M2Prefix := KillString (M2Prefix) ;
+   M2Prefix := InitStringCharStar (arg)
+END SetM2Prefix ;
+
+
+(*
+   GetM2Prefix - return M2Prefix as a C string.
+*)
+
+PROCEDURE GetM2Prefix () : ADDRESS ;
+BEGIN
+   RETURN string (M2Prefix)
+END GetM2Prefix ;
+
+
+(*
+   SetM2PathName - assign arg to M2PathName.
+*)
+
+PROCEDURE SetM2PathName (arg: ADDRESS) ;
+BEGIN
+   M2PathName := KillString (M2PathName) ;
+   M2PathName := InitStringCharStar (arg) ;
+   (* fprintf1 (StdErr, "M2PathName = %s\n", M2PathName)  *)
+END SetM2PathName ;
+
+
+(*
+   GetM2PathName - return M2PathName as a C string.
+*)
+
+PROCEDURE GetM2PathName () : ADDRESS ;
+BEGIN
+   RETURN string (M2PathName)
+END GetM2PathName ;
+
+
+(*
    SetB - assigns Barg to arg.
 *)
 
@@ -128,6 +182,94 @@ PROCEDURE GetB () : ADDRESS ;
 BEGIN
    RETURN string (Barg)
 END GetB ;
+
+
+(*
+   SetMD - assigns MDarg to the filename from arg.
+   This overrides any previous MMD.
+*)
+
+PROCEDURE SetMD (arg: ADDRESS) ;
+BEGIN
+   MMDarg := KillString (MMDarg) ;
+   MDarg := KillString (MDarg) ;
+   MDarg := InitStringCharStar (arg)
+END SetMD ;
+
+
+(*
+   GetMD - returns MDarg filename as a c-string or NIL if it was never set.
+*)
+
+PROCEDURE GetMD () : ADDRESS ;
+BEGIN
+   RETURN string (MDarg)
+END GetMD ;
+
+
+(*
+   SetMMD - assigns MMDarg to the filename from arg.
+   This overrides any previous MD.
+*)
+
+PROCEDURE SetMMD (arg: ADDRESS) ;
+BEGIN
+   MDarg := KillString (MDarg) ;
+   MMDarg := KillString (MMDarg) ;
+   MMDarg := InitStringCharStar (arg)
+END SetMMD ;
+
+
+(*
+   GetMMD - returns MMDarg filename as a c-string or NIL if it was never set.
+*)
+
+PROCEDURE GetMMD () : ADDRESS ;
+BEGIN
+   RETURN string (MMDarg)
+END GetMMD ;
+
+
+(*
+   SetMQ - assigns MQarg to the filename from arg.
+*)
+
+PROCEDURE SetMQ (arg: ADDRESS) ;
+BEGIN
+   MQarg := KillString (MQarg) ;
+   MQarg := InitStringCharStar (arg)
+END SetMQ ;
+
+
+(*
+   GetMMD - returns MQarg filename as a c-string or NIL if it was never set.
+*)
+
+PROCEDURE GetMQ () : ADDRESS ;
+BEGIN
+   RETURN string (MQarg)
+END GetMQ ;
+
+
+(*
+   SetObj - assigns CmdLineObj to the filename from arg.
+*)
+
+PROCEDURE SetObj (arg: ADDRESS) ;
+BEGIN
+   CmdLineObj := KillString (CmdLineObj) ;
+   CmdLineObj := InitStringCharStar (arg)
+END SetObj ;
+
+
+(*
+   GetObj - returns CmdLineObj filename as a c-string or NIL if it was never set.
+*)
+
+PROCEDURE GetObj () : ADDRESS ;
+BEGIN
+   RETURN string (CmdLineObj)
+END GetObj ;
 
 
 (*
@@ -360,6 +502,25 @@ PROCEDURE GetCpp () : BOOLEAN ;
 BEGIN
    RETURN CPreProcessor
 END GetCpp ;
+
+
+(*
+   SetPPOnly - set the PPonly (preprocess only) to value.
+*)
+
+PROCEDURE SetPPOnly (value: BOOLEAN) ;
+BEGIN
+   PPonly := value
+END SetPPOnly ;
+
+(*
+   GetPPOnly - get the PPonly (preprocess only).
+*)
+
+PROCEDURE GetPPOnly () : BOOLEAN ;
+BEGIN
+   RETURN PPonly
+END GetPPOnly ;
 
 
 (*
@@ -786,13 +947,13 @@ PROCEDURE SetSearchPath (arg: ADDRESS) ;
 VAR
    s: String ;
 BEGIN
-   s := InitStringCharStar(arg) ;
+   s := InitStringCharStar (arg) ;
+   AddInclude (M2PathName, s) ;
    IF Debugging
    THEN
-      printf1("setting search path to: %s\n", s)
+      DumpPathName ("path name entries: ")
    END ;
-   PrependSearchPath(s) ;
-   s := KillString(s)
+   s := KillString (s)
 END SetSearchPath ;
 
 
@@ -1048,7 +1209,8 @@ END SetSaveTemps ;
 
 PROCEDURE SetSaveTempsDir (arg: ADDRESS) ;
 BEGIN
-   SaveTempsDir := InitStringCharStar (arg)
+   SaveTempsDir := InitStringCharStar (arg) ;
+   SaveTemps := TRUE
 END SetSaveTempsDir ;
 
 
@@ -1061,6 +1223,24 @@ BEGIN
    RETURN SaveTempsDir
 END GetSaveTempsDir ;
 
+(*
+   SetDumpDir - Set the dump dir.
+*)
+
+PROCEDURE SetDumpDir (arg: ADDRESS) ;
+BEGIN
+   DumpDir := InitStringCharStar (arg)
+END SetDumpDir ;
+
+
+(*
+   GetDumpDir - return DumpDir or NIL.
+*)
+
+PROCEDURE GetDumpDir () : String ;
+BEGIN
+   RETURN DumpDir
+END GetDumpDir ;
 
 (*
    SetScaffoldDynamic - set the -fscaffold-dynamic flag.
@@ -1182,7 +1362,7 @@ END SetShared ;
 
 BEGIN
    cflag                        := FALSE ;  (* -c.  *)
-   RuntimeModuleOverride        := NIL ;
+   RuntimeModuleOverride        := InitString (DefaultRuntimeModuleOverride) ;
    CppArgs                      := InitString ('') ;
    Pim                          :=  TRUE ;
    Pim2                         := FALSE ;
@@ -1245,5 +1425,11 @@ BEGIN
    GenModuleListFilename        := NIL ;
    SharedFlag                   := FALSE ;
    Barg                         := NIL ;
-   SaveTempsDir                 := NIL
+   MDarg                        := NIL ;
+   MMDarg                       := NIL ;
+   MQarg                        := NIL ;
+   SaveTempsDir                 := NIL ;
+   DumpDir                      := NIL ;
+   M2Prefix                     := InitString ('') ;
+   M2PathName                   := InitString ('')
 END M2Options.

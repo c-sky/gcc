@@ -1,5 +1,5 @@
 ;; Machine description for AArch64 AdvSIMD architecture.
-;; Copyright (C) 2011-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2011-2023 Free Software Foundation, Inc.
 ;; Contributed by ARM Ltd.
 ;;
 ;; This file is part of GCC.
@@ -840,7 +840,7 @@
 )
 
 ;; The intrinsic version of integer ABS must not be allowed to
-;; combine with any operation with an integerated ABS step, such
+;; combine with any operation with an integrated ABS step, such
 ;; as SABD.
 (define_insn "aarch64_abs<mode>"
   [(set (match_operand:VSDQ_I_DI 0 "register_operand" "=w")
@@ -1064,7 +1064,7 @@
 		(match_operand:<VEL> 1 "aarch64_simd_nonimmediate_operand" "w,?r,Utv"))
 	    (match_operand:VALL_F16 3 "register_operand" "0,0,0")
 	    (match_operand:SI 2 "immediate_operand" "i,i,i")))]
-  "TARGET_SIMD"
+  "TARGET_SIMD && exact_log2 (INTVAL (operands[2])) >= 0"
   {
    int elt = ENDIAN_LANE_N (<nunits>, exact_log2 (INTVAL (operands[2])));
    operands[2] = GEN_INT ((HOST_WIDE_INT) 1 << elt);
@@ -1093,7 +1093,7 @@
 		  [(match_operand:SI 4 "immediate_operand" "i")])))
 	    (match_operand:VALL_F16 1 "register_operand" "0")
 	    (match_operand:SI 2 "immediate_operand" "i")))]
-  "TARGET_SIMD"
+  "TARGET_SIMD && exact_log2 (INTVAL (operands[2])) >= 0"
   {
     int elt = ENDIAN_LANE_N (<nunits>, exact_log2 (INTVAL (operands[2])));
     operands[2] = GEN_INT (HOST_WIDE_INT_1 << elt);
@@ -1114,7 +1114,7 @@
 		  [(match_operand:SI 4 "immediate_operand" "i")])))
 	    (match_operand:VALL_F16_NO_V2Q 1 "register_operand" "0")
 	    (match_operand:SI 2 "immediate_operand" "i")))]
-  "TARGET_SIMD"
+  "TARGET_SIMD && exact_log2 (INTVAL (operands[2])) >= 0"
   {
     int elt = ENDIAN_LANE_N (<nunits>, exact_log2 (INTVAL (operands[2])));
     operands[2] = GEN_INT (HOST_WIDE_INT_1 << elt);
@@ -9153,7 +9153,7 @@
   [(set (match_operand:V4SF 0 "register_operand" "=w")
         (plus: V4SF (match_operand:V4SF 1 "register_operand" "0")
                     (unspec:V4SF [(match_operand:V8BF 2 "register_operand" "w")
-                                  (match_operand:VBF 3 "register_operand" "w")
+                                  (match_operand:VBF 3 "register_operand" "x")
                                   (match_operand:SI 4 "const_int_operand" "n")]
                      BF_MLA)))]
   "TARGET_BF16_SIMD"

@@ -1,6 +1,6 @@
 (* SymbolTable.def provides access to the symbol table.
 
-Copyright (C) 2001-2022 Free Software Foundation, Inc.
+Copyright (C) 2001-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius.mulley@southwales.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -191,6 +191,7 @@ EXPORT QUALIFIED NulSym,
                  PutProcedureEndQuad,
                  PutProcedureScopeQuad,
                  PutProcedureReachable,
+                 PutProcedureNoReturn, IsProcedureNoReturn,
                  PutReadQuad, RemoveReadQuad,
                  PutWriteQuad, RemoveWriteQuad,
                  PutGnuAsm, PutGnuAsmOutput, PutGnuAsmInput, PutGnuAsmTrash,
@@ -335,6 +336,7 @@ EXPORT QUALIFIED NulSym,
                  PutModuleContainsBuiltin, IsBuiltinInModule,
 		 HasVarParameters,
                  GetErrorScope,
+                 GetLibName, PutLibName,
 
                  IsSizeSolved,
                  IsOffsetSolved,
@@ -587,7 +589,21 @@ PROCEDURE MakeProcedure (tok: CARDINAL; ProcedureName: Name) : CARDINAL ;
    MakeProcedureCtorExtern - creates an extern ctor procedure
 *)
 
-PROCEDURE MakeProcedureCtorExtern (tokenno: CARDINAL; modulename: Name) : CARDINAL ;
+PROCEDURE MakeProcedureCtorExtern (tokenno: CARDINAL; libname, modulename: Name) : CARDINAL ;
+
+
+(*
+   PutLibName - places libname into defimp or module sym.
+*)
+
+PROCEDURE PutLibName (sym: CARDINAL; libname: Name) ;
+
+
+(*
+   GetLibName - returns libname associated with a defimp or module sym.
+*)
+
+PROCEDURE GetLibName (sym: CARDINAL) : Name ;
 
 
 (*
@@ -1274,7 +1290,7 @@ PROCEDURE PutProcedureInline (Sym: CARDINAL) ;
 
 
 (*
-   IsProcedureBuiltin - returns TRUE if this procedure was declared as inlined.
+   IsProcedureInline - returns TRUE if this procedure was declared as inlined.
 *)
 
 PROCEDURE IsProcedureInline (Sym: CARDINAL) : BOOLEAN ;
@@ -1634,6 +1650,21 @@ PROCEDURE PutProcedureReachable (Sym: CARDINAL) ;
 *)
 
 PROCEDURE IsProcedureReachable (Sym: CARDINAL) : BOOLEAN ;
+
+
+(*
+   PutProcedureNoReturn - places value into the no return attribute
+                          field of procedure sym.
+*)
+
+PROCEDURE PutProcedureNoReturn (Sym: CARDINAL; value: BOOLEAN) ;
+
+
+(*
+   IsProcedureNoReturn - returns TRUE if this procedure never returns.
+*)
+
+PROCEDURE IsProcedureNoReturn (Sym: CARDINAL) : BOOLEAN ;
 
 
 (*

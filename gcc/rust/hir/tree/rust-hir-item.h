@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Free Software Foundation, Inc.
+// Copyright (C) 2020-2023 Free Software Foundation, Inc.
 
 // This file is part of GCC.
 
@@ -571,13 +571,15 @@ public:
 private:
   VisType vis_type;
   HIR::SimplePath path;
+  Location locus;
 
   // should this store location info?
 
 public:
   Visibility (VisType vis_type,
-	      HIR::SimplePath path = HIR::SimplePath::create_empty ())
-    : vis_type (vis_type), path (std::move (path))
+	      HIR::SimplePath path = HIR::SimplePath::create_empty (),
+	      Location locus = Location ())
+    : vis_type (vis_type), path (std::move (path)), locus (locus)
   {}
 
   // Returns whether visibility is in an error state.
@@ -2394,6 +2396,8 @@ public:
     return outer_attrs;
   }
 
+  Location get_trait_locus () const override { return get_locus (); }
+
 protected:
   // Clone function implementation as (not pure) virtual method
   TraitItemFunc *clone_trait_item_impl () const override
@@ -2479,6 +2483,8 @@ public:
   {
     return outer_attrs;
   }
+
+  Location get_trait_locus () const override { return get_locus (); }
 
 protected:
   // Clone function implementation as (not pure) virtual method
@@ -2566,6 +2572,8 @@ public:
   {
     return outer_attrs;
   }
+
+  Location get_trait_locus () const override { return get_locus (); }
 
 protected:
   // Clone function implementation as (not pure) virtual method

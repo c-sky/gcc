@@ -1,6 +1,6 @@
 /* Gwrapc.c wrap libc functions for mc.
 
-Copyright (C) 2005-2022 Free Software Foundation, Inc.
+Copyright (C) 2005-2023 Free Software Foundation, Inc.
 Contributed by Gaius Mulley <gaius@glam.ac.uk>.
 
 This file is part of GNU Modula-2.
@@ -167,14 +167,14 @@ wrapc_signbitf (float r)
 /* init constructor for the module.  */
 
 void
-_M2_wrapc_init ()
+_M2_wrapc_init (int argc, char *argv[], char *envp[])
 {
 }
 
 /* finish deconstructor for the module.  */
 
 void
-_M2_wrapc_finish ()
+_M2_wrapc_fini (int argc, char *argv[], char *envp[])
 {
 }
 

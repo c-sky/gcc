@@ -1080,12 +1080,6 @@ slpeel_tree_duplicate_loop_to_edge_cfg (class loop *loop,
   /* Allow duplication of outer loops.  */
   if (scalar_loop->inner)
     duplicate_outer_loop = true;
-  /* Check whether duplication is possible.  */
-  if (!can_copy_bbs_p (pbbs, scalar_loop->num_nodes))
-    {
-      free (bbs);
-      return NULL;
-    }
 
   /* Generate new loop structure.  */
   new_loop = duplicate_loop (scalar_loop, loop_outer (scalar_loop));
@@ -1329,7 +1323,11 @@ slpeel_can_duplicate_loop_p (const class loop *loop, const_edge e)
       || (e != exit_e && e != entry_e))
     return false;
 
-  return true;
+  basic_block *bbs = XNEWVEC (basic_block, loop->num_nodes);
+  get_loop_body_with_size (loop, bbs, loop->num_nodes);
+  bool ret = can_copy_bbs_p (bbs, loop->num_nodes);
+  free (bbs);
+  return ret;
 }
 
 /* Function vect_get_loop_location.
@@ -1386,6 +1384,50 @@ iv_phi_p (stmt_vec_info stmt_info)
   if (STMT_VINFO_DEF_TYPE (stmt_info) == vect_reduction_def
       || STMT_VINFO_DEF_TYPE (stmt_info) == vect_double_reduction_def)
     return false;
+
+  return true;
+}
+
+/* Return true if vectorizer can peel for nonlinear iv.  */
+static bool
+vect_can_peel_nonlinear_iv_p (loop_vec_info loop_vinfo,
+			      enum vect_induction_op_type induction_type)
+{
+  tree niters_skip;
+  /* Init_expr will be update by vect_update_ivs_after_vectorizer,
+     if niters or vf is unkown:
+     For shift, when shift mount >= precision, there would be UD.
+     For mult, don't known how to generate
+     init_expr * pow (step, niters) for variable niters.
+     For neg, it should be ok, since niters of vectorized main loop
+     will always be multiple of 2.  */
+  if ((!LOOP_VINFO_NITERS_KNOWN_P (loop_vinfo)
+       || !LOOP_VINFO_VECT_FACTOR (loop_vinfo).is_constant ())
+      && induction_type != vect_step_op_neg)
+    {
+      if (dump_enabled_p ())
+	dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
+			 "Peeling for epilogue is not supported"
+			 " for nonlinear induction except neg"
+			 " when iteration count is unknown.\n");
+      return false;
+    }
+
+  /* Also doens't support peel for neg when niter is variable.
+     ??? generate something like niter_expr & 1 ? init_expr : -init_expr?  */
+  niters_skip = LOOP_VINFO_MASK_SKIP_NITERS (loop_vinfo);
+  if ((niters_skip != NULL_TREE
+       && TREE_CODE (niters_skip) != INTEGER_CST)
+      || (!vect_use_loop_mask_for_alignment_p (loop_vinfo)
+	  && LOOP_VINFO_PEELING_FOR_ALIGNMENT (loop_vinfo) < 0))
+    {
+      if (dump_enabled_p ())
+	dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
+			 "Peeling for alignement is not supported"
+			 " for nonlinear induction when niters_skip"
+			 " is not constant.\n");
+      return false;
+    }
 
   return true;
 }
@@ -2820,7 +2862,6 @@ vect_do_peeling (loop_vec_info loop_vinfo, tree niters, tree nitersm1,
 	}
     }
 
-  dump_user_location_t loop_loc = find_loop_location (loop);
   if (vect_epilogues)
     /* Make sure to set the epilogue's epilogue scalar loop, such that we can
        use the original scalar loop as remaining epilogue if necessary.  */
@@ -2830,20 +2871,11 @@ vect_do_peeling (loop_vec_info loop_vinfo, tree niters, tree nitersm1,
   if (prolog_peeling)
     {
       e = loop_preheader_edge (loop);
-      if (!slpeel_can_duplicate_loop_p (loop, e))
-	{
-	  dump_printf_loc (MSG_MISSED_OPTIMIZATION, loop_loc,
-			   "loop can't be duplicated to preheader edge.\n");
-	  gcc_unreachable ();
-	}
+      gcc_checking_assert (slpeel_can_duplicate_loop_p (loop, e));
+
       /* Peel prolog and put it on preheader edge of loop.  */
       prolog = slpeel_tree_duplicate_loop_to_edge_cfg (loop, scalar_loop, e);
-      if (!prolog)
-	{
-	  dump_printf_loc (MSG_MISSED_OPTIMIZATION, loop_loc,
-			   "slpeel_tree_duplicate_loop_to_edge_cfg failed.\n");
-	  gcc_unreachable ();
-	}
+      gcc_assert (prolog);
       prolog->force_vectorize = false;
       slpeel_update_phi_nodes_for_loops (loop_vinfo, prolog, loop, true);
       first_loop = prolog;
@@ -2905,12 +2937,8 @@ vect_do_peeling (loop_vec_info loop_vinfo, tree niters, tree nitersm1,
   if (epilog_peeling)
     {
       e = single_exit (loop);
-      if (!slpeel_can_duplicate_loop_p (loop, e))
-	{
-	  dump_printf_loc (MSG_MISSED_OPTIMIZATION, loop_loc,
-			   "loop can't be duplicated to exit edge.\n");
-	  gcc_unreachable ();
-	}
+      gcc_checking_assert (slpeel_can_duplicate_loop_p (loop, e));
+
       /* Peel epilog and put it on exit edge of loop.  If we are vectorizing
 	 said epilog then we should use a copy of the main loop as a starting
 	 point.  This loop may have already had some preliminary transformations
@@ -2920,12 +2948,8 @@ vect_do_peeling (loop_vec_info loop_vinfo, tree niters, tree nitersm1,
 	 vectorizing.  */
       epilog = vect_epilogues ? get_loop_copy (loop) : scalar_loop;
       epilog = slpeel_tree_duplicate_loop_to_edge_cfg (loop, epilog, e);
-      if (!epilog)
-	{
-	  dump_printf_loc (MSG_MISSED_OPTIMIZATION, loop_loc,
-			   "slpeel_tree_duplicate_loop_to_edge_cfg failed.\n");
-	  gcc_unreachable ();
-	}
+      gcc_assert (epilog);
+
       epilog->force_vectorize = false;
       slpeel_update_phi_nodes_for_loops (loop_vinfo, loop, epilog, false);
 
@@ -3433,7 +3457,7 @@ vect_loop_versioning (loop_vec_info loop_vinfo,
   tree cost_name = NULL_TREE;
   profile_probability prob2 = profile_probability::uninitialized ();
   if (cond_expr
-      && !integer_truep (cond_expr)
+      && EXPR_P (cond_expr)
       && (version_niter
 	  || version_align
 	  || version_alias
@@ -3667,6 +3691,7 @@ vect_loop_versioning (loop_vec_info loop_vinfo,
   if (cost_name && TREE_CODE (cost_name) == SSA_NAME)
     {
       gimple *def = SSA_NAME_DEF_STMT (cost_name);
+      gcc_assert (gimple_bb (def) == condition_bb);
       /* All uses of the cost check are 'true' after the check we
 	 are going to insert.  */
       replace_uses_by (cost_name, boolean_true_node);
