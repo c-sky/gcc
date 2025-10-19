@@ -21,7 +21,7 @@
 
 
 MULTILIB_EXCEPTIONS  =
-MULTILIB_OSDIRNAMES = ./ ./ck807 ./ck860 ./ ./soft-fp ./hard-fp
+MULTILIB_OSDIRNAMES = . ck807 ck860 . soft-fp hard-fp
 
 # Arch variants.
 MULTILIB_OPTIONS     += mcpu=ck810f/mcpu=ck807f/mcpu=ck860f
