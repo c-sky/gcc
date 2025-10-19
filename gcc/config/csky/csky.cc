@@ -2589,11 +2589,11 @@ csky_option_override (void)
 
   /* Create the default target_options structure.  We need this early
      to configure the overall build target.  */
-  target_option_default_node = target_option_current_node
-    = build_target_option_node (&global_options, &global_options_set);
+  tree orig_tree =
+    build_target_option_node (&global_options, &global_options_set);
 
   csky_configure_build_target (&csky_active_target,
-			      TREE_TARGET_OPTION (target_option_default_node),
+			      TREE_TARGET_OPTION (orig_tree),
 			      &global_options_set);
 
 #ifdef SUBTARGET_OVERRIDE_OPTIONS
@@ -2757,10 +2757,6 @@ csky_option_override (void)
 
   /* TODO  */
 
-  /* Resynchronize the saved target options.  */
-  cl_target_option_save (TREE_TARGET_OPTION (target_option_default_node),
-			 &global_options, &global_options_set);
-
 #ifdef ENABLE_TPF_DEBUG
   /* Don't emit DWARF4 unless specifically selected.  The TPF
      debuggers do not yet support DWARF 3/4.  */
@@ -2774,6 +2770,10 @@ csky_option_override (void)
      since it tends to increase register pressure.  */
   if (!OPTION_SET_P (flag_schedule_insns))
     flag_schedule_insns = 0;
+
+  /* Resynchronize the saved target options.  */
+  target_option_default_node = target_option_current_node
+    = build_target_option_node (&global_options, &global_options_set);
 
   csky_add_gc_roots ();
 }
