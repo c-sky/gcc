@@ -126,6 +126,9 @@ const unsigned struct_kernel_stat64_sz = 0;
 #    elif defined(__loongarch__)
 const unsigned struct_kernel_stat_sz = 128;
 const unsigned struct_kernel_stat64_sz = 0;
+#elif defined(__csky__)
+  const unsigned struct_kernel_stat_sz = 80;
+  const unsigned struct_kernel_stat64_sz = 104;
 #    endif
 struct __sanitizer_perf_event_attr {
   unsigned type;
@@ -146,7 +149,7 @@ const unsigned struct_kexec_segment_sz = 4 * sizeof(unsigned long);
 
 #if SANITIZER_LINUX
 
-#if defined(__powerpc64__) || defined(__s390__) || defined(__loongarch__)
+#if defined(__powerpc64__) || defined(__s390__) || defined(__loongarch__) || defined(__csky__)
 const unsigned struct___old_kernel_stat_sz = 0;
 #elif !defined(__sparc__)
 const unsigned struct___old_kernel_stat_sz = 32;
@@ -528,7 +531,7 @@ typedef unsigned long long __sanitizer_eventfd_t;
 
 #if SANITIZER_LINUX
 #    if defined(_LP64) || defined(__x86_64__) || defined(__powerpc__) || \
-        defined(__mips__) || defined(__hexagon__)
+	defined(__mips__) || defined(__hexagon__) || defined(__csky__)
 typedef unsigned __sanitizer___kernel_uid_t;
 typedef unsigned __sanitizer___kernel_gid_t;
 #else
@@ -541,7 +544,7 @@ typedef long long __sanitizer___kernel_off_t;
 typedef long __sanitizer___kernel_off_t;
 #endif
 
-#if defined(__powerpc__) || defined(__mips__)
+#if defined(__powerpc__) || defined(__mips__) || defined(__csky__)
 typedef unsigned int __sanitizer___kernel_old_uid_t;
 typedef unsigned int __sanitizer___kernel_old_gid_t;
 #else

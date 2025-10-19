@@ -300,8 +300,13 @@ uptr internal_write(fd_t fd, const void *buf, uptr count) {
 
 uptr internal_ftruncate(fd_t fd, uptr size) {
   sptr res;
+#    if SANITIZER_LINUX && defined(__csky__)
+  HANDLE_EINTR(res,
+               (sptr)internal_syscall(SYSCALL(ftruncate64), fd, (OFF_T)size));
+#    else
   HANDLE_EINTR(res,
                (sptr)internal_syscall(SYSCALL(ftruncate), fd, (OFF_T)size));
+#    endif
   return res;
 }
 
@@ -540,7 +545,7 @@ uptr internal_unlink(const char *path) {
 }
 
 uptr internal_rename(const char *oldpath, const char *newpath) {
-#    if (defined(__riscv) || defined(__loongarch__)) && defined(__linux__)
+#    if (defined(__riscv) || defined(__loongarch__) || defined(__csky__)) && defined(__linux__)
   return internal_syscall(SYSCALL(renameat2), AT_FDCWD, (uptr)oldpath, AT_FDCWD,
                           (uptr)newpath, 0);
 #    elif SANITIZER_LINUX
@@ -853,7 +858,15 @@ uptr internal_getdents(fd_t fd, struct linux_dirent *dirp, unsigned int count) {
 }
 
 uptr internal_lseek(fd_t fd, OFF_T offset, int whence) {
+#    if SANITIZER_LINUX && defined(__csky__)
+  long long res;
+  int rc = internal_syscall(SYSCALL(llseek), fd,
+			    (long) (((u64)(offset)) >> 32),
+			    (long) offset, &res, whence);
+  return rc ? rc : res;
+#    else
   return internal_syscall(SYSCALL(lseek), fd, offset, whence);
+#    endif
 }
 
 #    if SANITIZER_LINUX
@@ -2569,6 +2582,11 @@ static void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
   *bp = ucontext->uc_mcontext.regs[29];
   *sp = ucontext->uc_mcontext.sp;
 #    endif
+#elif defined(__csky__)
+  ucontext_t *ucontext = (ucontext_t*)context;
+  *pc = ucontext->uc_mcontext.__gregs.__pc;
+  *bp = ucontext->uc_mcontext.__gregs.__regs[5];
+  *sp = ucontext->uc_mcontext.__gregs.__usp;
 #  elif defined(__hppa__)
   ucontext_t *ucontext = (ucontext_t *)context;
   *pc = ucontext->uc_mcontext.sc_iaoq[0];

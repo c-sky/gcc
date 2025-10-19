@@ -658,6 +658,8 @@ csky_default_logical_op_non_short_circuit (void)
 #undef	TARGET_CANNOT_COPY_INSN_P
 #define TARGET_CANNOT_COPY_INSN_P csky_cannot_copy_insn_p
 
+#undef TARGET_ASAN_SHADOW_OFFSET
+#define TARGET_ASAN_SHADOW_OFFSET csky_asan_shadow_offset
 
 /******************************************************************
  *			Assembler Format			  *
@@ -7325,6 +7327,13 @@ csky_mangle_type (const_tree type)
 
   /* Use the default mangling.  */
   return NULL;
+}
+
+/* Implement TARGET_ASAN_SHADOW_OFFSET.  */
+static unsigned HOST_WIDE_INT
+csky_asan_shadow_offset (void)
+{
+  return 0x0aaa0000;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;

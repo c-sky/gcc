@@ -85,6 +85,8 @@ case "${target}" in
 		TSAN_TARGET_DEPENDENT_OBJECTS=tsan_rtl_loongarch64.lo
 	fi
 	;;
+  csky*-*-linux*)
+	;;
   *)
 	UNSUPPORTED=1
 	;;

@@ -160,6 +160,14 @@
 // || `[0x36000000, 0x39ffffff]` || ShadowGap  ||
 // || `[0x30000000, 0x35ffffff]` || LowShadow  ||
 // || `[0x00000000, 0x2fffffff]` || LowMem     ||
+//
+// Default Linux/CSKY mapping:
+// || `[0x2aaa0000, 0xffffffff]` || HighMem    ||
+// || `[0x0fff4000, 0x2aa9ffff]` || HighShadow ||
+// || `[0x0bff4000, 0x0fff3fff]` || ShadowGap  ||
+// || `[0x0aaa0000, 0x0bff3fff]` || LowShadow  ||
+// || `[0x00000000, 0x0aa9ffff]` || LowMem     ||
+//
 
 #define ASAN_SHADOW_SCALE 3
 
@@ -169,6 +177,8 @@
 #  if SANITIZER_ANDROID
 #    define ASAN_SHADOW_OFFSET_DYNAMIC
 #  elif defined(__mips__)
+#    define ASAN_SHADOW_OFFSET_CONST 0x0aaa0000
+#  elif defined(__csky__)
 #    define ASAN_SHADOW_OFFSET_CONST 0x0aaa0000
 #  elif SANITIZER_FREEBSD
 #    define ASAN_SHADOW_OFFSET_CONST 0x40000000
