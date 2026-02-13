@@ -17,7 +17,7 @@ namespace __sanitizer {
 
 static const u32 kStackTraceMax = 256;
 
-#if SANITIZER_LINUX &&  (defined(__sparc__) || defined(__mips__))
+#if SANITIZER_LINUX &&  (defined(__sparc__) || defined(__mips__) || defined(__csky__))
 # define SANITIZER_CAN_FAST_UNWIND 0
 #elif SANITIZER_WINDOWS
 # define SANITIZER_CAN_FAST_UNWIND 0
@@ -79,6 +79,8 @@ uptr StackTrace::GetPreviousInstructionPc(uptr pc) {
   return pc - 4;
 #elif defined(__sparc__) || defined(__mips__)
   return pc - 8;
+#elif defined(__csky__)
+  return pc - 2;
 #else
   return pc - 1;
 #endif
