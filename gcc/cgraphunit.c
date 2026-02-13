@@ -2077,7 +2077,6 @@ node_cmp (const void *pa, const void *pb)
 #ifdef TARGET_FUNCS_SHARE_CONSTANT_POOL
 /* decides whether the function is switching section or not */
 static section *old_section = NULL;
-static bool old_section_initialized = false;
 static bool
 function_is_switching_section(tree decl)
 {
@@ -2086,12 +2085,6 @@ function_is_switching_section(tree decl)
     return true;
 
   section *new_section = function_section (decl);
-  if (!old_section_initialized)
-    {
-      old_section = new_section;
-      old_section_initialized = true;
-      return false;
-    }
   if (old_section != new_section)
     {
       if (new_section->common.flags & SECTION_FORGET)
@@ -2148,7 +2141,6 @@ expand_all_functions (void)
       // node_process_list[i] is 3
       // indicates next function will switch section.
       pre_func_no = -1;
-      old_section_initialized = false;
       for (i = new_order_pos - 1; i >= 0; i--)
         {
           node = order[i];
@@ -2160,6 +2152,7 @@ expand_all_functions (void)
               if (pre_func_no == -1)
                 {
                   pre_func_no = i;
+                  old_section = function_section (node->decl);
                   continue;
                 }
               if (function_is_switching_section(node->decl))
@@ -2344,7 +2337,6 @@ output_in_order (bool no_reorder)
   if (TARGET_FUNCS_SHARE_CONSTANT_POOL)
     {
       pre_func_no = -1;
-      old_section_initialized = false;
       for (i = 0; i < max; ++i)
         {
           section_will_change_flag[i] = 0;
@@ -2353,6 +2345,7 @@ output_in_order (bool no_reorder)
               if (pre_func_no == -1)
                 {
                   pre_func_no = i;
+                  old_section = function_section (nodes[i].u.f->decl);
                   continue;
                 }
               if (function_is_switching_section(nodes[i].u.f->decl))
