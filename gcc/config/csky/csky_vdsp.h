@@ -1,6 +1,15 @@
 #ifndef _GCC_CSKY_VDSP_H
 #define _GCC_CSKY_VDSP_H 1
 
+#include <stdint.h>
+
+#if defined (__CSKY_3E3R1__)
+__extension__ static __inline int32_t __attribute__ ((__always_inline__))
+mul_s32_h(int32_t __a, int32_t __b){
+  return __builtin_csky_smul_highpartsi(__a, __b);
+}
+#endif
+
 #if defined (__CSKY_DSPV2__)
 typedef __simd32_int8_t    int8x4_t;
 typedef __simd32_int16_t   int16x2_t;
@@ -10,10 +19,6 @@ typedef __simd32_uint8_t   uint8x4_t;
 typedef __simd32_uint16_t  uint16x2_t;
 typedef __simd64_uint16_t  uint16x4_t;
 typedef __simd64_uint32_t  uint32x2_t;
-typedef __simd32_sat8_t    sat8x4_t;
-typedef __simd32_sat16_t   sat16x2_t;
-typedef __simd32_usat8_t   usat8x4_t;
-typedef __simd32_usat16_t  usat16x2_t;
 
 __extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
 padd_8 (int8x4_t __a, int8x4_t __b)
@@ -27,28 +32,28 @@ padd_16 (int16x2_t __a, int16x2_t __b)
   return __a + __b;
 }
 
-__extension__ static __inline sat8x4_t __attribute__ ((__always_inline__))
-padd_s8_s (sat8x4_t __a, sat8x4_t __b)
+__extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
+padd_s8_s (int8x4_t __a, int8x4_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_paddssv4qi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-padd_s16_s (sat16x2_t __a, sat16x2_t __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+padd_s16_s (int16x2_t __a, int16x2_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_paddssv2hi (__a, __b);
 }
 
-__extension__ static __inline usat8x4_t __attribute__ ((__always_inline__))
-padd_u8_s (usat8x4_t __a, usat8x4_t __b)
+__extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
+padd_u8_s (uint8x4_t __a, uint8x4_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_paddusv4qi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-padd_u16_s (usat16x2_t __a, usat16x2_t __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+padd_u16_s (uint16x2_t __a, uint16x2_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_paddusv2hi (__a, __b);
 }
 
 __extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
@@ -63,28 +68,28 @@ psub_16 (int16x2_t __a, int16x2_t __b)
   return __a - __b;
 }
 
-__extension__ static __inline sat8x4_t __attribute__ ((__always_inline__))
-psub_s8_s (sat8x4_t __a, sat8x4_t __b)
+__extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
+psub_s8_s (int8x4_t __a, int8x4_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_psubssv4qi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-psub_s16_s (sat16x2_t __a, sat16x2_t __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+psub_s16_s (int16x2_t __a, int16x2_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_psubssv2hi (__a, __b);
 }
 
-__extension__ static __inline usat8x4_t __attribute__ ((__always_inline__))
-psub_u8_s (usat8x4_t __a, usat8x4_t __b)
+__extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
+psub_u8_s (uint8x4_t __a, uint8x4_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_psubusv4qi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-psub_u16_s (usat16x2_t __a, usat16x2_t __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+psub_u16_s (uint16x2_t __a, uint16x2_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_psubusv2hi (__a, __b);
 }
 
 __extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
@@ -102,13 +107,13 @@ paddh_u16 (uint16x2_t __a, uint16x2_t __b)
 __extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
 paddh_s8 (int8x4_t __a, int8x4_t __b)
 {
-  return __builtin_csky_psubhsv4qi (__a, __b);
+  return __builtin_csky_paddhsv4qi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
 paddh_s16 (int16x2_t __a, int16x2_t __b)
 {
-  return __builtin_csky_psubhsv2hi (__a, __b);
+  return __builtin_csky_paddhsv2hi (__a, __b);
 }
 
 __extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
@@ -141,16 +146,16 @@ pasx_16 (int16x2_t __a, int16x2_t __b)
   return __builtin_csky_pasxv2hi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-pasx_s16_s (sat16x2_t __a, sat16x2_t __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+pasx_s16_s (int16x2_t __a, int16x2_t __b)
 {
-  return __builtin_csky_pasxv2hq (__a, __b);
+  return __builtin_csky_pasxssv2hi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-pasx_u16_s (usat16x2_t __a, usat16x2_t __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+pasx_u16_s (uint16x2_t __a, uint16x2_t __b)
 {
-  return __builtin_csky_pasxv2uhq (__a, __b);
+  return __builtin_csky_pasxusv2hi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
@@ -159,16 +164,16 @@ psax_16 (int16x2_t __a, int16x2_t __b)
   return __builtin_csky_psaxv2hi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-psax_s16_s (sat16x2_t __a, sat16x2_t __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+psax_s16_s (int16x2_t __a, int16x2_t __b)
 {
-  return __builtin_csky_psaxv2hq (__a, __b);
+  return __builtin_csky_psaxssv2hi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-psax_u16_s (usat16x2_t __a, usat16x2_t __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+psax_u16_s (uint16x2_t __a, uint16x2_t __b)
 {
-  return __builtin_csky_psaxv2uhq (__a, __b);
+  return __builtin_csky_psaxusv2hi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
@@ -256,49 +261,49 @@ pcmplt_u16 (uint16x2_t __a, uint16x2_t __b)
 }
 
 __extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
-max_s8 (int8x4_t __a, int8x4_t __b)
+pmax_s8 (int8x4_t __a, int8x4_t __b)
 {
   return __builtin_csky_smaxv4qi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-max_s16 (int16x2_t __a, int16x2_t __b)
+pmax_s16 (int16x2_t __a, int16x2_t __b)
 {
   return __builtin_csky_smaxv2hi (__a, __b);
 }
 
 __extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
-max_u8 (uint8x4_t __a, uint8x4_t __b)
+pmax_u8 (uint8x4_t __a, uint8x4_t __b)
 {
   return __builtin_csky_umaxv4qi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-max_u16 (uint16x2_t __a, uint16x2_t __b)
+pmax_u16 (uint16x2_t __a, uint16x2_t __b)
 {
   return __builtin_csky_umaxv2hi (__a, __b);
 }
 
 __extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
-min_s8 (int8x4_t __a, int8x4_t __b)
+pmin_s8 (int8x4_t __a, int8x4_t __b)
 {
   return __builtin_csky_sminv4qi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-min_s16 (int16x2_t __a, int16x2_t __b)
+pmin_s16 (int16x2_t __a, int16x2_t __b)
 {
   return __builtin_csky_sminv2hi (__a, __b);
 }
 
 __extension__ static __inline uint8x4_t __attribute__ ((__always_inline__))
-min_u8 (uint8x4_t __a, uint8x4_t __b)
+pmin_u8 (uint8x4_t __a, uint8x4_t __b)
 {
   return __builtin_csky_uminv4qi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-min_u16 (uint16x2_t __a, uint16x2_t __b)
+pmin_u16 (uint16x2_t __a, uint16x2_t __b)
 {
   return __builtin_csky_uminv2hi (__a, __b);
 }
@@ -328,51 +333,51 @@ pextx_u8_e (uint8x4_t __a)
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-pclipi_u16 (uint16x2_t __a, const int __b)
+pclipi_u16 (uint16x2_t __a, const int32_t __b)
 {
   return __builtin_csky_pclipuv2hi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pclipi_s16 (int16x2_t __a, const int __b)
+pclipi_s16 (int16x2_t __a, const int32_t __b)
 {
   return __builtin_csky_pclipsv2hi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-pclip_u16 (uint16x2_t __a, int __b)
+pclip_u16 (uint16x2_t __a, int32_t __b)
 {
   return __builtin_csky_pclipuv2hi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pclip_s16 (int16x2_t __a, int __b)
+pclip_s16 (int16x2_t __a, int32_t __b)
 {
   return __builtin_csky_pclipsv2hi (__a, __b);
 }
 
-__extension__ static __inline sat8x4_t __attribute__ ((__always_inline__))
-pabs_s8_s (sat8x4_t __a)
+__extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
+pabs_s8_s (int8x4_t __a)
 {
-  return __builtin_csky_ssabsv4qq(__a);
+  return __builtin_csky_ssabsv4qi(__a);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-pabs_s16_s (sat16x2_t __a)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+pabs_s16_s (int16x2_t __a)
 {
-  return __builtin_csky_ssabsv2hq(__a);
+  return __builtin_csky_ssabsv2hi(__a);
 }
 
-__extension__ static __inline sat8x4_t __attribute__ ((__always_inline__))
-pneg_s8_s (sat8x4_t __a)
+__extension__ static __inline int8x4_t __attribute__ ((__always_inline__))
+pneg_s8_s (int8x4_t __a)
 {
-  return -__a;
+  return __builtin_csky_ssnegv4qi(__a);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-pneg_s16_s (sat16x2_t __a)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+pneg_s16_s (int16x2_t __a)
 {
-  return -__a;
+  return __builtin_csky_ssnegv2hi(__a);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
@@ -436,103 +441,103 @@ prmulx_s16_rh (int16x2_t __a, int16x2_t __b)
   return __builtin_csky_prmulxsrhv2hi (__a, __b);
 }
 
-__extension__ static __inline unsigned int __attribute__ ((__always_inline__))
+__extension__ static __inline uint32_t __attribute__ ((__always_inline__))
 psabsa_u8 (uint8x4_t __a, uint8x4_t __b)
 {
   return __builtin_csky_psabsav4qi (__a, __b);
 }
 
-__extension__ static __inline unsigned int __attribute__ ((__always_inline__))
-psabsaa_u8 (uint8x4_t __a, uint8x4_t __b)
+__extension__ static __inline uint32_t __attribute__ ((__always_inline__))
+psabsaa_u8 (uint32_t __in, uint8x4_t __a, uint8x4_t __b)
 {
-  return __builtin_csky_psabsaav4qi (__a, __b);
+  return __builtin_csky_psabsaav4qi (__in, __a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pasri_s16 (int16x2_t __a, const int __b)
+pasri_s16 (int16x2_t __a, const int32_t __b)
 {
   return __a >> __b;
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pasr_s16 (int16x2_t __a, int __b)
-{
-  return __a >> __b;
-}
-
-__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-plsri_s16 (uint16x2_t __a, const int __b)
+pasr_s16 (int16x2_t __a, int32_t __b)
 {
   return __a >> __b;
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-plsr_s16 (uint16x2_t __a, int __b)
+plsri_u16 (uint16x2_t __a, const int32_t __b)
+{
+  return __a >> __b;
+}
+
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+plsr_u16 (uint16x2_t __a, int32_t __b)
 {
   return __a >> __b;
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-plsli_s16 (int16x2_t __a, const int __b)
+plsli_s16 (int16x2_t __a, const int32_t __b)
 {
   return __a << __b;
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-plsl_s16 (int16x2_t __a, int __b)
+plsl_s16 (int16x2_t __a, int32_t __b)
 {
   return __a << __b;
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pasri_s16_r (int16x2_t __a, const int __b)
+pasri_s16_r (int16x2_t __a, const int32_t __b)
 {
   return __builtin_csky_pasrirv2hi (__a, __b);
 }
 
 __extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
-pasr_s16_r (int16x2_t __a, int __b)
+pasr_s16_r (int16x2_t __a, int32_t __b)
 {
   return __builtin_csky_pasrrv2hi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-plsri_s16_r (uint16x2_t __a, const int __b)
+plsri_u16_r (uint16x2_t __a, const int32_t __b)
 {
   return __builtin_csky_plsrirv2hi (__a, __b);
 }
 
 __extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
-plsr_s16_r (uint16x2_t __a, int __b)
+plsr_u16_r (uint16x2_t __a, int32_t __b)
 {
   return __builtin_csky_plsrrv2hi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-plsli_s16_s (sat16x2_t __a, const int __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+plsli_s16_s (int16x2_t __a, const int32_t __b)
 {
-  return __builtin_csky_plslissv2hq (__a, __b);
+  return __builtin_csky_plslissv2hi (__a, __b);
 }
 
-__extension__ static __inline sat16x2_t __attribute__ ((__always_inline__))
-plsl_s16_s (sat16x2_t __a, int __b)
+__extension__ static __inline int16x2_t __attribute__ ((__always_inline__))
+plsl_s16_s (int16x2_t __a, int32_t __b)
 {
-  return __builtin_csky_plslssv2hq (__a, __b);
+  return __builtin_csky_plslssv2hi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-plsli_u16_s (usat16x2_t __a, const int __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+plsli_u16_s (uint16x2_t __a, const int32_t __b)
 {
-  return __builtin_csky_plsliusv2uhq (__a, __b);
+  return __builtin_csky_plsliusv2hi (__a, __b);
 }
 
-__extension__ static __inline usat16x2_t __attribute__ ((__always_inline__))
-plsl_u16_s (usat16x2_t __a, int __b)
+__extension__ static __inline uint16x2_t __attribute__ ((__always_inline__))
+plsl_u16_s (uint16x2_t __a, int32_t __b)
 {
-  return __builtin_csky_plslusv2uhq (__a, __b);
+  return __builtin_csky_plslusv2hi (__a, __b);
 }
 
-#endif
+#endif // __CSKY_DSPV2__
 #if defined (__CSKY_VDSP64__)
 typedef __simd64_int8_t     int8x8_t;
 typedef __simd64_uint8_t    uint8x8_t;
@@ -540,12 +545,6 @@ typedef __simd64_int16_t    int16x4_t;
 typedef __simd64_uint16_t   uint16x4_t;
 typedef __simd64_int32_t    int32x2_t;
 typedef __simd64_uint32_t   uint32x2_t;
-typedef __simd64_sat8_t     sat8x8_t;
-typedef __simd64_usat8_t    usat8x8_t;
-typedef __simd64_sat16_t    sat16x4_t;
-typedef __simd64_usat16_t   usat16x4_t;
-typedef __simd64_sat32_t    sat32x2_t;
-typedef __simd64_usat32_t   usat32x2_t;
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
 vabs_s8 (int8x8_t __a)
@@ -565,22 +564,22 @@ vabs_s32 (int32x2_t __a)
   return __builtin_csky_vabsv2si (__a);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vabs_s8_s (sat8x8_t __a)
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vabs_s8_s (int8x8_t __a)
 {
-  return __builtin_csky_vabsv8qq (__a);
+  return __builtin_csky_vabsssv8qi (__a);
 }
 
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vabs_s16_s (sat16x4_t __a)
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vabs_s16_s (int16x4_t __a)
 {
-  return __builtin_csky_vabsv4hq (__a);
+  return __builtin_csky_vabsssv4hi (__a);
 }
 
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vabs_s32_s (sat32x2_t __a)
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vabs_s32_s (int32x2_t __a)
 {
-  return __builtin_csky_vabsv2sq (__a);
+  return __builtin_csky_vabsssv2si (__a);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
@@ -643,40 +642,40 @@ vadd_s32 (int32x2_t __a, int32x2_t __b)
   return __a + __b;
 }
 
-__extension__ static __inline usat8x8_t __attribute__ ((__always_inline__))
-vadd_u8_s (usat8x8_t __a, usat8x8_t __b)
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vadd_u8_s (uint8x8_t __a, uint8x8_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddusv8qi(__a, __b);
 }
 
-__extension__ static __inline usat16x4_t __attribute__ ((__always_inline__))
-vadd_u16_s (usat16x4_t __a, usat16x4_t __b)
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vadd_u16_s (uint16x4_t __a, uint16x4_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddusv4hi(__a, __b);
 }
 
-__extension__ static __inline usat32x2_t __attribute__ ((__always_inline__))
-vadd_u32_s (usat32x2_t __a, usat32x2_t __b)
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vadd_u32_s (uint32x2_t __a, uint32x2_t __b)
 {
-  return __a + __b;;
+  return __builtin_csky_vaddusv2si(__a, __b);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vadd_s8_s (sat8x8_t __a, sat8x8_t __b)
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vadd_s8_s (int8x8_t __a, int8x8_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv8qi(__a, __b);
 }
 
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vadd_s16_s (sat16x4_t __a, sat16x4_t __b)
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vadd_s16_s (int16x4_t __a, int16x4_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv4hi(__a, __b);
 }
 
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vadd_s32_s (sat32x2_t __a, sat32x2_t __b)
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vadd_s32_s (int32x2_t __a, int32x2_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv2si(__a, __b);
 }
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
@@ -715,40 +714,40 @@ vsub_s32 (int32x2_t __a, int32x2_t __b)
   return __a - __b;
 }
 
-__extension__ static __inline usat8x8_t __attribute__ ((__always_inline__))
-vsub_u8_s (usat8x8_t __a, usat8x8_t __b)
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vsub_u8_s (uint8x8_t __a, uint8x8_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubusv8qi(__a, __b);
 }
 
-__extension__ static __inline usat16x4_t __attribute__ ((__always_inline__))
-vsub_u16_s (usat16x4_t __a, usat16x4_t __b)
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vsub_u16_s (uint16x4_t __a, uint16x4_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubusv4hi(__a, __b);
 }
 
-__extension__ static __inline usat32x2_t __attribute__ ((__always_inline__))
-vsub_u32_s (usat32x2_t __a, usat32x2_t __b)
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vsub_u32_s (uint32x2_t __a, uint32x2_t __b)
 {
-  return __a - __b;;
+  return __builtin_csky_vsubusv2si(__a, __b);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vsub_s8_s (sat8x8_t __a, sat8x8_t __b)
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vsub_s8_s (int8x8_t __a, int8x8_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv8qi(__a, __b);
 }
 
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vsub_s16_s (sat16x4_t __a, sat16x4_t __b)
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vsub_s16_s (int16x4_t __a, int16x4_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv4hi(__a, __b);
 }
 
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vsub_s32_s (sat32x2_t __a, sat32x2_t __b)
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vsub_s32_s (int32x2_t __a, int32x2_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv2si(__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
@@ -1186,37 +1185,37 @@ vcmin_s32 (int32x2_t __a, int32x2_t __b)
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
 vcmphs_u8 (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vcmphsuv8qi (__a, __b);
+  return __builtin_csky_vcmpuhsv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
 vcmphs_u16 (uint16x4_t __a, uint16x4_t __b)
 {
-  return __builtin_csky_vcmphsuv4hi (__a, __b);
+  return __builtin_csky_vcmpuhsv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
 vcmphs_u32 (uint32x2_t __a, uint32x2_t __b)
 {
-  return __builtin_csky_vcmphsuv2si (__a, __b);
+  return __builtin_csky_vcmpuhsv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
 vcmphs_s8 (int8x8_t __a, int8x8_t __b)
 {
-  return __builtin_csky_vcmphssv8qi (__a, __b);
+  return __builtin_csky_vcmpshsv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
 vcmphs_s16 (int16x4_t __a, int16x4_t __b)
 {
-  return __builtin_csky_vcmphssv4hi (__a, __b);
+  return __builtin_csky_vcmpshsv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
 vcmphs_s32 (int32x2_t __a, int32x2_t __b)
 {
-  return __builtin_csky_vcmphssv2si (__a, __b);
+  return __builtin_csky_vcmpshsv2si (__a, __b);
 }
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
@@ -1258,37 +1257,37 @@ vcmphsz_s32 (int32x2_t __a)
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
 vcmplt_u8 (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vcmpltuv8qi (__a, __b);
+  return __builtin_csky_vcmpultv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
 vcmplt_u16 (uint16x4_t __a, uint16x4_t __b)
 {
-  return __builtin_csky_vcmpltuv4hi (__a, __b);
+  return __builtin_csky_vcmpultv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
 vcmplt_u32 (uint32x2_t __a, uint32x2_t __b)
 {
-  return __builtin_csky_vcmpltuv2si (__a, __b);
+  return __builtin_csky_vcmpultv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
 vcmplt_s8 (int8x8_t __a, int8x8_t __b)
 {
-  return __builtin_csky_vcmpltsv8qi (__a, __b);
+  return __builtin_csky_vcmpsltv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
 vcmplt_s16 (int16x4_t __a, int16x4_t __b)
 {
-  return __builtin_csky_vcmpltsv4hi (__a, __b);
+  return __builtin_csky_vcmpsltv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
 vcmplt_s32 (int32x2_t __a, int32x2_t __b)
 {
-  return __builtin_csky_vcmpltsv2si (__a, __b);
+  return __builtin_csky_vcmpsltv2si (__a, __b);
 }
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
@@ -1330,37 +1329,37 @@ vcmpltz_s32 (int32x2_t __a)
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
 vcmpne_u8 (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vcmpneuv8qi (__a, __b);
+  return __builtin_csky_vcmpunev8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
 vcmpne_u16 (uint16x4_t __a, uint16x4_t __b)
 {
-  return __builtin_csky_vcmpneuv4hi (__a, __b);
+  return __builtin_csky_vcmpunev4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
 vcmpne_u32 (uint32x2_t __a, uint32x2_t __b)
 {
-  return __builtin_csky_vcmpneuv2si (__a, __b);
+  return __builtin_csky_vcmpunev2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
 vcmpne_s8 (int8x8_t __a, int8x8_t __b)
 {
-  return __builtin_csky_vcmpnesv8qi (__a, __b);
+  return __builtin_csky_vcmpsnev8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
 vcmpne_s16 (int16x4_t __a, int16x4_t __b)
 {
-  return __builtin_csky_vcmpnesv4hi (__a, __b);
+  return __builtin_csky_vcmpsnev4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
 vcmpne_s32 (int32x2_t __a, int32x2_t __b)
 {
-  return __builtin_csky_vcmpnesv2si (__a, __b);
+  return __builtin_csky_vcmpsnev2si (__a, __b);
 }
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
@@ -1400,9 +1399,15 @@ vcmpnez_s32 (int32x2_t __a)
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vcnt1_8 (int8x8_t __a)
+vcnt1_s8 (int8x8_t __a)
 {
-  return __builtin_csky_vcnt1v8qi (__a);
+  return __builtin_csky_vcnt1sv8qi (__a);
+}
+
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vcnt1_u8 (uint8x8_t __a)
+{
+  return __builtin_csky_vcnt1uv8qi (__a);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
@@ -1442,19 +1447,19 @@ vdcl_32 (int32x2_t __a, int32x2_t __b)
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vdup_8 (int8x8_t __a, const int __b)
+vdup_8 (int8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vdup_16 (int16x4_t __a, const int __b)
+vdup_16 (int16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vdup_32 (int32x2_t __a, const int __b)
+vdup_32 (int32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv2si (__a, __b);;
 }
@@ -1496,91 +1501,91 @@ vicl_32 (int32x2_t __a, int32x2_t __b)
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vins_8 (const int __a, int8x8_t __b, const int __c)
+vins_8 (const int32_t __a, int8x8_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vins_16 (const int __a, int16x4_t __b, const int __c)
+vins_16 (const int32_t __a, int16x4_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vins_32 (const int __a, int32x2_t __b, const int __c)
+vins_32 (const int32_t __a, int32x2_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv2si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vldd_8 (int __a, const int __b)
+vldd_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vldd_16 (int __a, const int __b)
+vldd_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vldd_32 (int __a, const int __b)
+vldd_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv2si (__a, __b);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vldq_8 (int __a, const int __b)
+vldq_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vldq_16 (int __a, const int __b)
+vldq_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vldq_32 (int __a, const int __b)
+vldq_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv2si (__a, __b);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vstd_8 (int __a, const int __b)
+vstd_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vstd_16 (int __a, const int __b)
+vstd_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vstd_32 (int __a, const int __b)
+vstd_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv2si (__a, __b);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vstq_8 (int __a, const int __b)
+vstq_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vstq_16 (int __a, const int __b)
+vstq_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vstq_32 (int __a, const int __b)
+vstq_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv2si (__a, __b);;
 }
@@ -1588,73 +1593,73 @@ vstq_32 (int __a, const int __b)
 
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vldrd_8 (int __a, int __b, const int __c)
+vldrd_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vldrd_16 (int __a, int __b, const int __c)
+vldrd_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vldrd_32 (int __a, int __b, const int __c)
+vldrd_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv2si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vldrq_8 (int __a, int __b, const int __c)
+vldrq_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vldrq_16 (int __a, int __b, const int __c)
+vldrq_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vldrq_32 (int __a, int __b, const int __c)
+vldrq_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv2si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vstrd_8 (int __a, int __b, const int __c)
+vstrd_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vstrd_16 (int __a, int __b, const int __c)
+vstrd_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vstrd_32 (int __a, int __b, const int __c)
+vstrd_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv2si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vstrq_8 (int __a, int __b, const int __c)
+vstrq_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vstrq_16 (int __a, int __b, const int __c)
+vstrq_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vstrq_32 (int __a, int __b, const int __c)
+vstrq_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv2si (__a, __b, __c);;
 }
@@ -1734,53 +1739,90 @@ vmin_s32 (int32x2_t __a, int32x2_t __b)
 }
 
 
-__extension__ static __inline unsigned char __attribute__ ((__always_inline__))
-vmfvr_u8 (uint8x8_t __a, const int __b)
+__extension__ static __inline uint8_t __attribute__ ((__always_inline__))
+vmfvr_u8 (uint8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv8qi (__a, __b);
 }
 
-__extension__ static __inline unsigned short __attribute__ ((__always_inline__))
-vmfvr_u16 (uint16x4_t __a, const int __b)
+__extension__ static __inline uint16_t __attribute__ ((__always_inline__))
+vmfvr_u16 (uint16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv4hi (__a, __b);
 }
 
-__extension__ static __inline unsigned int __attribute__ ((__always_inline__))
-vmfvr_u32 (uint32x2_t __a, const int __b)
+__extension__ static __inline uint32_t __attribute__ ((__always_inline__))
+vmfvr_u32 (uint32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv2si (__a, __b);
 }
 
 __extension__ static __inline char __attribute__ ((__always_inline__))
-vmfvr_s8 (int8x8_t __a, const int __b)
+vmfvr_s8 (int8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvrsv8qi (__a, __b);
 }
 
-__extension__ static __inline short __attribute__ ((__always_inline__))
-vmfvr_s16 (int16x4_t __a, const int __b)
+__extension__ static __inline int16_t __attribute__ ((__always_inline__))
+vmfvr_s16 (int16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvrsv4hi (__a, __b);
 }
 
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
-vmtvr_u8 (const int __a, unsigned char __b)
+vmtvr_u8 (const int32_t __a, uint8_t __b)
 {
   return __builtin_csky_vmtvruv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
-vmtvr_u16 (const int __a, unsigned short __b)
+vmtvr_u16 (const int32_t __a, uint16_t __b)
 {
   return __builtin_csky_vmtvruv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
-vmtvr_u32 (const int __a, unsigned int __b)
+vmtvr_u32 (const int32_t __a, uint32_t __b)
 {
   return __builtin_csky_vmtvruv2si (__a, __b);
+}
+
+/* vmov for vdsp64 */
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vmov_s8 (int8x8_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vmov_s16 (int16x4_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vmov_s32 (int32x2_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vmov_u8 (uint8x8_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vmov_u16 (uint16x4_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vmov_u32 (uint32x2_t __a)
+{
+  return __a;
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
@@ -2021,37 +2063,37 @@ vmula_s32 (int32x2_t __a, int32x2_t __b, int32x2_t __c)
 
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
-vmuls_u8 (uint8x8_t __a, uint8x8_t __b, uint8x8_t __c)
+vmuls_u8 (uint8x8_t __c, uint8x8_t __a, uint8x8_t __b)
 {
   return __builtin_csky_vmulsuv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
-vmuls_u16 (uint16x4_t __a, uint16x4_t __b, uint16x4_t __c)
+vmuls_u16 (uint16x4_t __c, uint16x4_t __a, uint16x4_t __b)
 {
   return __builtin_csky_vmulsuv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
-vmuls_u32 (uint32x2_t __a, uint32x2_t __b, uint32x2_t __c)
+vmuls_u32 (uint32x2_t __c, uint32x2_t __a, uint32x2_t __b)
 {
   return __builtin_csky_vmulsuv2si (__a, __b, __c);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vmuls_s8 (int8x8_t __a, int8x8_t __b, int8x8_t __c)
+vmuls_s8 (int8x8_t __c, int8x8_t __a, int8x8_t __b)
 {
   return __builtin_csky_vmulssv8qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vmuls_s16 (int16x4_t __a, int16x4_t __b, int16x4_t __c)
+vmuls_s16 (int16x4_t __c, int16x4_t __a, int16x4_t __b)
 {
   return __builtin_csky_vmulssv4hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vmuls_s32 (int32x2_t __a, int32x2_t __b, int32x2_t __c)
+vmuls_s32 (int32x2_t __c, int32x2_t __a, int32x2_t __b)
 {
   return __builtin_csky_vmulssv2si (__a, __b, __c);
 }
@@ -2060,19 +2102,19 @@ vmuls_s32 (int32x2_t __a, int32x2_t __b, int32x2_t __c)
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
 vmul_u8 (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vmul_uv8qi (__a, __b);
+  return __builtin_csky_vmuluv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
 vmul_u16 (uint16x4_t __a, uint16x4_t __b)
 {
-  return __builtin_csky_vmul_uv4hi (__a, __b);
+  return __builtin_csky_vmuluv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
 vmul_u32 (uint32x2_t __a, uint32x2_t __b)
 {
-  return __builtin_csky_vmul_uv2si (__a, __b);
+  return __builtin_csky_vmuluv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
@@ -2112,38 +2154,131 @@ vneg_s32 (int32x2_t __a)
   return __builtin_csky_vnegv2si (__a);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vneg_s8_s (sat8x8_t __a)
-{
-  return __builtin_csky_vnegv8qq (__a);
-}
-
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vneg_s16_s (sat16x4_t __a)
-{
-  return __builtin_csky_vnegv4hq (__a);
-}
-
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vneg_s32_s (sat32x2_t __a)
-{
-  return __builtin_csky_vnegv2sq (__a);
-}
-
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vor_8 (int8x8_t __a, int8x8_t __b)
+vneg_s8_s (int8x8_t __a)
+{
+  return __builtin_csky_vnegsv8qi (__a);
+}
+
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vneg_s16_s (int16x4_t __a)
+{
+  return __builtin_csky_vnegsv4hi (__a);
+}
+
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vneg_s32_s (int32x2_t __a)
+{
+  return __builtin_csky_vnegsv2si (__a);
+}
+
+/* vnor.t */
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vnor_s8 (int8x8_t __a, int8x8_t __b)
+{
+  return __builtin_csky_vnorsv8qi(__a, __b);
+}
+
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vnor_s16 (int16x4_t __a, int16x4_t __b)
+{
+  return __builtin_csky_vnorsv4hi(__a, __b);
+}
+
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vnor_s32 (int32x2_t __a, int32x2_t __b)
+{
+  return __builtin_csky_vnorsv2si(__a, __b);
+}
+
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vnor_u8 (uint8x8_t __a, uint8x8_t __b)
+{
+  return __builtin_csky_vnoruv8qi(__a, __b);
+}
+
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vnor_u16 (uint16x4_t __a, uint16x4_t __b)
+{
+  return __builtin_csky_vnoruv4hi(__a, __b);
+}
+
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vnor_u32 (uint32x2_t __a, uint32x2_t __b)
+{
+  return __builtin_csky_vnoruv2si(__a, __b);
+}
+
+/* vxor.t */
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vxor_s8 (int8x8_t __a, int8x8_t __b)
+{
+  return __builtin_csky_vxorsv8qi(__a, __b);
+}
+
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vxor_s16 (int16x4_t __a, int16x4_t __b)
+{
+  return __builtin_csky_vxorsv4hi(__a, __b);
+}
+
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vxor_s32 (int32x2_t __a, int32x2_t __b)
+{
+  return __builtin_csky_vxorsv2si(__a, __b);
+}
+
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vxor_u8 (uint8x8_t __a, uint8x8_t __b)
+{
+  return __builtin_csky_vxoruv8qi(__a, __b);
+}
+
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vxor_u16 (uint16x4_t __a, uint16x4_t __b)
+{
+  return __builtin_csky_vxoruv4hi(__a, __b);
+}
+
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vxor_u32 (uint32x2_t __a, uint32x2_t __b)
+{
+  return __builtin_csky_vxoruv2si(__a, __b);
+}
+
+/* vor.t */
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vor_s8 (int8x8_t __a, int8x8_t __b)
 {
   return __a | __b;
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vor_16 (int16x4_t __a, int16x4_t __b)
+vor_s16 (int16x4_t __a, int16x4_t __b)
 {
   return __a | __b;
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vor_32 (int32x2_t __a, int32x2_t __b)
+vor_s32 (int32x2_t __a, int32x2_t __b)
+{
+  return __a | __b;
+}
+
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vor_u8 (uint8x8_t __a, uint8x8_t __b)
+{
+  return __a | __b;
+}
+
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vor_u16 (uint16x4_t __a, uint16x4_t __b)
+{
+  return __a | __b;
+}
+
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vor_u32 (uint32x2_t __a, uint32x2_t __b)
 {
   return __a | __b;
 }
@@ -2326,116 +2461,113 @@ vshl_s32 (int32x2_t __a, int32x2_t __b)
   return __builtin_csky_vshlsv2si (__a, __b);
 }
 
-__extension__ static __inline usat8x8_t __attribute__ ((__always_inline__))
-vshl_u8_s (usat8x8_t __a, usat8x8_t __b)
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vshl_u8_s (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vshlv8uqq (__a, __b);
+  return __builtin_csky_vshlusv8qi (__a, __b);
 }
 
-__extension__ static __inline usat16x4_t __attribute__ ((__always_inline__))
-vshl_u16_s (usat16x4_t __a, usat16x4_t __b)
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vshl_u16_s (uint16x4_t __a, uint16x4_t __b)
 {
-  return __builtin_csky_vshlv4uhq (__a, __b);
+  return __builtin_csky_vshlusv4hi (__a, __b);
 }
 
-__extension__ static __inline usat32x2_t __attribute__ ((__always_inline__))
-vshl_u32_s (usat32x2_t __a, usat32x2_t __b)
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vshl_u32_s (uint32x2_t __a, uint32x2_t __b)
 {
-  return __builtin_csky_vshlv2usq (__a, __b);
+  return __builtin_csky_vshlusv2si (__a, __b);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vshl_s8_s (sat8x8_t __a, sat8x8_t __b)
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vshl_s8_s (int8x8_t __a, int8x8_t __b)
 {
-  return __builtin_csky_vshlv8qq (__a, __b);
+  return __builtin_csky_vshlssv8qi (__a, __b);
 }
 
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vshl_s16_s (sat16x4_t __a, sat16x4_t __b)
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vshl_s16_s (int16x4_t __a, int16x4_t __b)
 {
-  return __builtin_csky_vshlv4hq (__a, __b);
+  return __builtin_csky_vshlssv4hi (__a, __b);
 }
 
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vshl_s32_s (sat32x2_t __a, sat32x2_t __b)
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vshl_s32_s (int32x2_t __a, int32x2_t __b)
 {
-  return __builtin_csky_vshlv2sq (__a, __b);
+  return __builtin_csky_vshlssv2si (__a, __b);
 }
-
-
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
-vshli_u8 (uint8x8_t __a, const int __b)
+vshli_u8 (uint8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
-vshli_u16 (uint16x4_t __a, const int __b)
+vshli_u16 (uint16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
-vshli_u32 (uint32x2_t __a, const int __b)
+vshli_u32 (uint32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vshli_s8 (int8x8_t __a, const int __b)
+vshli_s8 (int8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vshli_s16 (int16x4_t __a, const int __b)
+vshli_s16 (int16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vshli_s32 (int32x2_t __a, const int __b)
+vshli_s32 (int32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv2si (__a, __b);
 }
 
-__extension__ static __inline usat8x8_t __attribute__ ((__always_inline__))
-vshli_u8_s (usat8x8_t __a, const int __b)
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vshli_u8_s (uint8x8_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv8uqq (__a, __b);
+  return __builtin_csky_vshliusv8qi (__a, __b);
 }
 
-__extension__ static __inline usat16x4_t __attribute__ ((__always_inline__))
-vshli_u16_s (usat16x4_t __a, const int __b)
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vshli_u16_s (uint16x4_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv4uhq (__a, __b);
+  return __builtin_csky_vshliusv4hi (__a, __b);
 }
 
-__extension__ static __inline usat32x2_t __attribute__ ((__always_inline__))
-vshli_u32_s (usat32x2_t __a, const int __b)
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vshli_u32_s (uint32x2_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv2usq (__a, __b);
+  return __builtin_csky_vshliusv2si (__a, __b);
 }
 
-__extension__ static __inline sat8x8_t __attribute__ ((__always_inline__))
-vshli_s8_s (sat8x8_t __a, const int __b)
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vshli_s8_s (int8x8_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv8qq (__a, __b);
+  return __builtin_csky_vshlissv8qi (__a, __b);
 }
 
-__extension__ static __inline sat16x4_t __attribute__ ((__always_inline__))
-vshli_s16_s (sat16x4_t __a, const int __b)
+__extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
+vshli_s16_s (int16x4_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv4hq (__a, __b);
+  return __builtin_csky_vshlissv4hi (__a, __b);
 }
 
-__extension__ static __inline sat32x2_t __attribute__ ((__always_inline__))
-vshli_s32_s (sat32x2_t __a, const int __b)
+__extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
+vshli_s32_s (int32x2_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv2sq (__a, __b);
+  return __builtin_csky_vshlissv2si (__a, __b);
 }
-
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
 vshr_u8 (uint8x8_t __a, uint8x8_t __b)
@@ -2511,73 +2643,73 @@ vshr_s32_r (int32x2_t __a, int32x2_t __b)
 
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
-vshri_u8 (uint8x8_t __a, const int __b)
+vshri_u8 (uint8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
-vshri_u16 (uint16x4_t __a, const int __b)
+vshri_u16 (uint16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
-vshri_u32 (uint32x2_t __a, const int __b)
+vshri_u32 (uint32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vshri_s8 (int8x8_t __a, const int __b)
+vshri_s8 (int8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vshri_s16 (int16x4_t __a, const int __b)
+vshri_s16 (int16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vshri_s32 (int32x2_t __a, const int __b)
+vshri_s32 (int32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv2si (__a, __b);
 }
 
 __extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
-vshri_u8_r (uint8x8_t __a, const int __b)
+vshri_u8_r (uint8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv8qi (__a, __b);
 }
 
 __extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
-vshri_u16_r (uint16x4_t __a, const int __b)
+vshri_u16_r (uint16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv4hi (__a, __b);
 }
 
 __extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
-vshri_u32_r (uint32x2_t __a, const int __b)
+vshri_u32_r (uint32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv2si (__a, __b);
 }
 
 __extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vshri_s8_r (int8x8_t __a, const int __b)
+vshri_s8_r (int8x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vshri_s16_r (int16x4_t __a, const int __b)
+vshri_s16_r (int16x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vshri_s32_r (int32x2_t __a, const int __b)
+vshri_s32_r (int32x2_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv2si (__a, __b);
 }
@@ -2632,22 +2764,40 @@ vtrcl_32 (int32x2_t __a, int32x2_t __b)
   return __builtin_csky_vtrclv2si (__a, __b);
 }
 
-__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
-vtst_8 (int8x8_t __a, int8x8_t __b)
+__extension__ static __inline uint8x8_t __attribute__ ((__always_inline__))
+vtst_u8 (uint8x8_t __a, uint8x8_t __b)
 {
-  return __builtin_csky_vtstv8qi (__a, __b);
+  return __builtin_csky_vtstuv8qi (__a, __b);
+}
+
+__extension__ static __inline uint16x4_t __attribute__ ((__always_inline__))
+vtst_u16 (uint16x4_t __a, uint16x4_t __b)
+{
+  return __builtin_csky_vtstuv4hi (__a, __b);
+}
+
+__extension__ static __inline uint32x2_t __attribute__ ((__always_inline__))
+vtst_u32 (uint32x2_t __a, uint32x2_t __b)
+{
+  return __builtin_csky_vtstuv2si (__a, __b);
+}
+
+__extension__ static __inline int8x8_t __attribute__ ((__always_inline__))
+vtst_s8 (int8x8_t __a, int8x8_t __b)
+{
+  return __builtin_csky_vtstsv8qi (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
-vtst_16 (int16x4_t __a, int16x4_t __b)
+vtst_s16 (int16x4_t __a, int16x4_t __b)
 {
-  return __builtin_csky_vtstv4hi (__a, __b);
+  return __builtin_csky_vtstsv4hi (__a, __b);
 }
 
 __extension__ static __inline int32x2_t __attribute__ ((__always_inline__))
-vtst_32 (int32x2_t __a, int32x2_t __b)
+vtst_s32 (int32x2_t __a, int32x2_t __b)
 {
-  return __builtin_csky_vtstv2si (__a, __b);
+  return __builtin_csky_vtstsv2si (__a, __b);
 }
 
 __extension__ static __inline int16x4_t __attribute__ ((__always_inline__))
@@ -2673,7 +2823,7 @@ vsub_eu16 (uint16x4_t __a, uint16x4_t __b)
 {
   return __builtin_csky_vsubeuv4hi (__a, __b);
 }
-#endif
+#endif // __CSKY_VDSP64__
 #if defined (__CSKY_VDSP128__)
 typedef __simd128_int8_t     int8x16_t;
 typedef __simd128_uint8_t    uint8x16_t;
@@ -2681,12 +2831,6 @@ typedef __simd128_int16_t    int16x8_t;
 typedef __simd128_uint16_t   uint16x8_t;
 typedef __simd128_int32_t    int32x4_t;
 typedef __simd128_uint32_t   uint32x4_t;
-typedef __simd128_sat8_t     sat8x16_t;
-typedef __simd128_usat8_t    usat8x16_t;
-typedef __simd128_sat16_t    sat16x8_t;
-typedef __simd128_usat16_t   usat16x8_t;
-typedef __simd128_sat32_t    sat32x4_t;
-typedef __simd128_usat32_t   usat32x4_t;
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
 vabs_s8 (int8x16_t __a)
@@ -2706,22 +2850,22 @@ vabs_s32 (int32x4_t __a)
   return __builtin_csky_vabsv4si (__a);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vabs_s8_s (sat8x16_t __a)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vabs_s8_s (int8x16_t __a)
 {
-  return __builtin_csky_vabsv16qq (__a);
+  return __builtin_csky_vabsssv16qi (__a);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vabs_s16_s (sat16x8_t __a)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vabs_s16_s (int16x8_t __a)
 {
-  return __builtin_csky_vabsv8hq (__a);
+  return __builtin_csky_vabsssv8hi (__a);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vabs_s32_s (sat32x4_t __a)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vabs_s32_s (int32x4_t __a)
 {
-  return __builtin_csky_vabsv4sq (__a);
+  return __builtin_csky_vabsssv4si (__a);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
@@ -2784,40 +2928,40 @@ vadd_s32 (int32x4_t __a, int32x4_t __b)
   return __a + __b;
 }
 
-__extension__ static __inline usat8x16_t __attribute__ ((__always_inline__))
-vadd_u8_s (usat8x16_t __a, usat8x16_t __b)
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vadd_u8_s (uint8x16_t __a, uint8x16_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddusv16qi(__a, __b);
 }
 
-__extension__ static __inline usat16x8_t __attribute__ ((__always_inline__))
-vadd_u16_s (usat16x8_t __a, usat16x8_t __b)
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vadd_u16_s (uint16x8_t __a, uint16x8_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddusv8hi(__a, __b);
 }
 
-__extension__ static __inline usat32x4_t __attribute__ ((__always_inline__))
-vadd_u32_s (usat32x4_t __a, usat32x4_t __b)
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vadd_u32_s (uint32x4_t __a, uint32x4_t __b)
 {
-  return __a + __b;;
+  return __builtin_csky_vaddusv4si(__a, __b);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vadd_s8_s (sat8x16_t __a, sat8x16_t __b)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vadd_s8_s (int8x16_t __a, int8x16_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv16qi(__a, __b);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vadd_s16_s (sat16x8_t __a, sat16x8_t __b)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vadd_s16_s (int16x8_t __a, int16x8_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv8hi(__a, __b);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vadd_s32_s (sat32x4_t __a, sat32x4_t __b)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vadd_s32_s (int32x4_t __a, int32x4_t __b)
 {
-  return __a + __b;
+  return __builtin_csky_vaddssv4si(__a, __b);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
@@ -2856,40 +3000,40 @@ vsub_s32 (int32x4_t __a, int32x4_t __b)
   return __a - __b;
 }
 
-__extension__ static __inline usat8x16_t __attribute__ ((__always_inline__))
-vsub_u8_s (usat8x16_t __a, usat8x16_t __b)
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vsub_u8_s (uint8x16_t __a, uint8x16_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubusv16qi(__a, __b);
 }
 
-__extension__ static __inline usat16x8_t __attribute__ ((__always_inline__))
-vsub_u16_s (usat16x8_t __a, usat16x8_t __b)
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vsub_u16_s (uint16x8_t __a, uint16x8_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubusv8hi(__a, __b);
 }
 
-__extension__ static __inline usat32x4_t __attribute__ ((__always_inline__))
-vsub_u32_s (usat32x4_t __a, usat32x4_t __b)
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vsub_u32_s (uint32x4_t __a, uint32x4_t __b)
 {
-  return __a - __b;;
+  return __builtin_csky_vsubusv4si(__a, __b);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vsub_s8_s (sat8x16_t __a, sat8x16_t __b)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vsub_s8_s (int8x16_t __a, int8x16_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv16qi(__a, __b);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vsub_s16_s (sat16x8_t __a, sat16x8_t __b)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vsub_s16_s (int16x8_t __a, int16x8_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv8hi(__a, __b);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vsub_s32_s (sat32x4_t __a, sat32x4_t __b)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vsub_s32_s (int32x4_t __a, int32x4_t __b)
 {
-  return __a - __b;
+  return __builtin_csky_vsubssv4si(__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
@@ -3327,37 +3471,37 @@ vcmin_s32 (int32x4_t __a, int32x4_t __b)
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmphs_u8 (uint8x16_t __a, uint8x16_t __b)
 {
-  return __builtin_csky_vcmphsuv16qi (__a, __b);
+  return __builtin_csky_vcmpuhsv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmphs_u16 (uint16x8_t __a, uint16x8_t __b)
 {
-  return __builtin_csky_vcmphsuv8hi (__a, __b);
+  return __builtin_csky_vcmpuhsv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmphs_u32 (uint32x4_t __a, uint32x4_t __b)
 {
-  return __builtin_csky_vcmphsuv4si (__a, __b);
+  return __builtin_csky_vcmpuhsv4si (__a, __b);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmphs_s8 (int8x16_t __a, int8x16_t __b)
 {
-  return __builtin_csky_vcmphssv16qi (__a, __b);
+  return __builtin_csky_vcmpshsv16qi (__a, __b);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmphs_s16 (int16x8_t __a, int16x8_t __b)
 {
-  return __builtin_csky_vcmphssv8hi (__a, __b);
+  return __builtin_csky_vcmpshsv8hi (__a, __b);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmphs_s32 (int32x4_t __a, int32x4_t __b)
 {
-  return __builtin_csky_vcmphssv4si (__a, __b);
+  return __builtin_csky_vcmpshsv4si (__a, __b);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
@@ -3378,58 +3522,58 @@ vcmphsz_u32 (uint32x4_t __a)
   return __builtin_csky_vcmphszuv4si (__a);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmphsz_s8 (int8x16_t __a)
 {
-  return __builtin_csky_vcmphszsv16qi (__a);
+  return __builtin_csky_vcmphszv16qi (__a);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmphsz_s16 (int16x8_t __a)
 {
-  return __builtin_csky_vcmphszsv8hi (__a);
+  return __builtin_csky_vcmphszv8hi (__a);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmphsz_s32 (int32x4_t __a)
 {
-  return __builtin_csky_vcmphszsv4si (__a);
+  return __builtin_csky_vcmphszv4si (__a);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmplt_u8 (uint8x16_t __a, uint8x16_t __b)
 {
-  return __builtin_csky_vcmpltuv16qi (__a, __b);
+  return __builtin_csky_vcmpultv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmplt_u16 (uint16x8_t __a, uint16x8_t __b)
 {
-  return __builtin_csky_vcmpltuv8hi (__a, __b);
+  return __builtin_csky_vcmpultv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmplt_u32 (uint32x4_t __a, uint32x4_t __b)
 {
-  return __builtin_csky_vcmpltuv4si (__a, __b);
+  return __builtin_csky_vcmpultv4si (__a, __b);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmplt_s8 (int8x16_t __a, int8x16_t __b)
 {
-  return __builtin_csky_vcmpltsv16qi (__a, __b);
+  return __builtin_csky_vcmpsltv16qi (__a, __b);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmplt_s16 (int16x8_t __a, int16x8_t __b)
 {
-  return __builtin_csky_vcmpltsv8hi (__a, __b);
+  return __builtin_csky_vcmpsltv8hi (__a, __b);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmplt_s32 (int32x4_t __a, int32x4_t __b)
 {
-  return __builtin_csky_vcmpltsv4si (__a, __b);
+  return __builtin_csky_vcmpsltv4si (__a, __b);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
@@ -3450,58 +3594,58 @@ vcmpltz_u32 (uint32x4_t __a)
   return __builtin_csky_vcmpltzuv4si (__a);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmpltz_s8 (int8x16_t __a)
 {
-  return __builtin_csky_vcmpltzsv16qi (__a);
+  return __builtin_csky_vcmpltzv16qi (__a);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmpltz_s16 (int16x8_t __a)
 {
-  return __builtin_csky_vcmpltzsv8hi (__a);
+  return __builtin_csky_vcmpltzv8hi (__a);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmpltz_s32 (int32x4_t __a)
 {
-  return __builtin_csky_vcmpltzsv4si (__a);
+  return __builtin_csky_vcmpltzv4si (__a);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmpne_u8 (uint8x16_t __a, uint8x16_t __b)
 {
-  return __builtin_csky_vcmpneuv16qi (__a, __b);
+  return __builtin_csky_vcmpunev16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmpne_u16 (uint16x8_t __a, uint16x8_t __b)
 {
-  return __builtin_csky_vcmpneuv8hi (__a, __b);
+  return __builtin_csky_vcmpunev8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmpne_u32 (uint32x4_t __a, uint32x4_t __b)
 {
-  return __builtin_csky_vcmpneuv4si (__a, __b);
+  return __builtin_csky_vcmpunev4si (__a, __b);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmpne_s8 (int8x16_t __a, int8x16_t __b)
 {
-  return __builtin_csky_vcmpnesv16qi (__a, __b);
+  return __builtin_csky_vcmpsnev16qi (__a, __b);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmpne_s16 (int16x8_t __a, int16x8_t __b)
 {
-  return __builtin_csky_vcmpnesv8hi (__a, __b);
+  return __builtin_csky_vcmpsnev8hi (__a, __b);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmpne_s32 (int32x4_t __a, int32x4_t __b)
 {
-  return __builtin_csky_vcmpnesv4si (__a, __b);
+  return __builtin_csky_vcmpsnev4si (__a, __b);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
@@ -3522,28 +3666,34 @@ vcmpnez_u32 (uint32x4_t __a)
   return __builtin_csky_vcmpnezuv4si (__a);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vcmpnez_s8 (int8x16_t __a)
 {
-  return __builtin_csky_vcmpnezsv16qi (__a);
+  return __builtin_csky_vcmpnezv16qi (__a);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vcmpnez_s16 (int16x8_t __a)
 {
-  return __builtin_csky_vcmpnezsv8hi (__a);
+  return __builtin_csky_vcmpnezv8hi (__a);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vcmpnez_s32 (int32x4_t __a)
 {
-  return __builtin_csky_vcmpnezsv4si (__a);
+  return __builtin_csky_vcmpnezv4si (__a);
+}
+
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vcnt1_u8 (uint8x16_t __a)
+{
+  return __builtin_csky_vcnt1uv16qi (__a);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vcnt1_8 (int8x16_t __a)
+vcnt1_s8 (int8x16_t __a)
 {
-  return __builtin_csky_vcnt1v16qi (__a);
+  return __builtin_csky_vcnt1sv16qi (__a);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
@@ -3583,19 +3733,19 @@ vdcl_32 (int32x4_t __a, int32x4_t __b)
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vdup_8 (int8x16_t __a, const int __b)
+vdup_8 (int8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vdup_16 (int16x8_t __a, const int __b)
+vdup_16 (int16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vdup_32 (int32x4_t __a, const int __b)
+vdup_32 (int32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vdupv4si (__a, __b);;
 }
@@ -3637,91 +3787,91 @@ vicl_32 (int32x4_t __a, int32x4_t __b)
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vins_8 (const int __a, int8x16_t __b, const int __c)
+vins_8 (const int32_t __a, int8x16_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vins_16 (const int __a, int16x8_t __b, const int __c)
+vins_16 (const int32_t __a, int16x8_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vins_32 (const int __a, int32x4_t __b, const int __c)
+vins_32 (const int32_t __a, int32x4_t __b, const int32_t __c)
 {
   return __builtin_csky_vinsv4si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vldd_8 (int __a, const int __b)
+vldd_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vldd_16 (int __a, const int __b)
+vldd_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vldd_32 (int __a, const int __b)
+vldd_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vlddv4si (__a, __b);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vldq_8 (int __a, const int __b)
+vldq_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vldq_16 (int __a, const int __b)
+vldq_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vldq_32 (int __a, const int __b)
+vldq_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vldqv4si (__a, __b);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vstd_8 (int __a, const int __b)
+vstd_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vstd_16 (int __a, const int __b)
+vstd_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vstd_32 (int __a, const int __b)
+vstd_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstdv4si (__a, __b);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vstq_8 (int __a, const int __b)
+vstq_8 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vstq_16 (int __a, const int __b)
+vstq_16 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vstq_32 (int __a, const int __b)
+vstq_32 (int32_t __a, const int32_t __b)
 {
   return __builtin_csky_vstqv4si (__a, __b);;
 }
@@ -3729,73 +3879,73 @@ vstq_32 (int __a, const int __b)
 
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vldrd_8 (int __a, int __b, const int __c)
+vldrd_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vldrd_16 (int __a, int __b, const int __c)
+vldrd_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vldrd_32 (int __a, int __b, const int __c)
+vldrd_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrdv4si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vldrq_8 (int __a, int __b, const int __c)
+vldrq_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vldrq_16 (int __a, int __b, const int __c)
+vldrq_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vldrq_32 (int __a, int __b, const int __c)
+vldrq_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vldrqv4si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vstrd_8 (int __a, int __b, const int __c)
+vstrd_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vstrd_16 (int __a, int __b, const int __c)
+vstrd_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vstrd_32 (int __a, int __b, const int __c)
+vstrd_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrdv4si (__a, __b, __c);;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vstrq_8 (int __a, int __b, const int __c)
+vstrq_8 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vstrq_16 (int __a, int __b, const int __c)
+vstrq_16 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vstrq_32 (int __a, int __b, const int __c)
+vstrq_32 (int32_t __a, int32_t __b, const int32_t __c)
 {
   return __builtin_csky_vstrqv4si (__a, __b, __c);;
 }
@@ -3875,53 +4025,90 @@ vmin_s32 (int32x4_t __a, int32x4_t __b)
 }
 
 
-__extension__ static __inline unsigned char __attribute__ ((__always_inline__))
-vmfvr_u8 (uint8x16_t __a, const int __b)
+__extension__ static __inline uint8_t __attribute__ ((__always_inline__))
+vmfvr_u8 (uint8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv16qi (__a, __b);
 }
 
-__extension__ static __inline unsigned short __attribute__ ((__always_inline__))
-vmfvr_u16 (uint16x8_t __a, const int __b)
+__extension__ static __inline uint16_t __attribute__ ((__always_inline__))
+vmfvr_u16 (uint16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv8hi (__a, __b);
 }
 
-__extension__ static __inline unsigned int __attribute__ ((__always_inline__))
-vmfvr_u32 (uint32x4_t __a, const int __b)
+__extension__ static __inline uint32_t __attribute__ ((__always_inline__))
+vmfvr_u32 (uint32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvruv4si (__a, __b);
 }
 
 __extension__ static __inline char __attribute__ ((__always_inline__))
-vmfvr_s8 (int8x16_t __a, const int __b)
+vmfvr_s8 (int8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvrsv16qi (__a, __b);
 }
 
-__extension__ static __inline short __attribute__ ((__always_inline__))
-vmfvr_s16 (int16x8_t __a, const int __b)
+__extension__ static __inline int16_t __attribute__ ((__always_inline__))
+vmfvr_s16 (int16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vmfvrsv8hi (__a, __b);
 }
 
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
-vmtvr_u8 (const int __a, unsigned char __b)
+vmtvr_u8 (const int32_t __a, uint8_t __b)
 {
   return __builtin_csky_vmtvruv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
-vmtvr_u16 (const int __a, unsigned short __b)
+vmtvr_u16 (const int32_t __a, uint16_t __b)
 {
   return __builtin_csky_vmtvruv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
-vmtvr_u32 (const int __a, unsigned int __b)
+vmtvr_u32 (const int32_t __a, uint32_t __b)
 {
   return __builtin_csky_vmtvruv4si (__a, __b);
+}
+
+/* vmov for vdsp128 */
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vmov_s8 (int8x16_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vmov_s16 (int16x8_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vmov_s32 (int32x4_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vmov_u8 (uint8x16_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vmov_u16 (uint16x8_t __a)
+{
+  return __a;
+}
+
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vmov_u32 (uint32x4_t __a)
+{
+  return __a;
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
@@ -4160,60 +4347,58 @@ vmula_s32 (int32x4_t __a, int32x4_t __b, int32x4_t __c)
   return __builtin_csky_vmulasv4si (__a, __b, __c);
 }
 
-
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
-vmuls_u8 (uint8x16_t __a, uint8x16_t __b, uint8x16_t __c)
+vmuls_u8 (uint8x16_t __c, uint8x16_t __a, uint8x16_t __b)
 {
   return __builtin_csky_vmulsuv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
-vmuls_u16 (uint16x8_t __a, uint16x8_t __b, uint16x8_t __c)
+vmuls_u16 (uint16x8_t __c, uint16x8_t __a, uint16x8_t __b)
 {
   return __builtin_csky_vmulsuv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
-vmuls_u32 (uint32x4_t __a, uint32x4_t __b, uint32x4_t __c)
+vmuls_u32 (uint32x4_t __c, uint32x4_t __a, uint32x4_t __b)
 {
   return __builtin_csky_vmulsuv4si (__a, __b, __c);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vmuls_s8 (int8x16_t __a, int8x16_t __b, int8x16_t __c)
+vmuls_s8 (int8x16_t __c, int8x16_t __a, int8x16_t __b)
 {
   return __builtin_csky_vmulssv16qi (__a, __b, __c);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vmuls_s16 (int16x8_t __a, int16x8_t __b, int16x8_t __c)
+vmuls_s16 (int16x8_t __c, int16x8_t __a, int16x8_t __b)
 {
   return __builtin_csky_vmulssv8hi (__a, __b, __c);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vmuls_s32 (int32x4_t __a, int32x4_t __b, int32x4_t __c)
+vmuls_s32 (int32x4_t __c, int32x4_t __a, int32x4_t __b)
 {
   return __builtin_csky_vmulssv4si (__a, __b, __c);
 }
 
-
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vmul_u8 (uint8x16_t __a, uint8x16_t __b)
 {
-  return __builtin_csky_vmul_uv16qi (__a, __b);
+  return __builtin_csky_vmuluv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
 vmul_u16 (uint16x8_t __a, uint16x8_t __b)
 {
-  return __builtin_csky_vmul_uv8hi (__a, __b);
+  return __builtin_csky_vmuluv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
 vmul_u32 (uint32x4_t __a, uint32x4_t __b)
 {
-  return __builtin_csky_vmul_uv4si (__a, __b);
+  return __builtin_csky_vmuluv4si (__a, __b);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
@@ -4253,38 +4438,131 @@ vneg_s32 (int32x4_t __a)
   return __builtin_csky_vnegv4si (__a);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vneg_s8_s (sat8x16_t __a)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vneg_s8_s (int8x16_t __a)
 {
-  return __builtin_csky_vnegv16qq (__a);
+  return __builtin_csky_vnegsv16qi (__a);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vneg_s16_s (sat16x8_t __a)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vneg_s16_s (int16x8_t __a)
 {
-  return __builtin_csky_vnegv8hq (__a);
+  return __builtin_csky_vnegsv8hi (__a);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vneg_s32_s (sat32x4_t __a)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vneg_s32_s (int32x4_t __a)
 {
-  return __builtin_csky_vnegv4sq (__a);
+  return __builtin_csky_vnegsv4si (__a);
+}
+
+/* vnor.t */
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vnor_s8 (int8x16_t __a, int8x16_t __b)
+{
+  return __builtin_csky_vnorsv16qi(__a, __b);
+}
+
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vnor_s16 (int16x8_t __a, int16x8_t __b)
+{
+  return __builtin_csky_vnorsv8hi(__a, __b);
+}
+
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vnor_s32 (int32x4_t __a, int32x4_t __b)
+{
+  return __builtin_csky_vnorsv4si(__a, __b);
+}
+
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vnor_u8 (uint8x16_t __a, uint8x16_t __b)
+{
+  return __builtin_csky_vnoruv16qi(__a, __b);
+}
+
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vnor_u16 (uint16x8_t __a, uint16x8_t __b)
+{
+  return __builtin_csky_vnoruv8hi(__a, __b);
+}
+
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vnor_u32 (uint32x4_t __a, uint32x4_t __b)
+{
+  return __builtin_csky_vnoruv4si(__a, __b);
+}
+
+/* vxor.t */
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vxor_s8 (int8x16_t __a, int8x16_t __b)
+{
+  return __builtin_csky_vxorsv16qi(__a, __b);
+}
+
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vxor_s16 (int16x8_t __a, int16x8_t __b)
+{
+  return __builtin_csky_vxorsv8hi(__a, __b);
+}
+
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vxor_s32 (int32x4_t __a, int32x4_t __b)
+{
+  return __builtin_csky_vxorsv4si(__a, __b);
+}
+
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vxor_u8 (uint8x16_t __a, uint8x16_t __b)
+{
+  return __builtin_csky_vxoruv16qi(__a, __b);
+}
+
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vxor_u16 (uint16x8_t __a, uint16x8_t __b)
+{
+  return __builtin_csky_vxoruv8hi(__a, __b);
+}
+
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vxor_u32 (uint32x4_t __a, uint32x4_t __b)
+{
+  return __builtin_csky_vxoruv4si(__a, __b);
+}
+
+/* vor.t */
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vor_u8 (uint8x16_t __a, uint8x16_t __b)
+{
+  return __a | __b;
+}
+
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vor_u16 (uint16x8_t __a, uint16x8_t __b)
+{
+  return __a | __b;
+}
+
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vor_u32 (uint32x4_t __a, uint32x4_t __b)
+{
+  return __a | __b;
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vor_8 (int8x16_t __a, int8x16_t __b)
+vor_s8 (int8x16_t __a, int8x16_t __b)
 {
   return __a | __b;
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vor_16 (int16x8_t __a, int16x8_t __b)
+vor_s16 (int16x8_t __a, int16x8_t __b)
 {
   return __a | __b;
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vor_32 (int32x4_t __a, int32x4_t __b)
+vor_s32 (int32x4_t __a, int32x4_t __b)
 {
   return __a | __b;
 }
@@ -4467,116 +4745,113 @@ vshl_s32 (int32x4_t __a, int32x4_t __b)
   return __builtin_csky_vshlsv4si (__a, __b);
 }
 
-__extension__ static __inline usat8x16_t __attribute__ ((__always_inline__))
-vshl_u8_s (usat8x16_t __a, usat8x16_t __b)
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vshl_u8_s (uint8x16_t __a, uint8x16_t __b)
 {
-  return __builtin_csky_vshlv16uqq (__a, __b);
+  return __builtin_csky_vshlusv16qi (__a, __b);
 }
 
-__extension__ static __inline usat16x8_t __attribute__ ((__always_inline__))
-vshl_u16_s (usat16x8_t __a, usat16x8_t __b)
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vshl_u16_s (uint16x8_t __a, uint16x8_t __b)
 {
-  return __builtin_csky_vshlv8uhq (__a, __b);
+  return __builtin_csky_vshlusv8hi (__a, __b);
 }
 
-__extension__ static __inline usat32x4_t __attribute__ ((__always_inline__))
-vshl_u32_s (usat32x4_t __a, usat32x4_t __b)
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vshl_u32_s (uint32x4_t __a, uint32x4_t __b)
 {
-  return __builtin_csky_vshlv4usq (__a, __b);
+  return __builtin_csky_vshlusv4si (__a, __b);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vshl_s8_s (sat8x16_t __a, sat8x16_t __b)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vshl_s8_s (int8x16_t __a, int8x16_t __b)
 {
-  return __builtin_csky_vshlv16qq (__a, __b);
+  return __builtin_csky_vshlssv16qi (__a, __b);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vshl_s16_s (sat16x8_t __a, sat16x8_t __b)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vshl_s16_s (int16x8_t __a, int16x8_t __b)
 {
-  return __builtin_csky_vshlv8hq (__a, __b);
+  return __builtin_csky_vshlssv8hi (__a, __b);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vshl_s32_s (sat32x4_t __a, sat32x4_t __b)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vshl_s32_s (int32x4_t __a, int32x4_t __b)
 {
-  return __builtin_csky_vshlv4sq (__a, __b);
+  return __builtin_csky_vshlssv4si (__a, __b);
 }
-
-
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
-vshli_u8 (uint8x16_t __a, const int __b)
+vshli_u8 (uint8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
-vshli_u16 (uint16x8_t __a, const int __b)
+vshli_u16 (uint16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
-vshli_u32 (uint32x4_t __a, const int __b)
+vshli_u32 (uint32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshliuv4si (__a, __b);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vshli_s8 (int8x16_t __a, const int __b)
+vshli_s8 (int8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vshli_s16 (int16x8_t __a, const int __b)
+vshli_s16 (int16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vshli_s32 (int32x4_t __a, const int __b)
+vshli_s32 (int32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshlisv4si (__a, __b);
 }
 
-__extension__ static __inline usat8x16_t __attribute__ ((__always_inline__))
-vshli_u8_s (usat8x16_t __a, const int __b)
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vshli_u8_s (uint8x16_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv16uqq (__a, __b);
+  return __builtin_csky_vshliusv16qi (__a, __b);
 }
 
-__extension__ static __inline usat16x8_t __attribute__ ((__always_inline__))
-vshli_u16_s (usat16x8_t __a, const int __b)
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vshli_u16_s (uint16x8_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv8uhq (__a, __b);
+  return __builtin_csky_vshliusv8hi (__a, __b);
 }
 
-__extension__ static __inline usat32x4_t __attribute__ ((__always_inline__))
-vshli_u32_s (usat32x4_t __a, const int __b)
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vshli_u32_s (uint32x4_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv4usq (__a, __b);
+  return __builtin_csky_vshliusv4si (__a, __b);
 }
 
-__extension__ static __inline sat8x16_t __attribute__ ((__always_inline__))
-vshli_s8_s (sat8x16_t __a, const int __b)
+__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
+vshli_s8_s (int8x16_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv16qq (__a, __b);
+  return __builtin_csky_vshlissv16qi (__a, __b);
 }
 
-__extension__ static __inline sat16x8_t __attribute__ ((__always_inline__))
-vshli_s16_s (sat16x8_t __a, const int __b)
+__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
+vshli_s16_s (int16x8_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv8hq (__a, __b);
+  return __builtin_csky_vshlissv8hi (__a, __b);
 }
 
-__extension__ static __inline sat32x4_t __attribute__ ((__always_inline__))
-vshli_s32_s (sat32x4_t __a, const int __b)
+__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
+vshli_s32_s (int32x4_t __a, const int32_t __b)
 {
-  return __builtin_csky_vshliv4sq (__a, __b);
+  return __builtin_csky_vshlissv4si (__a, __b);
 }
-
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
 vshr_u8 (uint8x16_t __a, uint8x16_t __b)
@@ -4652,73 +4927,73 @@ vshr_s32_r (int32x4_t __a, int32x4_t __b)
 
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
-vshri_u8 (uint8x16_t __a, const int __b)
+vshri_u8 (uint8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
-vshri_u16 (uint16x8_t __a, const int __b)
+vshri_u16 (uint16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
-vshri_u32 (uint32x4_t __a, const int __b)
+vshri_u32 (uint32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriuv4si (__a, __b);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vshri_s8 (int8x16_t __a, const int __b)
+vshri_s8 (int8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vshri_s16 (int16x8_t __a, const int __b)
+vshri_s16 (int16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vshri_s32 (int32x4_t __a, const int __b)
+vshri_s32 (int32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrisv4si (__a, __b);
 }
 
 __extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
-vshri_u8_r (uint8x16_t __a, const int __b)
+vshri_u8_r (uint8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv16qi (__a, __b);
 }
 
 __extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
-vshri_u16_r (uint16x8_t __a, const int __b)
+vshri_u16_r (uint16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv8hi (__a, __b);
 }
 
 __extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
-vshri_u32_r (uint32x4_t __a, const int __b)
+vshri_u32_r (uint32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshriruv4si (__a, __b);
 }
 
 __extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vshri_s8_r (int8x16_t __a, const int __b)
+vshri_s8_r (int8x16_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv16qi (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vshri_s16_r (int16x8_t __a, const int __b)
+vshri_s16_r (int16x8_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv8hi (__a, __b);
 }
 
 __extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vshri_s32_r (int32x4_t __a, const int __b)
+vshri_s32_r (int32x4_t __a, const int32_t __b)
 {
   return __builtin_csky_vshrirsv4si (__a, __b);
 }
@@ -4773,22 +5048,40 @@ vtrcl_32 (int32x4_t __a, int32x4_t __b)
   return __builtin_csky_vtrclv4si (__a, __b);
 }
 
-__extension__ static __inline int8x16_t __attribute__ ((__always_inline__))
-vtst_8 (int8x16_t __a, int8x16_t __b)
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vtst_s8 (int8x16_t __a, int8x16_t __b)
 {
-  return __builtin_csky_vtstv16qi (__a, __b);
+  return __builtin_csky_vtstsv16qi (__a, __b);
 }
 
-__extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
-vtst_16 (int16x8_t __a, int16x8_t __b)
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vtst_s16 (int16x8_t __a, int16x8_t __b)
 {
-  return __builtin_csky_vtstv8hi (__a, __b);
+  return __builtin_csky_vtstsv8hi (__a, __b);
 }
 
-__extension__ static __inline int32x4_t __attribute__ ((__always_inline__))
-vtst_32 (int32x4_t __a, int32x4_t __b)
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vtst_s32 (int32x4_t __a, int32x4_t __b)
 {
-  return __builtin_csky_vtstv4si (__a, __b);
+  return __builtin_csky_vtstsv4si (__a, __b);
+}
+
+__extension__ static __inline uint8x16_t __attribute__ ((__always_inline__))
+vtst_u8 (uint8x16_t __a, uint8x16_t __b)
+{
+  return __builtin_csky_vtstuv16qi (__a, __b);
+}
+
+__extension__ static __inline uint16x8_t __attribute__ ((__always_inline__))
+vtst_u16 (uint16x8_t __a, uint16x8_t __b)
+{
+  return __builtin_csky_vtstuv8hi (__a, __b);
+}
+
+__extension__ static __inline uint32x4_t __attribute__ ((__always_inline__))
+vtst_u32 (uint32x4_t __a, uint32x4_t __b)
+{
+  return __builtin_csky_vtstuv4si (__a, __b);
 }
 
 __extension__ static __inline int16x8_t __attribute__ ((__always_inline__))
@@ -4814,6 +5107,7 @@ vsub_eu16 (uint16x8_t __a, uint16x8_t __b)
 {
   return __builtin_csky_vsubeuv8hi (__a, __b);
 }
-#endif
+#endif // __CSKY_VDSP128__
 
 #endif
+

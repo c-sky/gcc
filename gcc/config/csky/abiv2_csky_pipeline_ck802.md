@@ -6,7 +6,7 @@
 
 (define_insn_reservation "ck802_alu" 2
   (and  (match_test "CSKY_TARGET_ARCH(CK802)")
-        (eq_attr "type" "alu"))
+        (eq_attr "type" "alu,mul,zext,sext,sexth,ins,lslr,div"))
   "csky_ck802_ex, csky_ck802_wb")
 
 (define_insn_reservation "ck802_branch" 2
@@ -31,7 +31,7 @@
 
 (define_insn_reservation "ck802_load" 2
   (and  (match_test "CSKY_TARGET_ARCH(CK802)")
-        (eq_attr "type" "load"))
+        (eq_attr "type" "load, loadr, loadi"))
   "csky_ck802_ex, csky_ck802_wb")
 
 (define_insn_reservation "ck802_store" 2
@@ -39,8 +39,8 @@
         (eq_attr "type" "store"))
   "csky_ck802_ex, csky_ck802_wb")
 
-(define_bypass 1 "*" "ck802_alu")
+(define_bypass 1 "ck802_*" "ck802_alu")
 
-(define_bypass 1 "*" "ck802_branch")
+(define_bypass 1 "ck802_*" "ck802_branch")
 
 (define_bypass 2 "ck802_cmp" "ck802_cbranch")

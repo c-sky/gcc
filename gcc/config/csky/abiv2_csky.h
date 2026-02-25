@@ -2,6 +2,7 @@
 #ifndef GCC_CSKY_H
 #define GCC_CSKY_H
 
+#include "abiv2_csky_fpu.h"
 
 #define CSKY_SP_REGNUM                14
 
@@ -10,22 +11,12 @@
 #endif
 
 #define TARGET_DEFAULT      \
-  (  MASK_PUSHPOP           \
-   | MASK_STRICT_ALIGNMENT  \
+  (  MASK_STRICT_ALIGNMENT  \
    | MASK_CONSTANT_POOL     \
    | MASK_DOUBLE_FLOAT      \
-   | MASK_FDIVDU            \
    | MASK_STACK_SIZE        \
-   | MASK_HARD_TP )
-
-/* Run-time Target Specification.  */
-#define TARGET_SOFT_FLOAT		(csky_float_abi == CSKY_FLOAT_ABI_SOFT)
-/* Use hardware floating point instructions. */
-#define TARGET_HARD_FLOAT		(csky_float_abi != CSKY_FLOAT_ABI_SOFT)
-/* Use hardware floating point calling convention.  */
-#define TARGET_HARD_FLOAT_ABI   (csky_float_abi == CSKY_FLOAT_ABI_HARD)
-/* Use hardware vector register.  */
-#define TARGET_SUPPORT_VREGS    (TARGET_HARD_FLOAT || CSKY_ISA_FEATURE(vdsp))
+   | MASK_HARD_TP           \
+   | MASK_ELRW )
 
 /* Largest increment in UNITS we allow the stack to grow in a single operation.  */
 extern int csky_stack_increment;
@@ -39,8 +30,13 @@ extern enum csky_base_architecture csky_base_arch;
 extern const char *csky_arch_name;
 
 extern char *csky_tolower (char *lo, const char *up);
+extern char *csky_toupper (char *up, const char *lo);
 
-
+/* Addressing modes, and classification of registers for them.  */
+#define HAVE_POST_INCREMENT 1
+#define HAVE_POST_MODIFY_REG 0
+#define USE_LOAD_POST_INCREMENT(mode) csky_autoinc_mode_ok_p(mode)
+#define USE_STORE_POST_INCREMENT(mode) USE_LOAD_POST_INCREMENT(mode)
 /******************************************************************
  *     Defining data structures for per-function information      *
  ******************************************************************/
@@ -319,13 +315,10 @@ typedef struct
 
 /* 1 if N is a possible register number for function argument passing.
    On the CSKY, r0-r3 are used to pass args.  */
-#define FUNCTION_ARG_REGNO_P(REGNO)         \
-  ((((REGNO) >= CSKY_FIRST_PARM_REG) &&      \
-   ((REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG))) \
-   || (TARGET_HARD_FLOAT_ABI \
-       && IN_RANGE ((REGNO), CSKY_FIRST_VFP_REGNUM, CSKY_FIRST_VFP_REGNUM + 3)) \
-  )
-
+#define FUNCTION_ARG_REGNO_P(REGNO)                       \
+  (((REGNO) >= CSKY_FIRST_PARM_REG                        \
+    && (REGNO) < (CSKY_NPARM_REGS + CSKY_FIRST_PARM_REG)) \
+   || FUNCTION_VARG_REGNO_P(REGNO))
 
 /* How Large Values Are Returned  */
 
@@ -351,7 +344,7 @@ typedef struct
  ******************************************************************/
 
 
-#define FIRST_PSEUDO_REGISTER 71
+#define FIRST_PSEUDO_REGISTER 202
 
 /* 1 for registers that have pervasive standard uses
    and are not available for the register allocator.
@@ -363,7 +356,7 @@ typedef struct
  /*  r0    r1    r2    r3    r4    r5    r6    r7  */                   \
 {    0,    0,    0,    0,    0,    0,    0,    0,                       \
  /*  r8    r9    r10   r11   r12   r13   r14   r15 */                   \
-     0,    0,    0,    0,    0,    0,    1,    0,                       \
+     0,    0,    0,    0,    0,    0,    1,    1,                       \
  /*  r16   r17   r18   r19   r20   r21   r22   r23 */                   \
      0,    0,    0,    0,    0,    0,    0,    0,                       \
  /*  r24   r25   r26   r27   r28   r29   r30   tls */                   \
@@ -380,7 +373,29 @@ typedef struct
  /* reserved */                                                         \
      1,    1,                                                           \
  /* epc */                                                              \
-     1                                                                  \
+     1,                                                                 \
+ /* vr16  vr17  vr18  vr19  vr20  vr21  vr22  vr23 */                   \
+     0,    0,    0,    0,    0,    0,    0,    0,                       \
+ /* vr24  vr25  vr26  vr27  vr28  vr29  vr30  vr31 */                   \
+     0,    0,    0,    0,    0,    0,    0,    0 ,                      \
+ /* reserved */                                                         \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* reserved for vdsp128 */                                             \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+                                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,                                                     \
 }
 
 /* 1 for registers that is clobbered (in general) by function calls.
@@ -391,7 +406,7 @@ typedef struct
  /*  r0    r1    r2    r3    r4    r5    r6    r7  */                   \
 {    1,    1,    1,    1,    0,    0,    0,    0,                       \
  /*  r8    r9    r10   r11   r12   r13   r14   r15 */                   \
-     0,    0,    0,    0,    1,    1,    1,    0,                       \
+     0,    0,    0,    0,    1,    1,    1,    1,                       \
  /*  r16   r17   r18   r19   r20   r21   r22   r23 */                   \
      0,    0,    1,    1,    1,    1,    1,    1,                       \
  /*  r24   r25   r26   r27   r28   r29   r30   r31 */                   \
@@ -408,7 +423,29 @@ typedef struct
  /* reserved */                                                         \
      1,    1,                                                           \
  /* epc */                                                              \
-     1                                                                  \
+     1,                                                                 \
+ /* vr16  vr17  vr18  vr19  vr20  vr21  vr22  vr23 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* vr24  vr25  vr26  vr27  vr28  vr29  vr30  vr31 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1 ,                      \
+ /*  reserved */                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* reserved for vdsp128 */                                             \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+                                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,                                                     \
 }
 
 /* Like `CALL_USED_REGISTERS' but used to overcome a historical
@@ -439,7 +476,29 @@ typedef struct
  /* reserved */                                                         \
      1,    1,                                                           \
  /* epc */                                                              \
-     1                                                                  \
+     1,                                                                 \
+ /* vr16  vr17  vr18  vr19  vr20  vr21  vr22  vr23 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* vr24  vr25  vr26  vr27  vr28  vr29  vr30  vr31 */                   \
+     1,    1,    1,    1,    1,    1,    1,    1 ,                      \
+ /*  reserved */                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+ /* reserved for vdsp128 */                                             \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+                                                                        \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,    1,    1,    1,    1,    1,                       \
+     1,    1,    1,                                                     \
 }
 
 #define REGISTER_NAMES                                                  \
@@ -462,7 +521,42 @@ typedef struct
   "vr0", "vr1", "vr2",  "vr3",  "vr4",  "vr5",  "vr6",  "vr7",          \
   "vr8", "vr9", "vr10", "vr11", "vr12", "vr13", "vr14", "vr15",         \
   "reserved" ,"reserved",                                               \
-  "epc"                                                                 \
+  "epc",                                                                \
+  /* V reigsters: 71~86 */                                              \
+  "vr16", "vr17", "vr18", "vr19", "vr20", "vr21", "vr22", "vr23",       \
+  "vr24", "vr25", "vr26", "vr27", "vr28", "vr29", "vr30", "vr31",       \
+  /* 87~102: used for v71~86 */                                         \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  /* 103~134: used for vdsp128 */                                       \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  /* 135~201 */                                                         \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved", "reserved", "reserved", "reserved", "reserved",           \
+  "reserved",                                                           \
+  "reserved", "reserved", "reserved",                                   \
 }
 
 /* Table of additional register names to use in user input.  */
@@ -521,9 +615,31 @@ typedef struct
      52,   53,   54,   55,   56,   57,   58,   59,              \
 /*  vr8   vr9   vr10  vr11  vr12  vr13  vr14  vr15 */           \
      60,   61,   62,   63,   64,   65,   66,   67,              \
+/*  vr16  vr17  vr18  vr19  vr20  vr21  vr22  vr23  */          \
+     71,   72,   73,   74,   75,   76,   77,   78,              \
+/*  vr24  vr25  vr26  vr27  vr28  vr29  vr30  vr31 */           \
+     79,   80,   81,   82,   83,   84,   85,   86,              \
 /*  reserved  */                                                \
      36,   37,   38,   39,   40,   41,   42,   43,              \
      44,   45,   46,   47,   48,   49,   50,   51,              \
+/*  reserved  */                                                \
+     87,   88,   89,   90,   91,   92,   93,   94,              \
+     95,   96,   97,   98,   99,   100,  101,  102,             \
+/*  reserved for vdsp128 */                                     \
+     103,   104,   105,   106,   107,   108,   109,   110,      \
+     111,   112,   113,   114,   115,   116,   117,   118,      \
+     119,   120,   121,   122,   123,   124,   125,   126,      \
+     127,   128,   129,   130,   131,   132,   133,   134,      \
+                                                                \
+     135,   136,   137,   138,   139,   140,   141,   142,      \
+     143,   144,   145,   146,   147,   148,   149,   150,      \
+     151,   152,   153,   154,   155,   156,   157,   158,      \
+     159,   160,   161,   162,   163,   164,   165,   166,      \
+     167,   168,   169,   170,   171,   172,   173,   174,      \
+     175,   176,   177,   178,   179,   180,   181,   182,      \
+     183,   184,   185,   186,   187,   188,   189,   190,      \
+     191,   192,   193,   194,   195,   196,   197,   198,      \
+     199,   200,   201,                                         \
 /*   sp   tls   reserved     c     reserved         epc */      \
      14,   31,   32,         33,   68,   69,         70  }
 
@@ -533,9 +649,12 @@ typedef struct
    but can be less for certain modes in special long registers.
 
    On the CSKY core regs are UNITS_PER_WORD bits wide.  */
-#define HARD_REGNO_NREGS(REGNO, MODE)                            \
-  ((REGNO >= CSKY_FIRST_VFP_REGNUM && !CSKY_TARGET_ARCH(CK803))  \
-   ? 1 : CSKY_NUM_REGS (MODE))
+#define HARD_REGNO_NREGS(REGNO, MODE)                              \
+  ((REGNO >= CSKY_FIRST_VFP_REGNUM                                 \
+    && !(TARGET_SINGLE_FPU                                         \
+         && !(csky_vector_mode_supported_p (MODE)                  \
+              || CSKY_VDSP_STRUCT_MODE_P (MODE))))                  \
+   ? CSKY_NUM_VREGS((MODE)) : CSKY_NUM_REGS (MODE))
 
 /* Retrun true if REGNO is suitable for holding a quantity of type MODE.  */
 #define HARD_REGNO_MODE_OK(REGNO, MODE) \
@@ -545,10 +664,7 @@ typedef struct
    when one has mode MODE1 and one has mode MODE2.
    If HARD_REGNO_MODE_OK could produce different values for MODE1 and MODE2,
    for any hard reg, then this must be 0 for correct output.  */
-#define MODES_TIEABLE_P(MODE1, MODE2) \
-  (!TARGET_HARD_FLOAT  || \
-   !(((MODE1) == DFmode && (MODE1) != (MODE2)) || \
-     ((MODE2) == DFmode && (MODE1) != (MODE2))))
+#define MODES_TIEABLE_P(MODE1, MODE2) csky_modes_tied_p((MODE1), (MODE2))
 
 /*  Register classes.  */
 enum reg_class
@@ -562,10 +678,13 @@ enum reg_class
   HI_REGS,
   LO_REGS,
   HILO_REGS,
+  VLO_REGS,
   V_REGS,
   GV_REGS,
   OTHER_REGS,
   RESERVE_REGS,
+  LSPILL_REGS,
+  HSPILL_REGS,
   ALL_REGS,
   LIM_REG_CLASSES
 };
@@ -584,10 +703,13 @@ enum reg_class
   "HI_REGS",            \
   "LO_REGS",            \
   "HILO_REGS",          \
+  "VLO_REGS",           \
   "V_REGS",             \
   "GV_REGS",            \
   "OTHER_REGS",         \
   "RESERVE_REGS",       \
+  "LSPILL_REGS",      \
+  "HSPILL_REGS",      \
   "ALL_REGS",           \
 }
 
@@ -595,22 +717,31 @@ enum reg_class
    for a vector of HARD_REG_SET of length N_REG_CLASSES.  */
 #define REG_CLASS_CONTENTS                                           \
 {                                                                    \
-  {0x00000000, 0x00000000, 0x00000000 },  /* NO_REGS           */    \
-  {0x000000FF, 0x00000000, 0x00000000 },  /* MINI_REGS         */    \
-  {0x00004000, 0x00000000, 0x00000000 },  /* SP_REGS           */    \
-  {0x0000FFFF, 0x00000000, 0x00000000 },  /* LOW_REGS          */    \
-  /* Add reg 32 and 36 into GeneralReg class JianPingZeng      */    \
-  {0xFFFFFFFF, 0x00000011, 0x00000000 },  /* GENERAL_REGS      */    \
-  {0x00000000, 0x00000002, 0x00000000 },  /* C_REGS            */    \
-  {0x00000000, 0x00000004, 0x00000000 },  /* HI_REG            */    \
-  {0x00000000, 0x00000008, 0x00000000 },  /* LO_REG            */    \
-  {0x00000000, 0x0000000c, 0x00000000 },  /* HILO_REGS         */    \
-  {0x00000000, 0xFFF00000, 0x0000000F },  /* V_REGS            */    \
-  {0xFFFFFFFF, 0xFFF00000, 0x0000000F },  /* GV_REGS           */    \
-  {0x00000000, 0x00000000, 0x00000040 },  /* OTHER_REGS        */    \
-  {0x00000000, 0x0FF00001, 0x00000030 },  /* RESERVE_REGS      */    \
-  {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F },  /* ALL_REGS          */    \
+  {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* NO_REGS           */    \
+  {0x000000FF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* MINI_REGS         */    \
+  {0x00004000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* SP_REGS           */    \
+  {0x0000FFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* LOW_REGS          */    \
+  /* Add reg 32 and 36 into GeneralReg class JianPingZeng      */                            \
+  {0xFFFFFFFF, 0x00000011, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* GENERAL_REGS      */    \
+  {0x00000000, 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* C_REGS            */    \
+  {0x00000000, 0x00000004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* HI_REG            */    \
+  {0x00000000, 0x00000008, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* LO_REG            */    \
+  {0x00000000, 0x0000000c, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* HILO_REGS         */    \
+  {0x00000000, 0xFFF00000, 0x0000000F, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* VLO_REGS          */    \
+  {0x00000000, 0xFFF00000, 0x007FFF8F, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* V_REGS            */    \
+  {0xFFFFFFFF, 0xFFF00000, 0x007FFF8F, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* GV_REGS           */    \
+  {0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* OTHER_REGS        */    \
+  {0x00000000, 0x0FF00001, 0xFF800030, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x000003FF },  /* RESERVE_REGS      */    \
+  {0x00003EFC, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* LSPILL_REGS     */      \
+  {0x03FF3EFC, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* HSPILL_REGS     */      \
+  {0xFFFFFFFF, 0xFFFFFFFF, 0x0000007F, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },  /* ALL_REGS          */    \
 }
+
+/* Any of the V register classes.  */
+#define V_REG_CLASS_P(X) \
+  ((X) == VLO_REGS || (X) == V_REGS)
+
+#define VECTOR_V_REG_CLASS VLO_REGS
 
 /* return register class from regno.  */
 extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
@@ -685,114 +816,12 @@ extern enum reg_class regno_reg_class[FIRST_PSEUDO_REGISTER];
    addresses.  */
 #define TARGET_UNSUPPORT_NEGATIVE_INDEX 1
 
-/* Addressing modes, and classification of registers for them.  */
-#define HAVE_POST_INCREMENT   1
-
 /******************************************************************
  *                        Run-time Target                         *
  ******************************************************************/
 
-
-#define TARGET_CPU_CPP_BUILTINS()                     \
-    do                                                \
-    {                                                 \
-        builtin_define ("__csky__=2");                \
-        builtin_define ("__CSKY__=2");                \
-        builtin_define ("__ckcore__=2");              \
-        builtin_define ("__CKCORE__=2");              \
-                                                      \
-        builtin_define ("__CSKYABIV2__");             \
-        builtin_define ("__cskyabiv2__");             \
-        builtin_define ("__CSKYABI__=2");             \
-        builtin_define ("__cskyabi__=2");             \
-                                                      \
-        if (TARGET_BIG_ENDIAN)                        \
-        {                                             \
-          builtin_define ("__ckcoreBE__");            \
-          builtin_define ("__cskyBE__");              \
-          builtin_define ("__cskybe__");              \
-          builtin_define ("__CSKYBE__");              \
-        }                                             \
-        else                                          \
-        {                                             \
-          builtin_define ("__ckcoreLE__");            \
-          builtin_define ("__cskyLE__");              \
-          builtin_define ("__cskyle__");              \
-          builtin_define ("__CSKYLE__");              \
-        }                                             \
-                                                      \
-        const char *Name = csky_arch_name;                      \
-        char *name = (char *) alloca (1 + strlen (Name));       \
-        char *pp_name = (char *) alloca (1 + strlen (Name) + 4);\
-        sprintf (pp_name, "__%s__", Name);                      \
-        builtin_define(pp_name);                                \
-        sprintf (pp_name, "__%s__", csky_tolower(name, Name));  \
-        builtin_define(pp_name);                                \
-                                                      \
-        if (CSKY_ISA_FEATURE(dsp))                    \
-        {                                             \
-            builtin_define ("__csky_dsp__");          \
-            builtin_define ("__CSKY_DSP__");          \
-        }                                             \
-        if (CSKY_ISA_FEATURE(dspv2))                  \
-        {                                             \
-            builtin_define ("__csky_dspv2__");        \
-            builtin_define ("__CSKY_DSPV2__");        \
-        }                                             \
-        if (CSKY_ISA_FEATURE(vdsp64))                 \
-        {                                             \
-            builtin_define ("__csky_vdsp64__");       \
-            builtin_define ("__CSKY_VDSP64__");       \
-        }                                             \
-        if (CSKY_ISA_FEATURE(vdsp128))                \
-        {                                             \
-            builtin_define ("__csky_vdsp128__");      \
-            builtin_define ("__CSKY_VDSP128__");      \
-        }                                             \
-        if (CSKY_ISA_FEATURE(fpv2_sf))                \
-        {                                             \
-            builtin_define ("__csky_fpuv2__");        \
-            builtin_define ("__CSKY_FPUV2__");        \
-        }                                             \
-        if (CSKY_ISA_FEATURE(security))               \
-        {                                             \
-            builtin_define ("__csky_security__");     \
-            builtin_define ("__CSKY_SECURITY__");     \
-        }                                             \
-                                                      \
-        if (TARGET_CP)                                \
-        {                                             \
-            builtin_define ("__csky_cp__");           \
-            builtin_define ("__CSKY_CP__");           \
-        }                                             \
-        if (TARGET_MP)                                \
-        {                                             \
-            builtin_define ("__csky_mp__");           \
-            builtin_define ("__CSKY_MP__");           \
-        }                                             \
-        if (TARGET_CACHE)                             \
-        {                                             \
-            builtin_define ("__csky_cache__");        \
-            builtin_define ("__CSKY_CACHE__");        \
-        }                                             \
-                                                      \
-        if (TARGET_HARD_FLOAT)                        \
-        {                                             \
-            builtin_define ("__csky_hard_float__");   \
-            builtin_define ("__CSKY_HARD_FLOAT__");   \
-            if (TARGET_HARD_FLOAT_ABI)                \
-              builtin_define ("__CSKY_HARD_FLOAT_ABI__"); \
-            if (csky_fpu_index == TARGET_FPU_fpv2_sf) \
-              builtin_define ("__CSKY_HARD_FLOAT_FPU_SF__"); \
-        }                                             \
-        else                                          \
-        {                                             \
-            builtin_define ("__csky_soft_float__");   \
-            builtin_define ("__CSKY_SOFT_FLOAT__");   \
-        }                                             \
-    }                                                 \
-    while (0)
-
+/* Target CPU builtins.  */
+#define TARGET_CPU_CPP_BUILTINS() csky_cpu_cpp_builtins (pfile)
 
 /******************************************************************
  *                      Per-function Data                         *
@@ -1000,6 +1029,11 @@ while (0)
 extern const int csky_dbx_regno[];
 #define DBX_REGISTER_NUMBER(REGNO) ((unsigned int)csky_dbx_regno[REGNO])
 
+#define CSKY_REGNO_OK_FOR_NREGS(REGNUM, N) \
+  (CSKY_LAST_VFP_REGNUM - (REGNUM) >= (N) - 1)
+
+#define CSKY_VDSP_STRUCT_MODE_P(MODE) \
+ ((MODE) == OImode || (MODE) == CImode || (MODE) == XImode)
 
 /******************************************************************
  *                    Miscellaneous Parameters                    *
@@ -1210,7 +1244,7 @@ csky_cc;
    Csky vdsp donot have vetcor not operator.  */
 #undef TARGET_EXCLUDE_VECTOR_OPERATOR
 #define TARGET_EXCLUDE_VECTOR_OPERATOR \
-  ((TREE_TARGET_OPTION (target_option_default_node)) -> x_vdsp_noisa & BIT_NOT_EXPR)
+  (vdsp_noisa & BIT_NOT_EXPR)
 
 /* Sized for fixed-point types.  */
 

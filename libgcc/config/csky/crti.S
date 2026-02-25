@@ -18,7 +18,11 @@
 #if PREINIT_FUNCTION_WEAK
   .global PREINIT_FUNCTION
   .weak PREINIT_FUNCTION
-#ifndef __CSKYABIV2__
+#else
+  .hidden PREINIT_FUNCTION
+#endif
+
+#if PREINIT_FUNCTION_WEAK
   .align 4
   .type call_weak_fn, %function
 call_weak_fn:
@@ -43,41 +47,12 @@ call_weak_fn:
 
   .align 4
 #endif
-#else
-  .hidden PREINIT_FUNCTION
-#endif
-
   .section .init,"ax",@progbits
   .align 4
   .globl _init
   .hidden _init
   .type _init, @function
 _init:
-#ifdef __CSKYABIV2__
-  subi    sp, 8
-  stw     lr, (sp, 0)
-  stw     gb, (sp, 4)
-  grs     t0, .Lgetpc
-.Lgetpc:
-  lrw     gb, .Lgetpc@GOTPC
-  add     gb, t0
-#if PREINIT_FUNCTION_WEAK
-  lrw     a2, PREINIT_FUNCTION@GOT
-  ldr.w   a2, (gb, a2 << 0)
-  cmpnei  a2, 0
-  bf      1f
-  jsr     a2
-1:
-#else
-  lrw     a2, PREINIT_FUNCTION@GOT
-  ldr.w   a2, (gb, a2 << 0)
-  jsr     a2
-#endif
-  br      2f
-  .literals
-  .align  4
-2:
-#else
   subi    sp, 8
   stw     lr, (sp, 0)
 #ifdef __PIC__
@@ -110,7 +85,6 @@ _init:
   .literals
   .align  4
 2:
-#endif
 
   .section .fini,"ax",@progbits
   .align 4
@@ -118,11 +92,7 @@ _init:
   .hidden _fini
   .type _fini, @function
 _fini:
-#ifdef __CSKYABIV2__
-  subi    sp, 4
-#else
-  subi    sp, 8
-#endif
+  subi    sp,8
   stw     lr, (sp, 0)
   br      2f
   .literals
@@ -131,7 +101,7 @@ _fini:
 #else
   .section  ".init"
   .global  _init
-  .hidden  _init
+  .hidden _init
   .type  _init,@function
   .align  2
 #  .align  4
@@ -159,7 +129,7 @@ _init:
 
   .section  ".fini"
   .global  _fini
-  .hidden  _fini
+  .hidden _fini
   .type  _fini,@function
   .align  2
 _fini:

@@ -218,6 +218,9 @@ lra_intersected_live_ranges_p (lra_live_range_t r1, lra_live_range_t r2)
   return false;
 }
 
+/* The corresponding bitmaps of BB currently being processed.  */
+static bitmap bb_killed_pseudos, bb_gen_pseudos;
+
 /* The function processing birth of hard register REGNO.  It updates
    living hard regs, START_LIVING, and conflict hard regs for living
    pseudos.  Conflict hard regs for the pic pseudo is not updated if
@@ -241,6 +244,8 @@ make_hard_regno_born (int regno, bool check_pic_pseudo_p ATTRIBUTE_UNUSED)
 	|| i != REGNO (pic_offset_table_rtx))
 #endif
       SET_HARD_REG_BIT (lra_reg_info[i].conflict_hard_regs, regno);
+  if (fixed_regs[regno] || TEST_HARD_REG_BIT (hard_regs_spilled_into, regno))
+    bitmap_set_bit (bb_gen_pseudos, regno);
 }
 
 /* Process the death of hard register REGNO.  This updates
@@ -253,6 +258,11 @@ make_hard_regno_dead (int regno)
     return;
   sparseset_set_bit (start_dying, regno);
   CLEAR_HARD_REG_BIT (hard_regs_live, regno);
+  if (fixed_regs[regno] || TEST_HARD_REG_BIT (hard_regs_spilled_into, regno))
+    {
+      bitmap_clear_bit (bb_gen_pseudos, regno);
+      bitmap_set_bit (bb_killed_pseudos, regno);
+    }
 }
 
 /* Mark pseudo REGNO as living at program point POINT, update conflicting
@@ -296,9 +306,6 @@ mark_pseudo_dead (int regno, int point)
       p->finish = point;
     }
 }
-
-/* The corresponding bitmaps of BB currently being processed.  */
-static bitmap bb_killed_pseudos, bb_gen_pseudos;
 
 /* Mark register REGNO (pseudo or hard register) in MODE as live at
    program point POINT.  Update BB_GEN_PSEUDOS.
@@ -998,6 +1005,25 @@ process_bb_lives (basic_block bb, int &curr_point, bool dead_insn_p)
 	check_pseudos_live_through_calls (j);
     }
 
+  for (i = 0; i < FIRST_PSEUDO_REGISTER; ++i)
+    {
+      if (!TEST_HARD_REG_BIT (hard_regs_live, i))
+	continue;
+
+      if (!TEST_HARD_REG_BIT (hard_regs_spilled_into, i))
+	continue;
+
+      if (bitmap_bit_p (df_get_live_in (bb), i))
+	continue;
+
+      live_change_p = true;
+      if (lra_dump_file)
+	fprintf (lra_dump_file,
+		 "  hard reg r%d is added to live at bb%d start\n", i,
+		 bb->index);
+      bitmap_set_bit (df_get_live_in (bb), i);
+    }
+
   if (need_curr_point_incr)
     next_program_point (curr_point, freq);
 
@@ -1271,6 +1297,11 @@ lra_create_live_ranges_1 (bool all_p, bool dead_insn_p)
 	}
       /* As we did not change CFG since LRA start we can use
 	 DF-infrastructure solver to solve live data flow problem.  */
+      for (int i = 0; i < FIRST_PSEUDO_REGISTER; ++i)
+	{
+	  if (TEST_HARD_REG_BIT (hard_regs_spilled_into, i))
+	    bitmap_clear_bit (&all_hard_regs_bitmap, i);
+	}
       df_simple_dataflow
 	(DF_BACKWARD, NULL, live_con_fun_0, live_con_fun_n,
 	 live_trans_fun, &all_blocks,

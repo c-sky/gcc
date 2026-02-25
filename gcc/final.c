@@ -191,7 +191,7 @@ static int dialect_number;
 /* Nonnull if the insn currently being emitted was a COND_EXEC pattern.  */
 rtx current_insn_predicate;
 
-/* True if printing into -fdump-final-insns= dump.  */   
+/* True if printing into -fdump-final-insns= dump.  */
 bool final_insns_dump_p;
 
 /* True if profile_function should be called, but hasn't been called yet.  */
@@ -795,7 +795,7 @@ compute_alignments (void)
 
 /* Grow the LABEL_ALIGN array after new labels are created.  */
 
-static void 
+static void
 grow_label_align (void)
 {
   int old = max_labelno;
@@ -996,10 +996,10 @@ shorten_branches (rtx_insn *first)
 
   /* Allocate the rest of the arrays.  */
   insn_lengths = XNEWVEC (int, max_uid);
-  insn_lengths_max_uid = max_uid;
+  insn_lengths_max_uid = max_uid * 2;
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
-  INSN_ADDRESSES_ALLOC (max_uid);
+  INSN_ADDRESSES_ALLOC (max_uid * 2);
 
   varying_length = XCNEWVEC (char, max_uid);
 

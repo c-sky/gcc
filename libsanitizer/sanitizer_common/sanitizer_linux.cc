@@ -162,8 +162,13 @@ uptr internal_write(fd_t fd, const void *buf, uptr count) {
 
 uptr internal_ftruncate(fd_t fd, uptr size) {
   sptr res;
+#if SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
+  HANDLE_EINTR(res, (sptr)internal_syscall(SYSCALL(ftruncate64), fd,
+               (OFF_T)size));
+#else
   HANDLE_EINTR(res, (sptr)internal_syscall(SYSCALL(ftruncate), fd,
                (OFF_T)size));
+#endif
   return res;
 }
 
@@ -211,8 +216,13 @@ uptr internal_stat(const char *path, void *buf) {
 #if SANITIZER_FREEBSD
   return internal_syscall(SYSCALL(stat), path, buf);
 #elif SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
+# if defined(__csky__)
+  return internal_syscall(SYSCALL(fstatat64), AT_FDCWD, (uptr)path,
+                          (uptr)buf, 0);
+# else
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path,
                           (uptr)buf, 0);
+# endif
 #elif SANITIZER_LINUX_USES_64BIT_SYSCALLS
 # if defined(__mips64)
   // For mips64, stat syscall fills buffer in the format of kernel_stat
@@ -235,8 +245,13 @@ uptr internal_lstat(const char *path, void *buf) {
 #if SANITIZER_FREEBSD
   return internal_syscall(SYSCALL(lstat), path, buf);
 #elif SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
+# if defined(__csky__)
+  return internal_syscall(SYSCALL(fstatat64), AT_FDCWD, (uptr)path,
+                         (uptr)buf, AT_SYMLINK_NOFOLLOW);
+# else
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path,
                          (uptr)buf, AT_SYMLINK_NOFOLLOW);
+# endif
 #elif SANITIZER_LINUX_USES_64BIT_SYSCALLS
   return internal_syscall(SYSCALL(lstat), (uptr)path, (uptr)buf);
 #else
@@ -291,7 +306,10 @@ uptr internal_unlink(const char *path) {
 }
 
 uptr internal_rename(const char *oldpath, const char *newpath) {
-#if SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
+#if defined(__csky__)
+  return internal_syscall(SYSCALL(renameat2), AT_FDCWD, (uptr)oldpath, AT_FDCWD,
+                          (uptr)newpath, 0);
+#elif SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
   return internal_syscall(SYSCALL(renameat), AT_FDCWD, (uptr)oldpath, AT_FDCWD,
                           (uptr)newpath);
 #else
@@ -321,7 +339,9 @@ uptr internal_execve(const char *filename, char *const argv[],
 // ----------------- sanitizer_common.h
 bool FileExists(const char *filename) {
   struct stat st;
-#if SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
+#if defined(__csky__)
+  if (internal_syscall(SYSCALL(fstatat64), AT_FDCWD, filename, &st, 0))
+#elif SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
   if (internal_syscall(SYSCALL(newfstatat), AT_FDCWD, filename, &st, 0))
 #else
   if (internal_stat(filename, &st))
@@ -537,7 +557,15 @@ uptr internal_getdents(fd_t fd, struct linux_dirent *dirp, unsigned int count) {
 }
 
 uptr internal_lseek(fd_t fd, OFF_T offset, int whence) {
+# if defined(__csky__)
+  int64_t res;
+  int rc = internal_syscall(SYSCALL(llseek), fd,
+                                    (long) (((u64)(offset)) >> 32),
+                                    (long) offset, &res, whence);
+  return rc ? rc : res;
+# else
   return internal_syscall(SYSCALL(lseek), fd, offset, whence);
+# endif
 }
 
 #if SANITIZER_LINUX
@@ -1136,6 +1164,11 @@ void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
   *pc = ucontext->uc_mcontext.pc;
   *bp = ucontext->uc_mcontext.gregs[30];
   *sp = ucontext->uc_mcontext.gregs[29];
+#elif defined(__csky__)
+  ucontext_t *ucontext = (ucontext_t*)context;
+  *pc = ucontext->uc_mcontext.__gregs.__pc;
+  *bp = ucontext->uc_mcontext.__gregs.__regs[5];
+  *sp = ucontext->uc_mcontext.__gregs.__usp;
 #else
 # error "Unsupported arch"
 #endif

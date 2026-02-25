@@ -28,27 +28,34 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #include <linux/version.h>
 
+#define TRAP0_V1               0x0008
+#define MOVI_R1_119_V1         (0x6000 + (119 << 4) + 1)
+#define MOVI_R1_127_V1         (0x6000 + (127 << 4) + 1)
+#define ADDI_R1_32_V1          (0x2000 + (31 << 4) + 1)
+#define ADDI_R1_14_V1          (0x2000 + (13 << 4) + 1)
+#define ADDI_R1_12_V1          (0x2000 + (11 << 4) + 1)
+
+#define TRAP0_V2_PART0         0xc000
+#define TRAP0_V2_PART1         0x2020
+#define MOVI_R7_119_V2_PART0   0xea07
+#define MOVI_R7_119_V2_PART1   119
+#define MOVI_R7_173_V2_PART0   0xea07
+#define MOVI_R7_173_V2_PART1   173
+#define MOVI_R7_139_V2_PART0   0xea07
+#define MOVI_R7_139_V2_PART1   139
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0))
 #define sc_pt_regs(x) (sc->sc_##x)
+#define sc_pt_regs_lr (sc->sc_r15)
 #define sc_pt_regs_tls(x) (sc->sc_exregs[15])
 #else
 #define sc_pt_regs(x) (sc->sc_pt_regs.x)
+#define sc_pt_regs_lr (sc->sc_pt_regs.lr)
 #define sc_pt_regs_tls(x) sc_pt_regs(x)
 #endif
 
 #include <signal.h>
 #include <asm/unistd.h>
-
-/* The third parameter to the signal handler points to something with
-   this structure defined in asm/ucontext.h, but the name clashes with
-   struct ucontext from sys/ucontext.h so this private copy is used.  */
-typedef struct _sig_ucontext {
-  unsigned long         uc_flags;
-  struct _sig_ucontext  *uc_link;
-  stack_t               uc_stack;
-  struct sigcontext     uc_mcontext;
-  sigset_t              uc_sigmask;
-} _sig_ucontext_t;
 
 #define MD_FALLBACK_FRAME_STATE_FOR csky_fallback_frame_state
 
@@ -65,11 +72,11 @@ csky_fallback_frame_state (struct _Unwind_Context *context,
 /* #define _NR_sigreturn 119 */
 #ifdef  __CSKYABIV1__
   /* movi r1, __NR_sigreturn; trap 0  */
-  if ((*(pc+0) == (0x6000 + (119 << 4) + 1)) && (*(pc+1) == 0x0008))
+  if ((*(pc+0) == MOVI_R1_119_V1) && (*(pc+1) == TRAP0_V1))
 #else
   /* movi r7, __NR_rt_sigreturn; trap 0  */
-  if ((*(pc+0) == 0xea07) && (*(pc+1) == 119) &&
-      (*(pc+2) == 0xc000) &&  (*(pc+3) == 0x2020))
+  if ((*(pc+0) == MOVI_R7_119_V2_PART0) && (*(pc+1) == MOVI_R7_119_V2_PART1) &&
+      (*(pc+2) == TRAP0_V2_PART0) &&  (*(pc+3) == TRAP0_V2_PART1))
 #endif
   {
     struct sigframe {
@@ -85,12 +92,12 @@ csky_fallback_frame_state (struct _Unwind_Context *context,
 /* #define _NR_rt_sigreturn 173 */
 #ifdef  __CSKYABIV1__
   /* movi r1, 127, addi r1, 32, addi r1, (_NR_rt_sigreturn - 127 - 32); trap 0  */
-  else if((*(pc+0) == (0x6000 + (127 << 4) + 1)) && (*(pc+1) == (0x2000 + (31 << 4) + 1)) &&
-          (*(pc+2) == (0x2000 + ((173 - 127 - 32 - 1) << 4) + 1)) && (*(pc+3) == 0x0008))
+  else if((*(pc+0) == MOVI_R1_127_V1) && (*(pc+1) == ADDI_R1_32_V1) &&
+          (*(pc+2) == ADDI_R1_14_V1) && (*(pc+3) == TRAP0_V1))
 #else
   /* movi r7, __NR_rt_sigreturn; trap 0  */
-  else if ((*(pc+0) == 0xea07) && (*(pc+1) == 173) &&
-      (*(pc+2) == 0xc000) &&  (*(pc+3) == 0x2020))
+  else if ((*(pc+0) == MOVI_R7_173_V2_PART0) && (*(pc+1) == MOVI_R7_173_V2_PART1) &&
+           (*(pc+2) == TRAP0_V2_PART0) &&  (*(pc+3) == TRAP0_V2_PART1))
 #endif
 #else
 /* #define _NR_rt_sigreturn 139 */
@@ -100,16 +107,16 @@ csky_fallback_frame_state (struct _Unwind_Context *context,
   * addi r1, (_NR_rt_sigreturn - 127)
   * trap 0
   */
-  if((*(pc+0) == (0x6000 + (127 << 4) + 1)) &&
-     (*(pc+1) == (0x2000 + ( 12 << 4) + 1)) &&
-     (*(pc+2) ==  0x0008))
+  if((*(pc+0) == MOVI_R1_127_V1) &&
+     (*(pc+1) == ADDI_R1_12_V1) &&
+     (*(pc+2) == TRAP0_V1))
 #else
   /*
    * movi r7, __NR_rt_sigreturn
    * trap 0
    */
-  if ((*(pc+0) == 0xea07) && (*(pc+1) == 139) &&
-      (*(pc+2) == 0xc000) && (*(pc+3) == 0x2020))
+  if ((*(pc+0) == MOVI_R7_139_V2_PART0) && (*(pc+1) == MOVI_R7_139_V2_PART1) &&
+      (*(pc+2) == TRAP0_V2_PART0) && (*(pc+3) == TRAP0_V2_PART1))
 #endif
 #endif
   {
@@ -124,7 +131,7 @@ csky_fallback_frame_state (struct _Unwind_Context *context,
   }
   else  return _URC_END_OF_STACK;
 
-  new_cfa = (_Unwind_Ptr) sc->sc_pt_regs.usp;
+  new_cfa = (_Unwind_Ptr) sc_pt_regs(usp);
   fs->regs.cfa_how = CFA_REG_OFFSET;
   fs->regs.cfa_reg = STACK_POINTER_REGNUM;
   fs->regs.cfa_offset = new_cfa - (_Unwind_Ptr) context->cfa;
@@ -170,15 +177,14 @@ csky_fallback_frame_state (struct _Unwind_Context *context,
   /* FIXME : hi lo ? */
 #endif
   fs->regs.reg[15].how = REG_SAVED_OFFSET;
-  fs->regs.reg[15].loc.offset = (_Unwind_Ptr)&sc_pt_regs(lr) - new_cfa;
+  fs->regs.reg[15].loc.offset = (_Unwind_Ptr)&sc_pt_regs_lr - new_cfa;
 
-  fs->regs.reg[56].how = REG_SAVED_OFFSET;
-  fs->regs.reg[56].loc.offset = (_Unwind_Ptr)&sc_pt_regs(pc) - new_cfa;
-  fs->retaddr_column = 56;
+  fs->regs.reg[32].how = REG_SAVED_OFFSET;
+  fs->regs.reg[32].loc.offset = (_Unwind_Ptr)&sc_pt_regs(pc) - new_cfa;
+  fs->retaddr_column = 32;
   fs->signal_frame = 1;
 
   return _URC_NO_REASON;
 }
 
 #endif
-

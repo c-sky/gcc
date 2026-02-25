@@ -12,7 +12,7 @@ Specify the name of the target architecture.
 
 ; Other csky_arch values are loaded from abiv2_csky_tables.opt
 EnumValue
-Enum(csky_arch) String(native) Value(-1) DriverOnly
+Enum(csky_arch) Value(-1) DriverOnly
 
 mcpu=
 Target RejectNegative ToLower Joined Enum(csky_processor_type) Var(csky_cpu_option) Init(TARGET_CPU_csky_none) Save
@@ -20,7 +20,7 @@ Specify the name of the target CPU.
 
 ; Other csky_processor_type values are loaded from abiv2_csky_tables.opt
 EnumValue
-Enum(csky_processor_type) String(native) Value(-1) DriverOnly
+Enum(csky_processor_type) Value(-1) DriverOnly
 
 mfpu=
 Target RejectNegative Joined Enum(csky_fpu) Var(csky_fpu_index) Init(TARGET_FPU_auto) Save
@@ -161,11 +161,15 @@ medsp
 Target Report Var(flag_csky_enhance_dsp)
 Use Csky Enhance DSP instructions.
 
-fcse-cc
+mvdspv2
+Target Report Var(flag_csky_vdspv2)
+Use Csky VDSPv2 instructions.
+
+mcse-cc
 Common Report Var(flag_cse_cc) Optimization
 Allow common condition code set expression elimination.
 
-fsched-prolog
+msched-prolog
 Common Report Var(flag_sched_prolog) Undocumented
 Permit scheduling of a function's prologue sequence.
 
@@ -205,3 +209,27 @@ Set the 810 vdsp vector register width, the default is 128.
 mvdsp-noisa
 Target Report Joined RejectNegative UInteger Var(vdsp_noisa) Init(0) Save Undocumented
 Set the unsupported vdsp insns, the default is 0.
+
+mpieces-move-speedup
+Target Report Var(flag_pieces_move_speedup) Init(0)
+Prefer to use instructions instead of function call when asked to copy between two areas of memory.
+
+msmall-pieces-fold
+Target Report Var(flag_small_pieces_fold) Init(0)
+Prefer to fold gimple builtin function and pieces.
+
+mloop-induction-speedup
+Target Report Var(flag_induction_speedup) Init(0)
+Prefer to improve performance when do loop ivopt, copy header and ira.
+
+mspill-regs
+Target Report Var(flag_spill_regs) Init(1)
+Enable SPILL_REGS for register pressure which bring down performance.
+
+mrequired-attr-fpu-abi
+Target Report Var(flag_required_attr_fpu_abi) Init(1)
+Enable required csky attribute for fpu abi.
+
+msim
+Target
+Use the simulator runtime.

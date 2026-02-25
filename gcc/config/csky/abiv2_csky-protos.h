@@ -8,12 +8,6 @@
 #define CSKY_NPARM_REGS               4
 #define CSKY_FIRST_PARM_REG           0
 #define CSKY_NGPR_REGS                32
-#define CSKY_NPARM_FREGS              4
-#define CSKY_FIRST_VFP_REGNUM         52
-#define CSKY_LAST_VFP_REGNUM          67
-#define CSKY_FIRST_PERESERVED_VFP     60
-#define CSKY_LAST_PERESERVED_VFP      67
-#define CSKY_NVFP_REGS                16
 #define CSKY_FIRST_HIGH_REGNUM        16
 #define CSKY_LAST_HIGH_REGNUM         (CSKY_NGPR_REGS - 1)
 #define CSKY_FIRST_MINI_REGNUM        0
@@ -22,6 +16,7 @@
 #define CSKY_LO_REGNUM                35
 #define CSKY_LAST_HIGH_UNFIXED_REGNUM 25
 #define CSKY_TLS_REGNUM               31
+#define CSKY_EPC_REGNUM               70
 
 #define CSKY_LD16_MAX_OFFSET(MODE)    (31 * GET_MODE_SIZE(MODE))
 #define CSKY_LD32_MAX_OFFSET(MODE)    (4095 * GET_MODE_SIZE(MODE))
@@ -34,20 +29,21 @@
 #define CSKY_MULTIPLE_LDST_THRESHOLD  3
 #define CSKY_MAX_MULTIPLE_STLD        12
 
+#define UNITS_PER_V128 16
 #define CSKY_NUM_WORDS(SIZE) ((SIZE + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
+#define CSKY_NUM_V128(SIZE) ((SIZE + UNITS_PER_V128 - 1) / UNITS_PER_V128)
 
 #define CSKY_GENERAL_REGNO_P(N) \
   ((N) < CSKY_NGPR_REGS && (N) >= 0)
-
-#define CSKY_VREG_P(N)               \
-  (((N) >= CSKY_FIRST_VFP_REGNUM)    \
-   && ((N) <= CSKY_LAST_VFP_REGNUM))
 
 #define CSKY_HILO_REG_P(N)   \
   ((N == CSKY_HI_REGNUM) || (N == CSKY_LO_REGNUM))
 
 #define CSKY_NUM_REGS(MODE) \
   CSKY_NUM_WORDS(GET_MODE_SIZE (MODE))
+
+#define CSKY_NUM_VREGS(MODE) \
+  CSKY_NUM_V128(GET_MODE_SIZE (MODE))
 
 #define CSKY_CONSTPOOL_LABEL_PREFIX   "LCP"
 
@@ -96,6 +92,9 @@
 #define CSKY_CONST_OK_FOR_P(VALUE)  \
   ((((VALUE) & 0x3) == 0)           \
    && VALUE_BETWEEN(VALUE, 4, 508))
+
+#define CSKY_CONST_OK_FOR_Uw(VALUE)  \
+  (VALUE_BETWEEN(VALUE, -128, 127))
 
 #define CSKY_CONST_OK_FOR_Ug(VALUE)  \
   ((((VALUE) & 0x3) == 0)            \
@@ -171,7 +170,7 @@ csky_stack_frame;
 
 struct csky_address
 {
-  rtx base, index, symbol, label, disp, post_inc_reg;
+  rtx base, index, symbol, label, disp, post_inc_reg, post_modify_reg;
   HOST_WIDE_INT scale;
 };
 
@@ -222,7 +221,7 @@ extern int get_cskyv2_mem_constraint (const char *, rtx);
 #ifdef RTX_CODE
 extern bool gen_csky_compare (enum rtx_code, rtx, rtx);
 extern bool gen_csky_compare_float (enum rtx_code, rtx, rtx);
-extern int csky_split_constant (enum rtx_code, machine_mode, rtx,
+extern void csky_split_constant (enum rtx_code, machine_mode, rtx,
                                 HOST_WIDE_INT, rtx, rtx, int);
 extern bool csky_can_split_constant (enum rtx_code, rtx,
                                      HOST_WIDE_INT);
@@ -269,6 +268,7 @@ extern int csky_arch_isa_features[];
 #include "abiv2_csky_internal.h"
 extern const struct tune_params *current_tune;
 
+extern void csky_cpu_cpp_builtins (struct cpp_reader *);
 extern void csky_asm_output_opcode (FILE *);
 extern enum csky_cond_code maybe_get_csky_condition_code (rtx);
 extern void csky_final_prescan_insn (rtx_insn *);
@@ -280,6 +280,30 @@ extern void csky_init_builtins (void);
 extern tree csky_builtin_decl (unsigned, bool);
 extern rtx csky_expand_builtin (tree, rtx, rtx, machine_mode, int);
 extern void csky_const_bounds (rtx, HOST_WIDE_INT, HOST_WIDE_INT);
+extern bool csky_signed_reg_p (rtx op);
+extern bool csky_unsigned_reg_p (rtx op);
 extern bool csky_legitimate_address_p (machine_mode, rtx, bool);
+extern bool csky_autoinc_mode_ok_p(machine_mode);
+/* Determines if the specified address expression is legal for ldr.hs or ldr.bs instruction. */
+extern int cskyv2_valid_address_ldr_hs(rtx addr, bool addr_index);
+
+extern int cskyv2_valid_address_reg_disp(rtx operand, machine_mode mode);
+/* fpv3 */
+extern const char *fp3_output_move (rtx *operands);
+extern int fp3_const_double_rtx (rtx x);
+extern int fp3_const_double_for_fract_bits (rtx);
+extern int fp3_const_double_for_bits (rtx);
+
+extern bool csky_modes_tied_p(machine_mode mode1, machine_mode mode2);
+extern rtx csky_make_constant (rtx vals);
+int vdspv2_immediate_valid_for_shift (rtx op, machine_mode mode,
+                                      rtx *modconst, int *elementwidth,
+                                      bool isleftshift, bool isextend);
+char * vdspv2_output_shift_immediate (const char *mnem, char sign,const char* suf,rtx *op2,
+                               machine_mode mode, bool isleftshift, bool isextend);
+rtx vdspv2_immediate_from_scalar(rtx op, machine_mode mode);
+rtx csky_vldld_shiftsize(rtx op, machine_mode mode, bool flag);
+
+extern int csky_isrp2fp_offset;
 
 #endif /* GCC_CSKY_PROTOS_H */

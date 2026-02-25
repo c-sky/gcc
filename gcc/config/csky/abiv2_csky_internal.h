@@ -28,13 +28,17 @@ struct tune_params
 
   int (*branch_cost) (bool, bool);
   bool (*logical_op_non_short_circuit) (void);
+  const char *fpu;
 };
 
 
 struct csky_option2isa
 {
-  int flag;
+  int value;
   enum csky_isa_feature isa_bits[CSKY_ISA_FEATURE_GET(max)];
+  const void *opt;
+  const void *opt_set;
+  const void *vtype;
 };
 
 struct csky_processors

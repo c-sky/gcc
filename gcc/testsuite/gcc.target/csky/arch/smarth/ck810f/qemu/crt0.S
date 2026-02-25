@@ -137,7 +137,7 @@ __goto_c:
 exit:
 __GI_exit:
 _exit:
-    lrw     r4, 0x10002000
+    lrw     r4, 0x90002000
     mov     r5, a0
     stw     r5, (r4, 0)
     bkpt
@@ -145,13 +145,13 @@ _exit:
 abort:
 __GI_abort:
 _abort:
-    lrw     r4, 0x10002000
+    lrw     r4, 0x90002000
     movi    r5, 0x1
     stw     r5, (r4, 0)
     bkpt
     br _abort
 __default_exception_handler:
-    lrw     r4, 0x10002000
+    lrw     r4, 0x90002000
     movi    r5, 0x2
     stw     r5, (r4, 0)
     br __default_exception_handler

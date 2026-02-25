@@ -115,7 +115,7 @@
 // the upstream linux community for all new ports. Other ports may still
 // use legacy syscalls.
 #ifndef SANITIZER_USES_CANONICAL_LINUX_SYSCALLS
-# if defined(__aarch64__) && SANITIZER_LINUX
+# if (defined (__aarch64__) || (__csky__)) && SANITIZER_LINUX
 # define SANITIZER_USES_CANONICAL_LINUX_SYSCALLS 1
 # else
 # define SANITIZER_USES_CANONICAL_LINUX_SYSCALLS 0

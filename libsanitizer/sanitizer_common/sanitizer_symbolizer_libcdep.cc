@@ -215,6 +215,8 @@ class LLVMSymbolizerProcess : public SymbolizerProcess {
     const char* const kSymbolizerArch = "--default-arch=powerpc64";
 #elif defined(__powerpc64__) && defined(__LITTLE_ENDIAN__)
     const char* const kSymbolizerArch = "--default-arch=powerpc64le";
+#elif defined(__csky__)
+    const char* const kSymbolizerArch = "--default-arch=csky";
 #else
     const char* const kSymbolizerArch = "--default-arch=unknown";
 #endif

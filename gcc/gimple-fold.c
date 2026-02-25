@@ -1310,7 +1310,7 @@ gimple_fold_builtin_strcpy (gimple_stmt_iterator *gsi,
       return true;
     }
 
-  if (optimize_function_for_size_p (cfun))
+  if (optimize_function_for_size_p (cfun) && !flag_gimple_fold_builtin)
     return false;
 
   fn = builtin_decl_implicit (BUILT_IN_MEMCPY);
@@ -1964,7 +1964,8 @@ gimple_fold_builtin_stpcpy (gimple_stmt_iterator *gsi)
 
   if (optimize_function_for_size_p (cfun)
       /* If length is zero it's small enough.  */
-      && !integer_zerop (len))
+      && !integer_zerop (len)
+      && !flag_gimple_fold_builtin)
     return false;
 
   /* If the source has a known length replace stpcpy with memcpy.  */

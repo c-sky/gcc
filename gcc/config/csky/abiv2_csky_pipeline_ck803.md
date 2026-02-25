@@ -8,12 +8,12 @@
 
 (define_insn_reservation "ck803_3cycle" 1
   (and (match_test "CSKY_TARGET_ARCH(CK803)")
-       (eq_attr "type" "alu,cmp,branch,branch_jmp,call_jsr,call"))
+       (eq_attr "type" "alu,mul,div,zext,sext,sexth,ins,lslr,cmp,branch,branch_jmp,call_jsr,call"))
   "ck803_ex1+ck803_exit")
 
 (define_insn_reservation "ck803_alu1" 1
   (and (match_test "CSKY_TARGET_ARCH(CK803)")
-       (eq_attr "type" "addsub,alu_ix"))
+       (eq_attr "type" "addsub,caddsub,alu_ix"))
   "ck803_ex1+ck803_exit")
 
 (define_insn_reservation "ck803_cbranch" 1
@@ -23,7 +23,7 @@
 
 (define_insn_reservation "ck803_load" 1
   (and (match_test "CSKY_TARGET_ARCH(CK803)")
-       (eq_attr "type" "load"))
+       (eq_attr "type" "load, loadr, loadi"))
   "ck803_ex1+ck803_exit")
 
 (define_insn_reservation "ck803_store" 1

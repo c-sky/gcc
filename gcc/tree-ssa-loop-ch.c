@@ -59,7 +59,7 @@ should_duplicate_loop_header_p (basic_block header, struct loop *loop,
      be true, since quite often it is possible to verify that the condition is
      satisfied in the first iteration and therefore to eliminate it.  Jump
      threading handles these cases now.  */
-  if (optimize_loop_for_size_p (loop))
+  if (optimize_loop_for_size_p (loop) && !flag_duplicate_loop_header)
     return false;
 
   gcc_assert (EDGE_COUNT (header->succs) > 0);

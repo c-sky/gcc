@@ -32,6 +32,8 @@ load_gcc_lib scanipa.exp
 load_gcc_lib timeout-dg.exp
 load_gcc_lib torture-options.exp
 load_gcc_lib fortran-modules.exp
+load_gcc_lib gcc-gdb-test.exp
+load_gcc_lib gcc-qemu-test.exp
 
 # Try to load a test support file, built during libgomp configuration.
 load_file libgomp-test-support.exp
@@ -348,7 +350,7 @@ proc check_effective_target_offload_device_nonshared_as { } {
 	}
     } ]
 }
-  
+
 # Return 1 if offload device is available and it has shared address space.
 proc check_effective_target_offload_device_shared_as { } {
     return [check_runtime_nocache offload_device_shared_as {
@@ -411,7 +413,7 @@ proc check_effective_target_hsa_offloading_selected_nocache {} {
 	    return v;
 	}
     }
-    
+
     set result [eval [list check_compile hsa_offloading_src executable $src] ""]
     set lines [lindex $result 0]
     set output [lindex $result 1]

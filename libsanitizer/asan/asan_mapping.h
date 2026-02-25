@@ -107,6 +107,14 @@
 // || `[0x36000000, 0x39ffffff]` || ShadowGap  ||
 // || `[0x30000000, 0x35ffffff]` || LowShadow  ||
 // || `[0x00000000, 0x2fffffff]` || LowMem     ||
+//
+// Default Linux/CSKY mapping:
+// || `[0x2aaa0000, 0xffffffff]` || HighMem    ||
+// || `[0x0fff4000, 0x2aa9ffff]` || HighShadow ||
+// || `[0x0bff4000, 0x0fff3fff]` || ShadowGap  ||
+// || `[0x0aaa0000, 0x0bff3fff]` || LowShadow  ||
+// || `[0x00000000, 0x0aa9ffff]` || LowMem     ||
+//
 
 static const u64 kDefaultShadowScale = 3;
 static const u64 kDefaultShadowOffset32 = 1ULL << 29;  // 0x20000000
@@ -123,6 +131,7 @@ static const u64 kPPC64_ShadowOffset64 = 1ULL << 41;
 static const u64 kFreeBSD_ShadowOffset32 = 1ULL << 30;  // 0x40000000
 static const u64 kFreeBSD_ShadowOffset64 = 1ULL << 46;  // 0x400000000000
 static const u64 kWindowsShadowOffset32 = 3ULL << 28;  // 0x30000000
+static const u64 kCSKY_ShadowOffset32 = 0x0aaa0000;
 
 #define SHADOW_SCALE kDefaultShadowScale
 
@@ -132,6 +141,8 @@ static const u64 kWindowsShadowOffset32 = 3ULL << 28;  // 0x30000000
 #    define SHADOW_OFFSET (0)
 #  elif defined(__mips__)
 #    define SHADOW_OFFSET kMIPS32_ShadowOffset32
+#  elif defined(__csky__)
+#    define SHADOW_OFFSET kCSKY_ShadowOffset32
 #  elif SANITIZER_FREEBSD
 #    define SHADOW_OFFSET kFreeBSD_ShadowOffset32
 #  elif SANITIZER_WINDOWS

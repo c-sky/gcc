@@ -32,6 +32,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pretty-print.h"
 #include "fold-const.h"
 #include "cfgloop.h"
+#include "tree-pass.h"
+#include "tree-ssa.h"
 #include "tree-ssa-loop-ivopts.h"
 #include "tree-ssa-loop-niter.h"
 #include "tree-chrec.h"
@@ -39,6 +41,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "params.h"
 #include "tree-scalar-evolution.h"
 
+
+static bool valid_sharp_wrap_pass_p(){
+  return !strcmp(current_pass->name,"cunroll") || !strcmp(current_pass->name, "ivopts");
+}
 /* Extended folder for chrecs.  */
 
 /* Determines whether CST is not a constant evolution.  */
@@ -1178,6 +1184,7 @@ convert_affine_scev (struct loop *loop, tree type,
   tree ct = TREE_TYPE (*step);
   bool enforce_overflow_semantics;
   bool must_check_src_overflow, must_check_rslt_overflow;
+  bool wrap_p = true;
   tree new_base, new_step;
   tree step_type = POINTER_TYPE_P (type) ? sizetype : type;
 
@@ -1231,7 +1238,25 @@ convert_affine_scev (struct loop *loop, tree type,
   else
     must_check_rslt_overflow = false;
 
-  if (must_check_src_overflow
+  /* if ct is unsigned char/short/int, and type is signed short/int/long long
+     we assume there is no wrap in ct, this will get more optimization*/
+
+  if(flag_sharp_wrap
+     &&  valid_sharp_wrap_pass_p()
+     && must_check_src_overflow
+     && !chrec_contains_undetermined(*base)
+     && !chrec_contains_undetermined(*step)
+     && !TYPE_UNSIGNED(type)
+     && TYPE_UNSIGNED(ct)
+     && TREE_CODE(*step) == INTEGER_CST
+     && TREE_CODE(type) == INTEGER_TYPE
+     && TREE_CODE(ct) == INTEGER_TYPE
+     && TYPE_PRECISION(ct) * 2 == TYPE_PRECISION(type))
+
+    wrap_p = false;
+
+  if (wrap_p
+      && must_check_src_overflow
       && scev_probably_wraps_p (*base, *step, at_stmt, loop,
 				use_overflow_semantics))
     return false;
@@ -1354,6 +1379,9 @@ keep_cast:
   else
     res = fold_convert (type, chrec);
 
+  if(flag_sharp_wrap &&  valid_sharp_wrap_pass_p())
+    STRIP_USELESS_TYPE_CONVERSION(res);
+
   /* Don't propagate overflows.  */
   if (CONSTANT_CLASS_P (res))
     TREE_OVERFLOW (res) = 0;
@@ -1424,8 +1452,14 @@ chrec_convert_aggressive (tree type, tree chrec, bool *fold_conversions)
     return NULL_TREE;
 
   inner_type = TREE_TYPE (chrec);
-  if (TYPE_PRECISION (type) > TYPE_PRECISION (inner_type))
-    return NULL_TREE;
+
+  /* if(!flag_sharp_wrap */
+  if(!flag_sharp_wrap
+     || ! valid_sharp_wrap_pass_p()
+     || TYPE_PRECISION(type) > 2*TYPE_PRECISION(inner_type)){
+    if (TYPE_PRECISION (type) > TYPE_PRECISION (inner_type))
+      return NULL_TREE;
+  }
 
   if (useless_type_conversion_p (type, inner_type))
     return NULL_TREE;

@@ -82,12 +82,13 @@ $padding\""
 if [ $# = 0 ]; then
 EOF
 
+m="\/"
 pat=
 for x in $dirnames; do
 #  p=`echo $x | sed -e 's,=!,/$=/,'`
-  p=`echo $x | sed -e 's/=//g'`
+  p=`echo $x | sed -e 's,=,\\\/,g'`
 #  pat="$pat -e 's=^//$p='"
-   pat="$pat -e 's/$p/g'"
+   pat="$pat -e 's/$p$m/g'"
 done
 echo '  optstring=`echo "/$optstring" | sed '"$pat\`" >> print-sysroot-suffix2.sh
 cat >> print-sysroot-suffix2.sh <<\EOF

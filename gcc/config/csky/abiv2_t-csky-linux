@@ -4,28 +4,44 @@ MULTILIB_DIRNAMES    = little big
 MULTILIB_MATCHES     = mlittle-endian=EL
 MULTILIB_MATCHES     = mbig-endian=EB
 MULTILIB_EXCEPTIONS  =
-CSKY_MULTILIB_OSDIRNAMES = mbig-endian=/big mlittle-endian=/. mfloat-abi.softfp=/soft-fp mfloat-abi.hard=/hard-fp mfloat-abi.soft=/. mmultiple-stld=/stm mno-multiple-stld=/. fpic=/pic mcpu.ck810f=/. mcpu.ck807f=/ck807
+CSKY_MULTILIB_OSDIRNAMES = mbig-endian=/big mlittle-endian=/. mfloat-abi.softfp=/soft-fp mfloat-abi.hard=/hard-fp mfloat-abi.soft=/. mmultiple-stld=/stm mno-multiple-stld=/. fpic=/pic mcpu.ck810f=/. mcpu.ck810fv=/ck810v mcpu.ck807f=/ck807 mcpu.ck860f=/ck860 mcpu.ck860fv=/ck860v mcpu.ck800=/ck800
 
 # For arch
-MULTILIB_OPTIONS     += mcpu=ck810f/mcpu=ck807f
-MULTILIB_DIRNAMES    += ck810 ck807
+MULTILIB_OPTIONS     += mcpu=ck800/mcpu=ck810f/mcpu=ck810fv/mcpu=ck807f/mcpu=ck860f/mcpu=ck860fv
+MULTILIB_DIRNAMES    += ck800 ck810 ck810v ck807 ck860 ck860v
 
 # For ck807
 MULTILIB_MATCHES     += mcpu?ck807f=march?ck807
 MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807e
 MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807ef
 MULTILIB_MATCHES     += mcpu?ck807f=mcpu?ck807
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?c807
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?c807f
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?r807
+MULTILIB_MATCHES     += mcpu?ck807f=mcpu?r807f
 
 # For arch ck810
 MULTILIB_MATCHES     += mcpu?ck810f=march?ck810
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810v
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810t
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810tv
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810fv
 MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ft
-MULTILIB_MATCHES     += mcpu?ck810f=mcpu?ck810ftv
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?c810
+MULTILIB_MATCHES     += mcpu?ck810f=mcpu?c810t
 
+MULTILIB_MATCHES     += mcpu?ck810fv=march?ck810v
+MULTILIB_MATCHES     += mcpu?ck810fv=mcpu?ck810v
+MULTILIB_MATCHES     += mcpu?ck810fv=mcpu?ck810tv
+MULTILIB_MATCHES     += mcpu?ck810fv=mcpu?ck810ftv
+MULTILIB_MATCHES     += mcpu?ck810fv=mcpu?c810v
+MULTILIB_MATCHES     += mcpu?ck810fv=mcpu?c810tv
+
+# For ck860
+MULTILIB_MATCHES     += mcpu?ck860f=march?ck860
+MULTILIB_MATCHES     += mcpu?ck860f=mcpu?ck860
+MULTILIB_MATCHES     += mcpu?ck860f=mcpu?c860
+MULTILIB_MATCHES     += mcpu?ck860fv=march?ck860v
+MULTILIB_MATCHES     += mcpu?ck860fv=mcpu?ck860v
+MULTILIB_MATCHES     += mcpu?ck860fv=mcpu?c860v
 
 # For option -mfloat-abi=
 MULTILIB_OPTIONS     += mfloat-abi=soft/mfloat-abi=softfp/mfloat-abi=hard
@@ -46,3 +62,8 @@ MULTILIB_DIRNAMES    += soft soft-fp hard-fp
 #MULTILIB_EXCEPTIONS += *mcpu?ck810/*mhard-float*
 #MULTILIB_EXCEPTIONS += *mcpu?ck810*/*fpic*
 
+MULTILIB_EXCEPTIONS  += *mbig-endian/*mcpu=ck860fv*
+
+MULTILIB_EXCEPTIONS  += *mbig-endian/*mcpu=ck800*
+MULTILIB_EXCEPTIONS  += *mcpu=ck800/*mfloat-abi=softfp*
+MULTILIB_EXCEPTIONS  += *mcpu=ck800/*mfloat-abi=hard*

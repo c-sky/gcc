@@ -1,4 +1,3 @@
-
 ;; Return 1 if OP is a load multiple operation.
 
 (define_predicate "csky_load_multiple_operation"
@@ -14,8 +13,7 @@
       || GET_CODE (XVECEXP (op, 0, 0))                     != SET
       || GET_CODE (SET_DEST (XVECEXP (op, 0, 0)))          != REG
       || GET_CODE (SET_SRC (XVECEXP (op, 0, 0)))           != MEM
-      || GET_CODE (XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0)) != REG
-      || XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0)            != stack_pointer_rtx)
+      || GET_CODE (XEXP (SET_SRC (XVECEXP (op, 0, 0)), 0)) != REG)
     return 0;
 
   dest_regno = REGNO (SET_DEST (XVECEXP (op, 0, 0)));
@@ -55,7 +53,6 @@
       || GET_CODE (XVECEXP (op, 0, 0))                      != SET
       || GET_CODE (SET_DEST (XVECEXP (op, 0, 0)))           != MEM
       || GET_CODE (XEXP (SET_DEST (XVECEXP (op, 0, 0)), 0)) != REG
-      || XEXP (SET_DEST (XVECEXP (op, 0, 0)), 0)            != stack_pointer_rtx
       || GET_CODE (SET_SRC (XVECEXP (op, 0, 0)))            != REG)
     return 0;
 
@@ -232,24 +229,7 @@
 (define_predicate "csky_addr_reg_disp"
   (match_code "mem")
   {
-    if (! general_operand(op, mode))
-      return 0;
-    else
-      {
-        struct csky_address addr;
-
-        decompose_csky_address (XEXP(op, 0), &addr);
-
-        /* FIXME The PIC related code.
-           Check if load the symbol address from got table.  */
-        if (addr.disp && GET_CODE(addr.disp) == UNSPEC)
-            return 0;
-
-        if (! addr.index && !addr.symbol)
-          return 1;
-
-        return 0;
-      }
+    return cskyv2_valid_address_reg_disp(op, mode);
   })
 
 (define_predicate "csky_addr_reg"
@@ -458,24 +438,103 @@
   (and (match_code "const_int")
        (match_test "IN_RANGE (INTVAL (op), 0, 31)")))
 
+(define_predicate "const_0_to_127_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 127)")))
+
+(define_predicate "const_0_to_127_mult4_operand"
+  (and (match_code "const_int")
+       (and (match_test "INTVAL (op)%4 == 0")
+            (match_test "IN_RANGE (INTVAL (op), 0, 508)"))))
+
 (define_predicate "imm_or_reg_vdsp_operand"
   (ior (match_operand 0 "register_operand")
        (match_operand 0 "const_0_to_15_operand")))
 
+(define_predicate "imm_for_vdspv2_lshift_operand"
+  (match_code "const_vector")
+{
+  return vdspv2_immediate_valid_for_shift (op, mode, NULL, NULL, true, false);
+})
+
+(define_predicate "imm_for_vdspv2_rshift_operand"
+  (match_code "const_vector")
+{
+  return vdspv2_immediate_valid_for_shift (op, mode, NULL, NULL, false, false);
+})
+
+(define_predicate "imm_for_vdspv2_lshifte_operand"
+  (match_code "const_vector")
+{
+  return vdspv2_immediate_valid_for_shift (op, mode, NULL, NULL, true, true);
+})
+
+(define_predicate "imm_lshift_or_reg_vdspv2"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm_for_vdspv2_lshift_operand")))
+
+(define_predicate "imm_rshift_or_reg_vdspv2"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm_for_vdspv2_rshift_operand")))
+
 (define_predicate "zero_operand"
   (and (match_code "const_int,const_vector")
        (match_test "op == CONST0_RTX (mode)")))
+
+(define_predicate "vectcmp_operand"
+  (ior (match_operand 0 "zero_operand")
+       (match_operand 0 "register_operand")))
 
 ;; Match a register, or zero in the appropriate mode.
 (define_predicate "reg_or_zero_operand"
   (ior (match_operand 0 "register_operand")
        (match_operand 0 "zero_operand")))
 
-(define_predicate "csky_scond_operator"
+(define_predicate "csky_scond_operator_common"
   (match_code "ne, ge, lt"))
 
-(define_predicate "csky_ucond_operator"
+(define_predicate "csky_ucond_operator_common"
   (match_code "ne, geu, ltu"))
 
-(define_special_predicate "csky_vect_comparison_operator"
-  (match_code "ne,lt,ge"))
+(define_special_predicate "csky_scond_operator"
+  (match_code "le, gt, ne, ge, lt"))
+
+(define_special_predicate "csky_ucond_operator"
+  (match_code "leu, gtu, ne, geu, ltu"))
+
+;; Define a predicate for ldr_hs template in md file.
+;; Jianping Zeng on 4/5/2018.
+(define_predicate "csky_address_index"
+  (match_code "mem")
+  {
+    return (cskyv2_valid_address_ldr_hs(XEXP (op, 0), true));
+  })
+(define_predicate "csky_address_index_0"
+  (match_code "mem")
+  {
+    return (cskyv2_valid_address_ldr_hs(XEXP (op, 0), false));
+  })
+
+(define_predicate "const_double_fcvt_power_of_two_reciprocal_hq"
+  (and (match_code "const_double")
+       (match_test "IN_RANGE (fp3_const_double_for_fract_bits (op), 1, 16)")))
+
+(define_predicate "const_double_fcvt_power_of_two_reciprocal_sq"
+  (and (match_code "const_double")
+       (match_test "IN_RANGE (fp3_const_double_for_fract_bits (op), 1, 32)")))
+
+(define_predicate "const_double_fcvt_power_of_two_hq"
+  (and (match_code "const_double")
+       (match_test "IN_RANGE (fp3_const_double_for_bits (op), 1, 16)")))
+
+(define_predicate "const_double_fcvt_power_of_two_sq"
+  (and (match_code "const_double")
+       (match_test "IN_RANGE (fp3_const_double_for_bits (op), 1, 32)")))
+
+(define_predicate "g_register_operand"
+  (match_code "reg")
+  {
+     int regno = REGNO (op);
+     return CSKY_GENERAL_REGNO_P (regno);
+  }
+)

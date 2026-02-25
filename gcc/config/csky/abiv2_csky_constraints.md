@@ -16,6 +16,7 @@
 
 (define_register_constraint "h" "HI_REGS" "hi register only")
 
+(define_register_constraint "w" "VLO_REGS" "vr0 - vr15")
 
 (define_register_constraint "v" "V_REGS" "Vector REGS")
 
@@ -75,6 +76,11 @@
   "Constant in range 0 - 255"
   (and (match_code "const_int")
        (match_test "CSKY_CONST_OK_FOR_N(ival + 1)")))
+
+(define_constraint "Uw"
+  "Constant in range -128 - 127"
+  (and (match_code "const_int")
+       (match_test "CSKY_CONST_OK_FOR_Uw(ival)")))
 
 (define_constraint "Uf"
   "A constant with two '1' bit maximum"
@@ -199,7 +205,7 @@
 (define_constraint "Dm"
   "memory operands whose address do not accept post_inc if condition is dspv2"
   (and (match_code "mem")
-       (match_test "!CSKY_ISA_FEATURE(dspv2) || GET_CODE (XEXP (op, 0)) != POST_INC")))
+       (match_test "(!CSKY_ISA_FEATURE(dspv2) || GET_CODE (XEXP (op, 0)) != POST_INC) && cskyv2_valid_address_reg_disp(op, mode)")))
 
 (define_memory_constraint "Ds"
   "memory operands just valid for single float instructions."
@@ -210,3 +216,32 @@
   "memory operands just valid for double float instructions."
   (and (match_code "mem")
        (match_test "csky_legitimate_address_p (DFmode, XEXP (op, 0), 0)")))
+
+(define_memory_constraint "Dl"
+  "memory operands just be valid for ldr_hs instruction."
+  (and (match_code "mem")
+       (match_test "cskyv2_valid_address_ldr_hs(XEXP (op, 0), true)")))
+
+(define_memory_constraint "Dn"
+  "memory operands just be valid for ldr_bs instruction."
+  (and (match_code "mem")
+       (match_test "cskyv2_valid_address_ldr_hs(XEXP (op, 0), false)")))
+
+(define_constraint "Dv"
+ "@VFPv3
+  A const_double which can be used with a VFP fmovi
+  instruction."
+ (and (match_code "const_double")
+      (match_test "fp3_const_double_rtx (op)")))
+
+(define_constraint "Dt"
+  "@VFPv3
+   Fract bits operation"
+  (and (match_code "const_double")
+       (match_test "fp3_const_double_for_fract_bits (op)")))
+
+(define_constraint "Du"
+  "@VFPv3
+   Bits operation"
+  (and (match_code "const_double")
+       (match_test "fp3_const_double_for_bits (op)")))

@@ -2770,25 +2770,27 @@ assemble_real (REAL_VALUE_TYPE d, machine_mode mode, unsigned int align,
   real_to_target (data, &d, mode);
 
   /* Put out the first word with the specified alignment.  */
+  unsigned int chunk_nunits = MIN (nunits, units_per);
   if (reverse)
     elt = flip_storage_order (SImode, gen_int_mode (data[nelts - 1], SImode));
   else
-    elt = GEN_INT (data[0]);
-  assemble_integer (elt, MIN (nunits, units_per), align, 1);
-  nunits -= units_per;
+    elt = GEN_INT (sext_hwi (data[0], chunk_nunits * BITS_PER_UNIT));
+  assemble_integer (elt, chunk_nunits, align, 1);
+  nunits -= chunk_nunits;
 
   /* Subsequent words need only 32-bit alignment.  */
   align = min_align (align, 32);
 
   for (int i = 1; i < nelts; i++)
     {
+      chunk_nunits = MIN (nunits, units_per);
       if (reverse)
 	elt = flip_storage_order (SImode,
 				  gen_int_mode (data[nelts - 1 - i], SImode));
       else
-	elt = GEN_INT (data[i]);
-      assemble_integer (elt, MIN (nunits, units_per), align, 1);
-      nunits -= units_per;
+	elt = GEN_INT (sext_hwi (data[i], chunk_nunits * BITS_PER_UNIT));
+      assemble_integer (elt, chunk_nunits, align, 1);
+      nunits -= chunk_nunits;
     }
 }
 
@@ -6353,7 +6355,6 @@ default_select_section (tree decl, int reloc,
     {
       if (! ((flag_pic && reloc)
 	     || !TREE_READONLY (decl)
-	     || TREE_SIDE_EFFECTS (decl)
 	     || !TREE_CONSTANT (decl)))
 	return readonly_data_section;
     }
@@ -6386,7 +6387,6 @@ categorize_decl_for_section (const_tree decl, int reloc)
       if (bss_initializer_p (decl))
 	ret = SECCAT_BSS;
       else if (! TREE_READONLY (decl)
-	       || TREE_SIDE_EFFECTS (decl)
 	       || ! TREE_CONSTANT (DECL_INITIAL (decl)))
 	{
 	  /* Here the reloc_rw_mask is not testing whether the section should
@@ -6415,7 +6415,6 @@ categorize_decl_for_section (const_tree decl, int reloc)
   else if (TREE_CODE (decl) == CONSTRUCTOR)
     {
       if ((reloc & targetm.asm_out.reloc_rw_mask ())
-	  || TREE_SIDE_EFFECTS (decl)
 	  || ! TREE_CONSTANT (decl))
 	ret = SECCAT_DATA;
       else

@@ -1,5 +1,5 @@
 /*
- * file: ckconfig.h
+ * file: config.h
  *
  * Some CPU configure infomation:
  * Data type, Baudrate for UART;
@@ -100,7 +100,6 @@
 /* SPM Transfer ? */
 #define	CONFIG_CKCORE_ISPM_TRANSFER	1	/* 0 - NO, 1 - YES */
 #define	CONFIG_CKCORE_DSPM_TRANSFER	1	/* 0 - NO, 1 - YES */
-
 
 
 #endif /* __DEMO_CONFIG_H */

@@ -1296,6 +1296,10 @@ ffloat-store
 Common Report Var(flag_float_store) Optimization
 Don't allocate floats and doubles in extended-precision registers.
 
+freal-cst
+Common Report Var(flag_real_cst) Init(1) Optimization
+Truncate REAL_CST to integer when compare to float_expr.
+
 fforce-addr
 Common Ignore
 Does nothing.  Preserved for backward compatibility.
@@ -2674,6 +2678,10 @@ fwrapv
 Common Report Var(flag_wrapv) Optimization
 Assume signed arithmetic overflow wraps around.
 
+fsharp-wrap
+Common Report Var(flag_sharp_wrap) Init(0) Optimization
+Assume there is no wrap from unsigned char/short/int to short/int/long long.
+
 fzero-initialized-in-bss
 Common Report Var(flag_zero_initialized_in_bss) Init(1)
 Put zero initialized data in the bss section.
@@ -2972,5 +2980,17 @@ Driver Joined Separate
 fipa-ra
 Common Report Var(flag_ipa_ra) Optimization
 Use caller save register across calls if possible.
+
+fgimple-fold-builtin
+Common Report Var(flag_gimple_fold_builtin) Init(0)
+Allow fold builtin functions in gimple pass which are prevented by Os.
+
+fduplicate-loop-header
+Common Report Var(flag_duplicate_loop_header) Init(0)
+Allow duplicate loop header which are prevented by Os.
+
+fivopt-loop-speedup
+Common Report Var(flag_ivopt_loop_speedup) Init(0)
+Speedup ivopt in loop which are prevented by Os.
 
 ; This comment is to ensure we retain the blank line above.

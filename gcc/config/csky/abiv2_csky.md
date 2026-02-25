@@ -8,6 +8,8 @@
    (CSKY_LR_REGNUM         15)
    (CSKY_GB_REGNUM         28)
    (CSKY_FIRST_RET_REG      0)
+   (CSKY_HI_REGNUM         34)
+   (CSKY_LO_REGNUM         35)
 ])
 
 ;; Supported TLS relocations
@@ -67,7 +69,11 @@
   UNSPEC_PSUBH_S
   UNSPEC_PSUBH_U
   UNSPEC_PASX
+  UNSPEC_PASXSS
+  UNSPEC_PASXUS
   UNSPEC_PSAX
+  UNSPEC_PSAXSS
+  UNSPEC_PSAXUS
   UNSPEC_PASXH_S
   UNSPEC_PASXH_U
   UNSPEC_PSAXH_S
@@ -128,7 +134,6 @@
   UNSPEC_VADDHS
   UNSPEC_VADDHRU
   UNSPEC_VADDHRS
-  UNSPEC_VANDN
   UNSPEC_VBPERM
   UNSPEC_VBPERMZ
   UNSPEC_VCADDU
@@ -137,18 +142,6 @@
   UNSPEC_VCMAXS
   UNSPEC_VCMINU
   UNSPEC_VCMINS
-  UNSPEC_VCMPHSU
-  UNSPEC_VCMPHSS
-  UNSPEC_VCMPHSZU
-  UNSPEC_VCMPHSZS
-  UNSPEC_VCMPLTU
-  UNSPEC_VCMPLTS
-  UNSPEC_VCMPLTZU
-  UNSPEC_VCMPLTZS
-  UNSPEC_VCMPNEU
-  UNSPEC_VCMPNES
-  UNSPEC_VCMPNEZU
-  UNSPEC_VCMPNEZS
   UNSPEC_VDCH
   UNSPEC_VDCL
   UNSPEC_VICH
@@ -184,7 +177,6 @@
   UNSPEC_VSUBXS
   UNSPEC_VTRCH
   UNSPEC_VTRCL
-  UNSPEC_VTST
   UNSPEC_VCADDEU
   UNSPEC_VCADDES
   UNSPEC_VCLSS
@@ -231,63 +223,240 @@
   UNSPEC_PLSLSS
   UNSPEC_PLSLIUS
   UNSPEC_PLSLUS
+  
+  ;;-----------
+  ;; VDSPV2
+  ;;-----------
+  UNSPEC_VLD1
+  UNSPEC_VLD2
+  UNSPEC_VLD3
+  UNSPEC_VLD4
+  UNSPEC_VST1
+  UNSPEC_VST2
+  UNSPEC_VST3
+  UNSPEC_VST4
+  UNSPEC_VLDX
+  UNSPEC_VSTX
+  UNSPEC_ADDRQI
+  UNSPEC_ADDRHI
+  UNSPEC_ADDRSI
+  UNSPEC_ADDRE
+  UNSPEC_VDUPF
+  UNSPEC_VDUP2
+  UNSPEC_VDUP3
+  UNSPEC_VDUP4
+  UNSPEC_VINS2
+  UNSPEC_VINS3
+  UNSPEC_VINS4
+  UNSPEC_VMTVR2
+  UNSPEC_VRECPEU
+  UNSPEC_VRECPES
+  UNSPEC_VRSQRTEU
+  UNSPEC_VRSQRTES
+  UNSPEC_VEXPEU
+  UNSPEC_VEXPES
+  UNSPEC_VSEXT
+  UNSPEC_VREVH
+  UNSPEC_VREVW
+  UNSPEC_VREVD
+  UNSPEC_VCLZU
+  UNSPEC_VCLZS
+  UNSPEC_VPADDEU
+  UNSPEC_VPADDES
+  UNSPEC_VPADDAEU
+  UNSPEC_VPADDAES
+  UNSPEC_VASXSS
+  UNSPEC_VASXUS
+  UNSPEC_VSAXUS
+  UNSPEC_VSAXSS
+  UNSPEC_VASXHS
+  UNSPEC_VASXHU
+  UNSPEC_VSAXHU
+  UNSPEC_VSAXHS
+  UNSPEC_VPMAXU
+  UNSPEC_VPMAXS
+  UNSPEC_VPMINU
+  UNSPEC_VPMINS
+  UNSPEC_VMULUH
+  UNSPEC_VMULSH
+  UNSPEC_VMULSE
+  UNSPEC_VMULUE
+  UNSPEC_VMULISE
+  UNSPEC_VMULIUE
+  UNSPEC_VMULASE
+  UNSPEC_VMULAUE
+  UNSPEC_VMULAISE
+  UNSPEC_VMULAIUE
+  UNSPEC_VMULSSE
+  UNSPEC_VMULSUE
+  UNSPEC_VMULSISE
+  UNSPEC_VMULSIUE
+  UNSPEC_VRMULHSS
+  UNSPEC_VRMULHSRS
+  UNSPEC_VRMULHASRS
+  UNSPEC_VRMULHSSRS
+  UNSPEC_VRMULXAASRS
+  UNSPEC_VRMULXASSRS
+  UNSPEC_VRMULXSSSRS
+  UNSPEC_VRMULXSASRS
+  UNSPEC_VRCMULSRS
+  UNSPEC_VRCMULCSRS
+  UNSPEC_VRCMULNSRS
+  UNSPEC_VRCMULCNSRS
+  UNSPEC_VRECPSS
+  UNSPEC_VRECPSU
+  UNSPEC_VRSQRTSS
+  UNSPEC_VRSQRTSU
+  UNSPEC_VTRN
+  UNSPEC_VPADDU
+  UNSPEC_VPADDS
+  UNSPEC_VPADDUS
+  UNSPEC_VPADDSS
+  UNSPEC_VSHTU
+  UNSPEC_VSHTS
+  UNSPEC_VSHTSS
+  UNSPEC_VSHTUS
+  UNSPEC_VSHTUR
+  UNSPEC_VSHTSR
+  UNSPEC_VSHTURS
+  UNSPEC_VSHTSRS
+  UNSPEC_VSHRUR
+  UNSPEC_VSHRSR
+  UNSPEC_VEXHS
+  UNSPEC_VEXLS
+  UNSPEC_VEXHU
+  UNSPEC_VEXLU
+  UNSPEC_VTSTS
+  UNSPEC_VTSTU
+  UNSPEC_VADDUH
+  UNSPEC_VSUBUH
+  UNSPEC_VADDSH
+  UNSPEC_VSUBSH
+  UNSPEC_VADDURH
+  UNSPEC_VSUBURH
+  UNSPEC_VADDSRH
+  UNSPEC_VSUBSRH
+  UNSPEC_VADDUE
+  UNSPEC_VADDSE
+  UNSPEC_VADDUX
+  UNSPEC_VADDSX
+  UNSPEC_VSUBUE
+  UNSPEC_VSUBSE
+  UNSPEC_VSUBUX
+  UNSPEC_VSUBSX
+  UNSPEC_VSABSUE
+  UNSPEC_VSABSSE
+  UNSPEC_VSABSAUE
+  UNSPEC_VSABSASE
+  UNSPEC_VMOV
+  UNSPEC_VMOVSE
+  UNSPEC_VMOVUE
+  UNSPEC_VMOVTL
+  UNSPEC_VMOVTH
+  UNSPEC_VMOVSSL
+  UNSPEC_VMOVUSL
+  UNSPEC_VMOVURH
+  UNSPEC_VMOVSRH
+  UNSPEC_VMULACAU
+  UNSPEC_VMULACAS
+  UNSPEC_VMULACAAU
+  UNSPEC_VMULACAAS
+  UNSPEC_VSELS
+  UNSPEC_VSELU
+  UNSPEC_VMASKIL
+  UNSPEC_VMASKIH
+  UNSPEC_VMOVIU
+  UNSPEC_VMOVIS
+  UNSPEC_VMASKI
+  UNSPEC_VCLIPS
+  UNSPEC_VCLIPU
+  UNSPEC_VSHLISE
+  UNSPEC_VSHLIUE
+  UNSPEC_VSHRIUR
+  UNSPEC_VSHRISR
+  UNSPEC_VSHRIAUR
+  UNSPEC_VSHRIASR
+  UNSPEC_VSHRISL
+  UNSPEC_VSHRIUL
+  UNSPEC_VSHRISLR
+  UNSPEC_VSHRIULR
+  UNSPEC_VSHRIULS
+  UNSPEC_VSHRISLS
+  UNSPEC_VSHRIULRS
+  UNSPEC_VSHRISLRS
+  UNSPEC_VMULIUH
+  UNSPEC_VMULISH
+  UNSPEC_VRMULHISS
+  UNSPEC_VRMULHISRS
+  UNSPEC_VRMULHAISRS
+  UNSPEC_VRMULHSISRS
+  UNSPEC_VRMULXAAISRS
+  UNSPEC_VRMULXASISRS
+  UNSPEC_VRMULXSSISRS
+  UNSPEC_VRMULXSAISRS
+  UNSPEC_VEXT
+  UNSPEC_VEXTI
+  UNSPEC_VTBL
+  UNSPEC_VTBX
+  UNSPEC_VRMULISSE
+  UNSPEC_VRMULSASE
+  UNSPEC_VRMULSSSE
+  UNSPEC_VRMULSSE
+  UNSPEC_VRMULSHRSE
+  UNSPEC_VRMULSHRISE
+  UNSPEC_VRMULSSISE
+  UNSPEC_VRCMULASE
+  UNSPEC_VRCMULCASE
+  UNSPEC_VRCMULNASE
+  UNSPEC_VRCMULCNASE
+  UNSPEC_VMULACAIU
+  UNSPEC_VMULACAIS
+  UNSPEC_VMULACAAIU
+  UNSPEC_VMULACAAIS
+  UNSPEC_VPKG2
+  UNSPEC_VPKG3
+  UNSPEC_VPKG4
+  UNSPEC_VITL2
+  UNSPEC_VDTL2
+  UNSPEC_VRMULSAISE
+  UNSPEC_VSTRUCTTYPE ;only use in special vector insn md
   ]
 )
 
-;; ------------------------------------------------------------------------
-;; Attributes
-;; ------------------------------------------------------------------------
+(define_c_enum "unspec" [
+  UNSPEC_FLOOR
+  UNSPEC_CEIL
+  UNSPEC_BTRUNC
+  UNSPEC_RINT
+])
 
-; LENGTH of an instruction (in bytes)
-(define_attr "length" "" (if_then_else
-                         (match_test "CSKY_TARGET_ARCH(CK801)")
-                         (const_int 2)
-                         (const_int 4)))
+;; UNSPEC_VOLATILE Usage:
 
-; Used for ck801 to represent whether do we need to use bsr for long
-; distance jump. If we do so, set the attribute to yes and the function
-; will save lr at the prologue according to this.
-(define_attr "far_jump" "yes,no" (const_string "no"))
-
-; Used for insn schedule
-(define_attr "type" "alu,load,store,cmp,branch,cbranch,addsub,alu_ix,branch_jmp,call_jsr,call"
-    (const_string "alu"))
-
-; Used to distinguish between the constraints of the instruction
-(define_attr "isa" "def, e1, e2, 2e3, 3e3r1, 3e7, 7e10"
-  (const_string "def"))
-
-(define_attr "enabled" "no,yes"
-  (cond [
-    (eq_attr "isa" "e1") (cond [(match_test "CSKY_ISA_FEATURE(E1)") (const_string "yes")] (const_string "no"))
-    (eq_attr "isa" "e2") (cond [(match_test "CSKY_ISA_FEATURE(E2)") (const_string "yes")] (const_string "no"))
-    (eq_attr "isa" "2e3") (cond [(match_test "CSKY_ISA_FEATURE(2E3)") (const_string "yes")] (const_string "no"))
-    (eq_attr "isa" "3e3r1") (cond [(match_test "CSKY_ISA_FEATURE(3E3r1)") (const_string "yes")] (const_string "no"))
-    (eq_attr "isa" "3e7") (cond [(match_test "CSKY_ISA_FEATURE(3E7)") (const_string "yes")] (const_string "no"))
-    (eq_attr "isa" "7e10") (cond [(match_test "CSKY_ISA_FEATURE(7E10)") (const_string "yes")] (const_string "no"))
-  ]
-    (const_string "yes")))
-
-;; The number of machine instructions this pattern expands to.
-;; Used for conditional execution.
-(define_attr "ce_count" "" (const_int 1))
-
-; Predicable means that the insn can be conditionally executed based on
-; an automatically added predicate (additional patterns are generated by
-; gen...).  We default to 'no' because not all CSKY patterns do.
-(define_attr "predicable" "no,yes" (const_string "no"))
+(define_c_enum "unspecv" [
+  VUNSPEC_GET_FCR     ; Represent fetch of FCR content.
+  VUNSPEC_SET_FCR     ; Represent assign of FCR content.
+  VUNSPEC_INS_FCR     ; Represent insert of FCR content.
+])
 
 ;; ------------------------------------------------------------------------
 ;; Include files
 ;; ------------------------------------------------------------------------
+(include "attrs.md")
 (include "abiv2_csky_constraints.md")
 (include "abiv2_csky_predicates.md")
-(include "abiv2_csky_insn_fpu.md")
+(include "abiv2_csky_iterators.md")
+(include "fpu.md")
 (include "abiv2_csky_pipeline_ck802.md")
 (include "abiv2_csky_pipeline_ck803.md")
+(include "abiv2_csky_pipeline_ck805.md")
+(include "abiv2_csky_pipeline_ck807.md")
 (include "abiv2_csky_pipeline_ck810.md")
+(include "abiv2_csky_pipeline_ck860.md")
 (include "abiv2_csky_insn_vdsp.md")
+(include "vdsp_expand.md")
 (include "abiv2_csky_fixed.md")
+(include "special.md")
+(include "sync.md")
 
 ;; ------------------------------------------------------------------------
 ;; Conditional Execution
@@ -368,7 +537,8 @@
 (define_insn "*ck801_movsi"
  [(set (match_operand:SI 0 "nonimmediate_operand"   "=r,a, a,r ,r,r,m")
        (match_operand:SI 1 "general_operand"        "r, Up,T,mi,F,c,r"))]
- "CSKY_ISA_FEATURE(E1)"
+ "CSKY_ISA_FEATURE(E1)
+ && (register_operand (operands[0], SImode) || register_operand (operands[1], SImode))"
  "* return output_ck801_move (insn, operands, SImode);"
  [(set_attr "length" "2,2,2,4,4,2,4")
   (set_attr "type" "alu,alu,alu,store,alu,alu,store")]
@@ -487,6 +657,13 @@
   {
     if (can_create_pseudo_p ())
       {
+	if (CONST_INT_P (operands[1]) && INTVAL (operands[1]) == -1)
+	  {
+	    rtx reg = gen_reg_rtx (SImode);
+	    operands[1] = GEN_INT (0xff);
+	    emit_insn (gen_movsi (reg, operands[1]));
+	    operands[1] = gen_lowpart (QImode, reg);
+	  }
         if (GET_CODE (operands[0]) == MEM)
           operands[1] = force_reg (QImode, operands[1]);
         else if (CONSTANT_P (operands[1])
@@ -516,7 +693,9 @@
 (define_insn "*cskyv2_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r,r,r,m,*y,*r,*v,*r,*v")
         (match_operand:QI 1 "general_operand"      "r, i,c,m,r,*r,*y,*r,*v,*v"))]
-  "CSKY_ISA_FEATURE(E2)"
+  "CSKY_ISA_FEATURE(E2)
+   && (register_operand (operands[0], QImode)
+       || register_operand (operands[1], QImode))"
   "* return output_csky_move (insn, operands, QImode);"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4,4")
    (set_attr "type" "alu,alu,alu,load,store,alu,alu,alu,alu,alu")]
@@ -525,7 +704,9 @@
 (define_insn "*ck801_movqi"
   [(set (match_operand:QI 0 "nonimmediate_operand"  "=r,a, a,r,r,r,m")
         (match_operand:QI 1 "general_operand"       "r, Up,T,i,m,c,r"))]
-  "CSKY_ISA_FEATURE(E1)"
+  "CSKY_ISA_FEATURE(E1)
+   && (register_operand (operands[0], QImode)
+       || register_operand (operands[1], QImode))"
   "* return output_ck801_move (insn, operands, QImode);"
   [(set_attr "length" "2,2,2,4,4,2,4")
    (set_attr "type" "alu,alu,alu,alu,store,alu,store")]
@@ -759,7 +940,8 @@
     operands[2] = GEN_INT(INTVAL(operands[3]) + INTVAL(operands[2]) - 1);
     return \"sext\t%0, %1, %2, %3\";
   }"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "4")
+   (set_attr "type" "sext")]
 )
 
 (define_insn "insv"
@@ -772,7 +954,8 @@
     operands[1] = GEN_INT (INTVAL (operands[2]) + INTVAL (operands[1]) - 1);
     return \"ins\t%0, %3, %1, %2\";
   }"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "4")
+   (set_attr "type" "ins")]
 )
 
 ;; Shift instructions.
@@ -791,11 +974,12 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  lsl\t%0, %1, %2
-  lsl\t%0, %1, %2
-  lsli\t%0, %1, %2
-  lsli\t%0, %1, %2"
+  lsl  %0, %1, %2
+  lsl  %0, %1, %2
+  lsli %0, %1, %2
+  lsli %0, %1, %2"
   [(set_attr "predicable" "yes")
+   (set_attr "type" "lslr")
    (set_attr "length" "2,4,2,4")]
 )
 
@@ -805,8 +989,9 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  lsli\t%0, %1, %2
-  lsl\t%0, %1, %2"
+  lsli %0, %1, %2
+  lsl  %0, %1, %2"
+  [(set_attr "type" "lslr")]
 )
 
 
@@ -824,10 +1009,10 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  asr\t%0, %1, %2
-  asr\t%0, %1, %2
-  asri\t%0, %1, %2
-  asri\t%0, %1, %2"
+  asr  %0, %1, %2
+  asr  %0, %1, %2
+  asri %0, %1, %2
+  asri %0, %1, %2"
   [(set_attr "type" "alu,alu,alu,alu")
    (set_attr "predicable" "yes")
    (set_attr "length" "2,4,2,4")]
@@ -839,8 +1024,8 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  asri\t%0, %1, %2
-  asr\t%0, %1, %2"
+  asri %0, %1, %2
+  asr  %0, %1, %2"
 )
 
 
@@ -858,11 +1043,12 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  lsr\t%0, %1, %2
-  lsr\t%0, %1, %2
-  lsri\t%0, %1, %2
-  lsri\t%0, %1, %2"
+  lsr  %0, %1, %2
+  lsr  %0, %1, %2
+  lsri %0, %1, %2
+  lsri %0, %1, %2"
   [(set_attr "predicable" "yes")
+   (set_attr "type" "lslr")
    (set_attr "length" "2,4,2,4")]
 )
 
@@ -872,8 +1058,9 @@
                      (match_operand:SI 2 "csky_arith_K_operand" "Ui,r")))]
   "CSKY_ISA_FEATURE(E1)"
   "@
-  lsri\t%0, %1, %2
-  lsr\t%0, %1, %2"
+  lsri %0, %1, %2
+  lsr  %0, %1, %2"
+  [(set_attr "type" "lslr")]
 )
 
 
@@ -891,10 +1078,10 @@
                    (match_operand:SI 2 "csky_arith_K_operand" "b,r,Ui,Ui")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
-  rotl\t%0, %1, %2
-  rotl\t%0, %1, %2
-  rotli\t%0, %1, %2
-  rotli\t%0, %1, %2"
+  rotl  %0, %1, %2
+  rotl  %0, %1, %2
+  rotli %0, %1, %2
+  rotli %0, %1, %2"
   [(set_attr "length" "2,4,2,4")]
 )
 
@@ -903,7 +1090,7 @@
         (rotate:SI (match_operand:SI 1 "register_operand"     "0")
                    (match_operand:SI 2 "csky_arith_K_operand" "r")))]
   "CSKY_ISA_FEATURE(E1)"
-  "rotl\t%0, %1, %2"
+  "rotl %0, %1, %2"
 )
 
 
@@ -918,6 +1105,24 @@
                  (match_operand:SI 2 "nonmemory_operand" "")))]
   ""
   ""
+)
+
+(define_insn "*ck801_addsi3"
+  [(set (match_operand:SI          0 "register_operand"  "=r,a,a,a,a,a, !z,!z,!z,a")
+        (plus:SI (match_operand:SI 1 "register_operand"  "%0,a,0,a,0,a, 0, 0, 0, !z")
+                 (match_operand:SI 2 "nonmemory_operand" "r, a,N,L,T,Us,P, Ug,r, Uq")))]
+  "CSKY_ISA_FEATURE(E1)"
+  "@
+    addu\t%0, %1, %2
+    addu\t%0, %1, %2
+    addi\t%0, %1, %2
+    addi\t%0, %1, %2
+    subi\t%0, %1, %M2
+    subi\t%0, %1, %M2
+    addi\t%0, %1, %2
+    subi\t%0, %1, %M2
+    addu\t%0, %1, %2
+    addi\t%0, %1, %2"
 )
 
 ;;remove mov insn from here.
@@ -972,24 +1177,6 @@
      addu\t%0, %1, %2"
   [(set_attr "type" "addsub")
    (set_attr "length" "2,2,2,2,4,4,4,4,4")]
-)
-
-(define_insn "*ck801_addsi3"
-  [(set (match_operand:SI          0 "register_operand"  "=r,a,a,a,a,a, !z,!z,!z,a")
-        (plus:SI (match_operand:SI 1 "register_operand"  "%0,a,0,a,0,a, 0, 0, 0, !z")
-                 (match_operand:SI 2 "nonmemory_operand" "r, a,N,L,T,Us,P, Ug,r, Uq")))]
-  "CSKY_ISA_FEATURE(E1)"
-  "@
-    addu\t%0, %1, %2
-    addu\t%0, %1, %2
-    addi\t%0, %1, %2
-    addi\t%0, %1, %2
-    subi\t%0, %1, %M2
-    subi\t%0, %1, %M2
-    addi\t%0, %1, %2
-    subi\t%0, %1, %M2
-    addu\t%0, %1, %2
-    addi\t%0, %1, %2"
 )
 
 (define_insn "*fast_addsi3"
@@ -1323,7 +1510,8 @@
   "CSKY_ISA_FEATURE(E2)"
   "mult\t%0, %1, %2"
   [(set_attr "predicable" "yes")
-   (set_attr "length" "2,4")]
+   (set_attr "length" "2,4")
+   (set_attr "type" "mul")]
 )
 
 (define_insn "*ck801_mulsi3"
@@ -1332,6 +1520,7 @@
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E1)"
   "mult\t%0, %1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "mulhisi3"
@@ -1340,7 +1529,8 @@
                  (sign_extend:SI (match_operand:HI 2 "register_operand" "b,r"))))]
   "CSKY_ISA_FEATURE(2E3)"
   "mulsh\t%0, %1, %2"
-  [(set_attr "length" "2,4")]
+  [(set_attr "length" "2,4")
+   (set_attr "type" "mul,mul")]
 )
 
 
@@ -1397,10 +1587,10 @@
       }
   }"
   [(set (attr "length")
-        (if_then_else (eq (match_dup 0) (match_dup 1))
+        (if_then_else (match_test "rtx_equal_p (operands[0], operands[1])")
                       (const_int 4)
                       (const_int 8)))
-   (set_attr "type" "addsub")]
+   (set_attr "type" "caddsub")]
 )
 
 (define_insn "cskyv2_addcc_invert"
@@ -1428,10 +1618,10 @@
     }
   }"
   [(set (attr "length")
-        (if_then_else (eq (match_dup 0) (match_dup 1))
+        (if_then_else (match_test "rtx_equal_p (operands[0], operands[1])")
                       (const_int 4)
                       (const_int 8)))
-   (set_attr "type" "addsub")]
+   (set_attr "type" "caddsub")]
 )
 
 /* FIXME this insn is now only used in 801 store, can it use
@@ -1507,6 +1697,7 @@
     operands[2] = GEN_INT (INTVAL (operands[3]) + INTVAL (operands[2]) - 1);
     return \"zext\t%0, %1, %2, %3\";
   }"
+  [(set_attr "type" "zext")]
 )
 
 (define_insn "*cskyv2_xtrb0"
@@ -1520,7 +1711,8 @@
     lsri\t%0, %0, 24
     lsri\t%0, %0, 24
     xtrb0\t%0, %1"
-  [(set_attr "length" "2,4,4")]
+  [(set_attr "length" "2,4,4")
+   (set_attr "type" "lslr,lslr,alu")]
 )
 
 (define_insn "*cskyv2_xtrb1"
@@ -1564,7 +1756,7 @@
    ld.h\t%0, %1
    ldbi.h\t%0, %1"
   [(set_attr "length" "4")
-   (set_attr "type" "load")]
+   (set_attr "type" "load,loadi")]
 )
 
 (define_insn "zero_extendqisi2"
@@ -1585,7 +1777,7 @@
    ld.b\t%0, %1
    ldbi.b\t%0, %1"
   [(set_attr "length" "4,4,4")
-   (set_attr "type" "load,load,load")]
+   (set_attr "type" "loadr,load,loadi")]
 )
 
 (define_insn "zero_extendqihi2"
@@ -1605,7 +1797,7 @@
    ld.b\t%0, %1
    ldbi.b\t%0, %1"
   [(set_attr "length" "4")
-   (set_attr "type" "load")]
+   (set_attr "type" "load,loadi")]
 )
 
 ;; -------------------------------------------------------------------------
@@ -1616,14 +1808,7 @@
   [(set (match_operand:SI         0 "register_operand" "=r")
         (clz:SI (match_operand:SI 1 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
-  "ff1\t%0, %1"
-)
-
-(define_insn "ctzsi2"
-  [(set (match_operand:SI         0 "register_operand" "=r")
-        (ctz:SI (match_operand:SI 1 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(E2)"
-  "brev\t%0, %1\;ff1\t%0, %0"
+  "ff1  %0,%1"
 )
 
 ;; -------------------------------------------------------------------------
@@ -1641,7 +1826,7 @@
   [(set (match_operand:SI         0 "register_operand" "=b,r")
         (not:SI (match_operand:SI 1 "register_operand" "0,r")))]
   "CSKY_ISA_FEATURE(E2)"
-  "not\t%0, %1"
+  "not %0, %1"
   [(set_attr "predicable" "yes")
    (set_attr "length" "2,4")]
 )
@@ -1650,7 +1835,7 @@
   [(set (match_operand:SI         0 "register_operand" "=r")
         (not:SI (match_operand:SI 1 "register_operand" "0")))]
   "CSKY_ISA_FEATURE(E1)"
-  "not\t%0, %1"
+  "not %0, %1"
 )
 
 ;; -------------------------------------------------------------------------
@@ -1690,18 +1875,20 @@
   ""
   "sexth\t%0, %1"
   [(set_attr "length" "2,4")
+   (set_attr "type" "sexth")
    (set_attr "isa"    "def,2e3")]
 )
 
 (define_insn "*cskyv2_sextend_ldhs"
-  [(set (match_operand:SI                 0 "register_operand" "=r,r")
-        (sign_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "Dm,Dp")))]
+  [(set (match_operand:SI                 0 "register_operand"   "=r,r,r")
+        (sign_extend:SI (match_operand:HI 1 "csky_addr_reg_disp" "Dl,Dm,Dp")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
+   ldr.hs\t%0, %1
    ld.hs\t%0, %1
    ldbi.hs\t%0, %1"
   [(set_attr "length" "4")
-   (set_attr "type" "load")]
+   (set_attr "type" "loadr,load,loadi")]
 )
 
 ;; qi -> si
@@ -1715,14 +1902,27 @@
 )
 
 (define_insn "*cskyv2_sextend_ldbs"
-  [(set (match_operand:SI                 0 "register_operand" "=r,r")
-        (sign_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "Dm,Dp")))]
+  [(set (match_operand:SI                 0 "register_operand" "=r,r,r")
+        (sign_extend:SI (match_operand:QI 1 "csky_addr_reg_disp" "Dn,Dm,Dp")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
+   ldr.bs\t%0, %1
    ld.bs\t%0, %1
    ldbi.bs\t%0, %1"
   [(set_attr "length" "4")
-   (set_attr "type" "load")]
+   (set_attr "type" "loadr,load,loadi")]
+)
+
+(define_insn "*cskyv2_sextend_ldbh"
+  [(set (match_operand:HI                 0 "register_operand" "=r,r,r")
+        (sign_extend:HI (match_operand:QI 1 "csky_addr_reg_disp" "Dn,Dm,Dp")))]
+  "CSKY_ISA_FEATURE(E2)"
+  "@
+   ldr.bs\t%0, %1
+   ld.bs\t%0, %1
+   ldbi.bs\t%0, %1"
+  [(set_attr "length" "4")
+   (set_attr "type" "loadr,load,loadi")]
 )
 
 ;; qi -> hi
@@ -1733,6 +1933,60 @@
   "sextb\t%0, %1"
   [(set_attr "length" "2,4")
    (set_attr "isa"    "def,2e3")]
+)
+
+;; Considersing following situation
+;; ldr.h a2, (t0, l4<<0)
+;; sexth a2, a2
+;;
+;; above code should be transformed into an instruction as follows.
+;; ldr.hs a2, (t0, l4<<0)
+;; JianPing Zeng on 2/5/2018
+(define_peephole2
+  [(set (match_operand:HI   0   "register_operand"    "")
+        (match_operand:HI   1   "csky_address_index_0" ""))
+   (set (match_operand:SI   2   "register_operand"    "")
+        (sign_extend:SI (match_dup    0)))]
+  "CSKY_ISA_FEATURE(2E3) && dead_or_set_p(peep2_next_insn(1), operands[0])"
+  [(set (match_dup 2)
+        (sign_extend:SI (match_dup 1))
+  )]
+)
+
+(define_insn "*cskyv2_ldr_hs"
+  [(set (match_operand:SI   0   "register_operand"   "=r")
+        (sign_extend:SI (match_operand:HI   1   "csky_address_index_0" "Dn")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "* return \"ldr.hs\t%0, %1\";"
+  [(set_attr "length" "4")
+   (set_attr "type" "loadr")]
+)
+
+;; Considersing following situation
+;; ldr.b a2, (t0, l4<<0)
+;; sextb a2, a2
+;;
+;; above code should be transformed into an instruction as follows.
+;; ldr.bs a2, (t0, l4<<0)
+;; JianPing Zeng on 4/5/2018
+(define_peephole2
+  [(set (match_operand:SI   0   "register_operand"    "")
+        (zero_extend: SI (match_operand:QI 1  "csky_address_index_0"    "")))
+   (set (match_operand:SI   2   "register_operand"    "")
+        (sign_extend:SI (match_dup    0)))]
+  "CSKY_ISA_FEATURE(2E3) && dead_or_set_p(peep2_next_insn(1), operands[0])"
+  [(set (match_dup 2)
+        (sign_extend:SI (match_dup 1))
+  )]
+)
+
+(define_insn "*cskyv2_ldr_bs"
+  [(set (match_operand:SI   0   "register_operand"   "=r")
+        (sign_extend:SI (match_operand:QI   1   "csky_address_index_0" "Dn")))]
+  "CSKY_ISA_FEATURE(2E3)"
+  "* return \"ldr.bs\t%0, %1\";"
+  [(set_attr "length" "4")
+   (set_attr "type" "loadr")]
 )
 
 ;; -------------------------------------------------------------------------
@@ -1747,61 +2001,53 @@
   "
   {
     int i;
-    rtx not_value;
+    rtx not_value = GEN_INT (~INTVAL(operands[2]));
 
-    if (GET_CODE(operands[2]) == CONST_INT)
-    {
-      for (i = 13; i <= 31; i++)
+    if (GET_CODE(operands[2]) != CONST_INT) goto end;
+
+    if (CSKY_ISA_FEATURE(E2) && satisfies_constraint_O(operands[2])) goto end;
+
+    if (CSKY_ISA_FEATURE(E2) && satisfies_constraint_O(not_value))
       {
-        if ((((HOST_WIDE_INT) 1) << i) - 1 == INTVAL (operands[2]))
-          {
-            emit_insn (gen_extzvsi (operands[0], operands[1], GEN_INT (i),
-                                    const0_rtx));
-            DONE;
-          }
-        else if ((((HOST_WIDE_INT) 1) << i) - 1
-             == ~INTVAL (operands[2]))
-          {
-            rtx shift = GEN_INT (i);
-            rtx reg = gen_reg_rtx (SImode);
-
-            emit_insn (gen_lshrsi3 (reg, operands[1], shift));
-            emit_insn (gen_ashlsi3 (operands[0], reg, shift));
-            DONE;
-          }
+        emit_insn(gen_cskyv2_andnsi3 (operands[0], not_value, operands[1]));
+        DONE;
       }
 
-      not_value = GEN_INT (~INTVAL(operands[2]));
-
-      /* Try to transform to andni insrtuction.  */
-      if (CSKY_ISA_FEATURE(E2))
+    for (i = 13; i <= 31; i++)
+    {
+      if ((((HOST_WIDE_INT) 1) << i) - 1 == INTVAL (operands[2]))
         {
-          if(csky_arith_O_operand (not_value,SImode))
-            {
-              emit_insn(gen_cskyv2_andnsi3 (operands[0], not_value, operands[1]));
-              DONE;
-            }
+          emit_insn (gen_extzvsi (operands[0], operands[1], GEN_INT (i),
+                                  const0_rtx));
+          DONE;
         }
-
-      /* Let it emit andi or bclri*2 if it could. Otherwise, try
-         some other ways.  */
-      if (!satisfies_constraint_Ue(operands[2])
-          && !(CSKY_ISA_FEATURE(E2) && satisfies_constraint_O (operands[2])))
+      else if ((((HOST_WIDE_INT) 1) << i) - 1 == ~INTVAL (operands[2]))
         {
-          /* If it is a negitive number, it seems better to use andn,
-             since the NOT_VALUE, is always smaller than the origin value.  */
-          if (INTVAL(operands[2]) < 0)
-            {
-              operands[2] = copy_to_mode_reg(SImode, not_value);
-              emit_insn(gen_cskyv2_andnsi3 (operands[0], operands[2], operands[1]));
-              DONE;
-            }
+          rtx shift = GEN_INT (i);
+          rtx reg = gen_reg_rtx (SImode);
 
-          /* If the above ways are all not working, mov the const
-             to reg.  */
-          operands[2] = copy_to_mode_reg(SImode, operands[2]);
+          emit_insn (gen_lshrsi3 (reg, operands[1], shift));
+          emit_insn (gen_ashlsi3 (operands[0], reg, shift));
+          DONE;
         }
     }
+
+    /* transform to 2*bclri. */
+    if (satisfies_constraint_Ue(operands[2])) goto end;
+
+    /* If it is a negitive number, it seems better to use andn,
+       since the NOT_VALUE, is always smaller than the origin value.  */
+    if (INTVAL(operands[2]) < 0)
+      {
+        operands[2] = copy_to_mode_reg(SImode, not_value);
+        emit_insn(gen_cskyv2_andnsi3 (operands[0], operands[2], operands[1]));
+        DONE;
+      }
+    /* If the above ways are all not working, mov the const
+           to reg.  */
+    operands[2] = copy_to_mode_reg(SImode, operands[2]);
+    end:
+      ;
  }"
 )
 
@@ -1849,11 +2095,9 @@
 )
 
 (define_insn "cskyv2_andnsi3"
-  [(use (and:SI (not:SI (match_operand:SI 1 "csky_arith_O_operand" "b,r, O"))
-        (match_operand:SI                 2 "register_operand"     "0,r, r")))
-   (set (match_operand:SI                 0 "register_operand"     "=b,r,r")
-        (and:SI (not:SI (match_dup 1))
-                (match_dup 2)))]
+  [(set (match_operand:SI                 0 "register_operand"     "=b,r,r")
+        (and:SI (not:SI (match_operand:SI 1 "csky_arith_O_operand" "b, r,O"))
+                (match_operand:SI         2 "register_operand"     "0, r,r")))]
   "CSKY_ISA_FEATURE(E2)"
   "@
     andn\t%0, %2, %1
@@ -1864,11 +2108,9 @@
 )
 
 (define_insn "ck801_andnsi3"
-  [(use (and:SI (not:SI (match_operand:SI 1 "register_operand" "r"))
-                (match_operand:SI         2 "register_operand" "0")))
-   (set (match_operand:SI                 0 "register_operand" "=r")
-        (and:SI (not:SI (match_dup 1))
-                (match_dup 2)))]
+   [(set (match_operand:SI                 0 "register_operand" "=r")
+         (and:SI (not:SI (match_operand:SI 1 "register_operand" "r"))
+                 (match_operand:SI         2 "register_operand" "0")))]
  "CSKY_ISA_FEATURE(E1)"
  "andn\t%0, %2, %1"
 )
@@ -2096,7 +2338,8 @@
       return \"divs\t%0, %1, %2\n\tmov\t%0, %0\";
     return \"divs\t%0, %1, %2\";
   }"
-  [(set_attr "predicable" "yes")]
+  [(set_attr "predicable" "yes")
+   (set_attr "type" "div")]
 )
 
 (define_insn "udivsi3"
@@ -2110,9 +2353,29 @@
       return \"divu\t%0, %1, %2\n\tmov\t%0, %0\";
     return \"divu\t%0, %1, %2\";
   }"
-  [(set_attr "predicable" "yes")]
+  [(set_attr "predicable" "yes")
+   (set_attr "type" "div")]
 )
 
+(define_insn "*divdisi"
+  [(set (match_operand:DI         0 "register_operand" "=&r")
+        (div:DI (match_operand:DI 1 "register_operand" "r")
+                (sign_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
+  "CSKY_ISA_FEATURE(3E3r3)"
+  "divsl\t%0, %1, %2"
+  [(set_attr "predicable" "yes")
+   (set_attr "type" "div")]
+)
+
+(define_insn "*udivdisi"
+  [(set (match_operand:DI          0 "register_operand" "=&r")
+        (udiv:DI (match_operand:DI 1 "register_operand" "r")
+                 (zero_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
+  "CSKY_ISA_FEATURE(3E3r3)"
+  "divul\t%0, %1, %2"
+  [(set_attr "predicable" "yes")
+   (set_attr "type" "div")]
+)
 
 ;; -----------------------------------------------------------------
 ;; Multiple load&store insn
@@ -3145,7 +3408,7 @@
 (define_insn "*fast_cmpnesi_i"
   [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (match_operand:SI 0 "register_operand"       "a,r")
                            (match_operand:SI 1 "csky_literal_I_operand" "K,I")))]
-  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
+  "CSKY_ISA_FEATURE(E2)"
   "cmpnei\t%0, %1"
   [(set_attr "type" "cmp")
    (set_attr "length" "2,4")]
@@ -3186,7 +3449,7 @@
 (define_insn "*fast_cmpltsi_i"
   [(set (reg:CC CSKY_CC_REGNUM) (lt:CC (match_operand:SI 0 "register_operand"        "a,r")
                            (match_operand:SI 1 "csky_literal_Uk_operand" "J,Uk")))]
-  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
+  "CSKY_ISA_FEATURE(E2)"
   "cmplti\t%0, %1"
   [(set_attr "length" "2,4")
    (set_attr "type" "cmp")]
@@ -3210,16 +3473,27 @@
   [(set_attr "type" "cmp")]
 )
 
-(define_insn "*cskyv2_tstsi2"
-  [(set (reg:CC CSKY_CC_REGNUM) (ne:CC (and:SI (match_operand:SI 0 "register_operand" "b,r")
-                                               (match_operand:SI 1 "register_operand" "b,r"))
-                                       (const_int 0)))]
-  "CSKY_ISA_FEATURE(E2)"
-  "tst\t%0, %1"
-  [(set_attr "length" "2,4")
-   (set_attr "type" "cmp,cmp")]
-)
+(define_insn "*cskyv2_btsti"
+  [(set (reg:CC CSKY_CC_REGNUM)
+	(ne:CC (zero_extract:SI (match_operand:SI 0 "register_operand" "a,r")
+				(const_int 1)
+				(match_operand 1 "immediate_operand" "i,i"))
+	       (const_int 0)))]
+  "CSKY_ISA_FEATURE(E2) && UINTVAL (operands[1]) < 32"
+  "btsti\t%0,%1"
+  [(set_attr "type" "cmp")
+   (set_attr "length" "2,4")])
 
+(define_insn "*ck801_btsti"
+  [(set (reg:CC CSKY_CC_REGNUM)
+	(ne:CC (zero_extract:SI (match_operand:SI 0 "register_operand" "a")
+				(const_int 1)
+				(match_operand 1 "immediate_operand" "i"))
+	       (const_int 0)))]
+  "CSKY_ISA_FEATURE(E1) && UINTVAL (operands[1]) < 32"
+  "btsti\t%0,%1"
+  [(set_attr "type" "cmp")
+   (set_attr "length" "2")])
 
 ;; -------------------------------------------------------------------------
 ;; SImode unsigned integer comparisons
@@ -3247,7 +3521,7 @@
 (define_insn "*fast_cmpgeusi_i"
   [(set (reg:CC CSKY_CC_REGNUM) (geu:CC (match_operand:SI 0 "register_operand"        "a,r")
                             (match_operand:SI 1 "csky_literal_Uk_operand" "J,Uk")))]
-  "!CSKY_ISA_FEATURE(smart) && CSKY_ISA_FEATURE(E2)"
+  "CSKY_ISA_FEATURE(E2)"
   "cmphsi\t%0, %1"
   [(set_attr "length" "2,4")
    (set_attr "type" "cmp")]
@@ -3354,7 +3628,7 @@
         (const_int 0))
         (match_operand 1 "" "")
         (match_operand 2 "" "")])]
-  "TARGET_HARD_FLOAT_ABI"
+  "TARGET_HARD_FLOAT_ABI || TARGET_SUPPORT_VDSP"
 {
   int i;
 
@@ -3384,18 +3658,33 @@
   ""
   [(set_attr "length" "0")])
 
-(define_insn "*call_value_internal_vect"
-  [(set (match_operand:VANY             0 "register_operand"          "=v,v,v")
+(define_insn "*call_value_internal_vect_int"
+  [(set (match_operand:VANY             0 "register_operand"          "=w,w,w")
         (call (mem:SI (match_operand:SI 1 "csky_call_address_operand" "b, r,S"))
               (match_operand 2 "" "")))
    (clobber (reg:SI 15))]
-  "CSKY_ISA_FEATURE(vdsp)"
+  "TARGET_SUPPORT_VDSP"
   "@
     jsr\t%1
     jsr\t%1
     jbsr\t%1"
   [(set_attr "length" "2,4,4")
    (set_attr "type"   "call_jsr,call_jsr,call")]
+)
+
+(define_insn "*call_value_internal_vh"
+  [(set (match_operand:HF               0 "register_operand"          "=v,v,v")
+        (call (mem:SI (match_operand:SI 1 "csky_call_address_operand" "b, r,S"))
+              (match_operand 2 "" "")))
+   (clobber (reg:SI 15))]
+  "TARGET_HARD_FLOAT_ABI && CSKY_ISA_FEATURE(fpv3_hf)"
+  "@
+    jsr\t%1
+    jsr\t%1
+    jbsr\t%1"
+  [(set_attr "length" "2,4,4")
+   (set_attr "type"   "call_jsr,call_jsr,call")
+   (set_attr "isa"    "def,2e3,def")]
 )
 
 (define_insn "*call_value_internal_vs"
@@ -3440,6 +3729,15 @@
   [(set_attr "length" "2,4,4")
    (set_attr "type"   "call_jsr,call_jsr,call")
    (set_attr "isa"    "def,2e3,def")]
+)
+
+(define_insn "*call_value_internal_pic_vh"
+  [(set (match_operand:HF               0 "register_operand"    "=v")
+        (call (mem:SI (match_operand:SI 1 "csky_unspec_operand" "X"))
+                      (match_operand    2 "" "")))
+   (clobber (reg:SI 15))]
+  "flag_pic && TARGET_HARD_FLOAT_ABI && CSKY_ISA_FEATURE(fpv3_hf)"
+  "* return csky_output_call (operands, 1);"
 )
 
 (define_insn "*call_value_internal_pic_vs"
@@ -4041,12 +4339,37 @@
   ""
 )
 
+(define_expand "csky_smul_highpartsi"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(truncate:SI
+	 (lshiftrt:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" ""))
+                            (sign_extend:DI (match_operand:SI 2 "register_operand" "")))
+		      (const_int 32))))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+{
+  emit_insn(gen_ck803er1_smulsi3_highpart(operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "ck803er1_smulsi3_highpart"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(truncate:SI
+	 (lshiftrt:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
+                            (sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
+		          (const_int 32))))]
+  "CSKY_ISA_FEATURE(3E3r1)"
+  "mul.s32.h\t%0, %1, %2"
+  [(set_attr "type"   "mul")
+   (set_attr "length"   "4")])
+
+
 (define_insn "*dsp_mulsidi3"
   [(set (match_operand:DI                          0 "register_operand" "=y")
         (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
                  (sign_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
   "CSKY_ISA_FEATURE(dsp)"
   "muls\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "*ck803er1_mulsidi3"
@@ -4055,8 +4378,9 @@
                  (sign_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
   "CSKY_ISA_FEATURE(3E3r1)"
   "mul.s32\t%0, %1, %2"
-  [(set_attr "type"   "alu")
+  [(set_attr "type"   "mul")
    (set_attr "length"   "4")])
+
 
 (define_expand "umulsidi3"
   [(set (match_operand:DI                          0 "register_operand" "")
@@ -4072,6 +4396,7 @@
                  (zero_extend:DI (match_operand:SI 2 "register_operand" "r"))))]
   "CSKY_ISA_FEATURE(dsp)"
   "mulu\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "*ck803er1_umulsidi3"
@@ -4080,7 +4405,7 @@
                  (zero_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
   "CSKY_ISA_FEATURE(3E3r1)"
   "mul.u32\t%0, %1, %2"
-  [(set_attr "type"   "alu")
+  [(set_attr "type"   "mul")
    (set_attr "length"   "4")])
 
 (define_insn "maddsidi4"
@@ -4090,6 +4415,7 @@
                  (match_operand:DI                          3 "register_operand" "0")))]
   "CSKY_ISA_FEATURE(dsp)"
   "mulsa\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "umaddsidi4"
@@ -4099,6 +4425,7 @@
                  (match_operand:DI                          3 "register_operand" "0")))]
   "CSKY_ISA_FEATURE(dsp)"
   "mulua\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "msubsidi4"
@@ -4108,6 +4435,7 @@
                            (sign_extend:DI (match_operand:SI 2 "register_operand" "r")))))]
   "CSKY_ISA_FEATURE(dsp)"
   "mulss\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "umsubsidi4"
@@ -4117,85 +4445,197 @@
                            (zero_extend:DI (match_operand:SI 2 "register_operand" "r")))))]
   "CSKY_ISA_FEATURE(dsp)"
   "mulus\t%1, %2"
+  [(set_attr "type" "mul")]
 )
 
 (define_insn "*mula_32_l0"
-  [(set (match_operand:SI 0 "register_operand"                   "+r")
+  [(set (match_operand:SI                   0 "register_operand" "=r")
+        (plus:SI (match_operand:SI          3 "register_operand" " 0")
+                 (mult:SI (match_operand:SI 1 "register_operand" " r")
+                          (match_operand:SI 2 "register_operand" " r"))))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
+  "mula.32.l\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "*mula_32_l0_ck860"
+  [(set (match_operand:SI                   0 "register_operand" "+r")
         (plus:SI (match_dup 0)
                  (mult:SI (match_operand:SI 1 "register_operand" " r")
                           (match_operand:SI 2 "register_operand" " r"))))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
   "mula.32.l\t%0, %1, %2"
-  [(set_attr "type"   "alu")
+  [(set_attr "type"   "mul")
    (set_attr "length"   "4")])
 
 (define_insn "*mula_32_l1"
-  [(set (match_operand:SI 0 "register_operand"                   "+r")
+  [(set (match_operand:SI                   0 "register_operand" "=r")
         (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
                           (match_operand:SI 2 "register_operand" " r"))
-                 (match_dup 0)))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+                 (match_operand:SI          3 "register_operand" " 0")))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
   "mula.32.l\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
 
+(define_insn "*mula_32_l1_ck860"
+  [(set (match_operand:SI                   0 "register_operand" "+r")
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
+                          (match_operand:SI 2 "register_operand" " r"))
+                 (match_dup 0)))]
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
+  "mula.32.l\t%0, %1, %2"
+  [(set_attr "type"   "mul")
+   (set_attr "length"   "4")])
+
 (define_insn "*mula_u32_0"
+  [(set (match_operand:DI                                   0 "register_operand" "=r")
+        (plus:DI (match_operand:DI                          3 "register_operand" " 0")
+                 (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+                          (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
+  "mula.u32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "*mula_u32_0_ck860"
   [(set (match_operand:DI                                   0 "register_operand" "+r")
         (plus:DI (match_dup 0)
                  (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
                           (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
+  "mula.u32\t%0, %1, %2"
+  [(set_attr "type"   "mul")
+   (set_attr "length"   "4")])
+
+(define_insn "*mula_u32_1"
+  [(set (match_operand:DI                                   0 "register_operand" "=r")
+        (plus:DI (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+                          (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))
+                 (match_operand:DI                          3 "register_operand" " 0")))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
   "mula.u32\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
 
-(define_insn "*mula_u32_1"
+(define_insn "*mula_u32_1_ck860"
   [(set (match_operand:DI                                   0 "register_operand" "+r")
         (plus:DI (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
                           (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))
                  (match_dup 0)))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
   "mula.u32\t%0, %1, %2"
-  [(set_attr "type"   "alu")
+  [(set_attr "type"   "mul")
    (set_attr "length"   "4")])
 
 (define_insn "*mula_s32_0"
+  [(set (match_operand:DI                                   0 "register_operand" "=r")
+        (plus:DI (match_operand:DI                          3 "register_operand" " 0")
+                 (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+                          (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
+  "mula.s32\t%0, %1, %2"
+  [(set_attr "type"   "alu")
+   (set_attr "length"   "4")])
+
+(define_insn "*mula_s32_0_ck860"
   [(set (match_operand:DI                                   0 "register_operand" "+r")
         (plus:DI (match_dup 0)
                  (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
                           (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
+  "mula.s32\t%0, %1, %2"
+  [(set_attr "type"   "mul")
+   (set_attr "length"   "4")])
+
+(define_insn "*mula_s32_1"
+  [(set (match_operand:DI                                   0 "register_operand" "=r")
+        (plus:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+                          (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
+                 (match_operand:DI                          3 "register_operand" " 0")))]
+  "CSKY_ISA_FEATURE(3E3r1) && !CSKY_TARGET_ARCH(CK860)"
   "mula.s32\t%0, %1, %2"
   [(set_attr "type"   "alu")
    (set_attr "length"   "4")])
 
-(define_insn "*mula_s32_1"
+(define_insn "*mula_s32_1_ck860"
   [(set (match_operand:DI                                   0 "register_operand" "+r")
         (plus:DI (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
                           (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
                  (match_dup 0)))]
-  "CSKY_ISA_FEATURE(3E3r1)"
+  "CSKY_ISA_FEATURE(3E3r1) && CSKY_TARGET_ARCH(CK860)"
   "mula.s32\t%0, %1, %2"
-  [(set_attr "type"   "alu")
+  [(set_attr "type"   "mul")
    (set_attr "length"   "4")])
+
+;(define_insn "*mulsi3addsi_signed"
+;  [(set (match_operand:SI                   0 "register_operand" "=h")
+;        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+;                          (match_operand:SI 2 "register_operand" "r"))
+;                 (match_operand:SI          3 "register_operand" "0")))
+;   (clobber (reg:SI CSKY_LO_REGNUM))]
+;  "CSKY_ISA_FEATURE(dsp)
+;  && !TARGET_BIG_ENDIAN
+;  && csky_signed_reg_p(operands[1]) && csky_signed_reg_p(operands[2]) && csky_signed_reg_p(operands[3])"
+;  "mulsa\t%1, %2"
+;)
+;
+;(define_insn "*mulsi3addsi_unsigned"
+;  [(set (match_operand:SI                   0 "register_operand" "=h")
+;        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+;                          (match_operand:SI 2 "register_operand" "r"))
+;                 (match_operand:SI          3 "register_operand" "0")))
+;   (clobber (reg:SI CSKY_LO_REGNUM))]
+;  "CSKY_ISA_FEATURE(dsp)
+;  && !TARGET_BIG_ENDIAN
+;  && csky_unsigned_reg_p(operands[1]) && csky_unsigned_reg_p(operands[2]) && csky_unsigned_reg_p(operands[3])"
+;  "mulua\t%1, %2"
+;)
+;
+;(define_insn "*mulsi3addsi_signed_be"
+;  [(set (match_operand:SI                   0 "register_operand" "=l")
+;        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+;                          (match_operand:SI 2 "register_operand" "r"))
+;                 (match_operand:SI          3 "register_operand" "0")))
+;   (clobber (reg:SI CSKY_HI_REGNUM))]
+;  "CSKY_ISA_FEATURE(dsp)
+;  && TARGET_BIG_ENDIAN
+;  && csky_signed_reg_p(operands[1]) && csky_signed_reg_p(operands[2]) && csky_signed_reg_p(operands[3])"
+;  "mulsa\t%1, %2"
+;)
+;
+;(define_insn "*mulsi3addsi_unsigned_be"
+;  [(set (match_operand:SI                   0 "register_operand" "=l")
+;        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+;                          (match_operand:SI 2 "register_operand" "r"))
+;                 (match_operand:SI          3 "register_operand" "0")))
+;   (clobber (reg:SI CSKY_HI_REGNUM))]
+;  "CSKY_ISA_FEATURE(dsp)
+;  && TARGET_BIG_ENDIAN
+;  && csky_unsigned_reg_p(operands[1]) && csky_unsigned_reg_p(operands[2]) && csky_unsigned_reg_p(operands[3])"
+;  "mulua\t%1, %2"
+;)
+
+;; old insn is mulall.s16.
+;; mulall.s16.s is a saturated operation.
+;;(define_insn "maddhisi4"
+;;  [(set (match_operand:SI                                   0 "register_operand" "=r")
+;;        (plus:SI (mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand" " r"))
+;;                          (sign_extend:SI (match_operand:HI 2 "register_operand" " r")))
+;;                 (match_operand:SI                          3 "register_operand" " 0")))]
+;;  "CSKY_ISA_FEATURE(3E3r1)"
+;;  "mulall.s16.s\t%0, %1, %2"
+;;  [(set_attr "type"   "mul")
+;;   (set_attr "length"   "4")])
 
 ;; ------------------------------------------------------------------------
 ;; index insns
 ;; ------------------------------------------------------------------------
 
-(define_insn "*cskyv2_indexdi_t"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
-                            (const_int 3))
-                 (match_operand:SI 2 "register_operand" "r")))]
-  "CSKY_ISA_FEATURE(2E3)"
-  "ixd\t%0, %2, %1"
-)
-
 (define_insn "*cskyv2_indexsi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
-                            (const_int 2))
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+                          (const_int 4))
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
   "ixw\t%0, %2, %1"
@@ -4203,8 +4643,8 @@
 
 (define_insn "*cskyv2_indexhi_t"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "r")
-                            (const_int 1))
+        (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "r")
+                          (const_int 2))
                  (match_operand:SI 2 "register_operand" "r")))]
   "CSKY_ISA_FEATURE(E2)"
   "ixh\t%0, %2, %1"
@@ -4332,7 +4772,7 @@
 
 (define_insn "doloop_end_internal_loop"
  [(set (pc)
-       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r,!m")
+       (if_then_else (ne (match_operand:SI 0 "nonimmediate_operand" "+r,!m")
        (const_int 0))
          (label_ref (match_operand 1 "" ""))
          (pc)))
@@ -4366,7 +4806,7 @@
 ;; emit bnezad
 (define_insn "fold_short_loop_with_bnezad"
  [(set (pc)
-       (if_then_else (ne (match_operand:SI 0 "register_operand" "+r,!m")
+       (if_then_else (ne (match_operand:SI 0 "nonimmediate_operand" "+r,!m")
        (const_int 0))
          (label_ref (match_operand 1 "" ""))
          (pc)))
@@ -4395,7 +4835,8 @@
        (if_then_else (lt (abs (minus (match_dup 1) (pc)))
          (const_int 65534))
          (const_int 4)
-         (const_int 12)))])
+         (const_int 12)))
+   (set_attr "type"   "branch_jmp")])
 
 ;;TODO emit decgt.
 ;;TODO emit declt.

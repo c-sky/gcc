@@ -8,6 +8,7 @@
 
 This file is part of GCC.
 
+
 GCC is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 3, or (at your option) any later
@@ -1775,6 +1776,57 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
   (cmp @0 INTEGER_CST@1)
   (if (tree_int_cst_sgn (@1) == 1)
    (acmp @0 { wide_int_to_tree (TREE_TYPE (@1), wi::sub (@1, 1)); }))))
+
+/* change "(double/float) integer cmp REAL_CST" to "integer cmp (int)REAL_CST" */
+
+(for cmp(simple_comparison)
+ (simplify
+  (cmp (float @0) (REAL_CST@1))
+  (if(flag_real_cst
+      && !REAL_VALUE_ISNAN(TREE_REAL_CST(@1))
+      && !REAL_VALUE_ISINF(TREE_REAL_CST(@1)))
+   (with {tree integer_type = TREE_TYPE(@0);
+         REAL_VALUE_TYPE tmax, tmin, t0, t1, t2 = TREE_REAL_CST(@1);
+         real_trunc(&t1, VOIDmode, &t2);
+         HOST_WIDE_INT const_i = real_to_integer(&t1);
+         wide_int wmax = wi::max_value(TYPE_PRECISION(integer_type), TYPE_SIGN(integer_type));
+         wide_int wmin = wi::min_value(TYPE_PRECISION(integer_type), TYPE_SIGN(integer_type));
+         real_from_integer(&t0, VOIDmode, 0, SIGNED);
+         real_from_integer(&tmax, VOIDmode, wmax, TYPE_SIGN(integer_type));
+         real_from_integer(&tmin, VOIDmode, wmin, TYPE_SIGN(integer_type));
+         }
+     (switch
+       (if(real_less(&tmax, &t2))
+         (switch
+           (if(cmp == LE_EXPR || cmp == LT_EXPR || cmp == NE_EXPR)
+             {build_one_cst(integer_type); })
+           (if(cmp == GE_EXPR || cmp == GT_EXPR || cmp == EQ_EXPR)
+             {build_zero_cst(integer_type); })))
+       (if(real_less(&t2, &tmin))
+         (switch
+           (if(cmp == LT_EXPR || cmp == LE_EXPR || cmp == EQ_EXPR)
+             {build_zero_cst(integer_type);})
+           (if(cmp == GE_EXPR || cmp == GT_EXPR || cmp == NE_EXPR)
+             {build_one_cst(integer_type); })))
+       (if(real_isinteger(&t2, VOIDmode))
+         (cmp @0 {build_int_cst(TREE_TYPE(@0), const_i);}))
+       (if(!real_isinteger(&t2, VOIDmode))
+         (switch
+           (if(cmp == EQ_EXPR)
+             {build_zero_cst(integer_type);})
+           (if(cmp == NE_EXPR)
+             {build_one_cst(integer_type);})
+           (if(real_less(&t0, &t2)
+               && (cmp == GE_EXPR || cmp == GT_EXPR))
+             (gt @0 {build_int_cst(integer_type, const_i);}))
+           (if(real_less(&t0, &t2) && (cmp == LT_EXPR || cmp == LE_EXPR))
+             (le @0 {build_int_cst(integer_type, const_i);}))
+           (if(real_less(&t2, &t0)
+               && (cmp == GE_EXPR || cmp == GT_EXPR))
+             (ge @0 {build_int_cst(integer_type, const_i);}))
+           (if(real_less(&t2, &t0)
+               && (cmp == LE_EXPR || cmp == LT_EXPR))
+             (lt @0 {build_int_cst(integer_type, const_i);})))))))))
 
 
 /* We can simplify a logical negation of a comparison to the

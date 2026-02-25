@@ -15,6 +15,7 @@
 #define CC1_SPEC  \
   "%{EB:-EB}      \
    %{EL:-EL}      \
+   %{profile:-p}  \
   "
 
 #undef ASM_SPEC
@@ -33,6 +34,8 @@
   %{mmac:-mmac}                 \
   %{manchor:-manchor}           \
   %{mtrust:-mtrust}             \
+  %{melrw:-melrw}               \
+  %{mistack:-mistack}           \
   "
 
 #define GLIBC_DYNAMIC_LINKER  "/lib/ld.so.1"
@@ -109,9 +112,9 @@
 #undef FUNCTION_PROFILER
 #define SAVE_LR     \
   "push\tlr"
-#define FUNCTION_PROFILER(file, labelno)                                  \
-{                                                                         \
-    fprintf(file, "\t%s\n\tjbsr\t_mcount\n\tnop32\n\tnop32\n", SAVE_LR);  \
+#define FUNCTION_PROFILER(file, labelno)                \
+{                                                       \
+    fprintf(file, "\t%s\n.no_literal_dump\t4\n\tjbsr\t_mcount\nnop32\nnop32\n", SAVE_LR);  \
 }
 #define NO_PROFILE_COUNTERS 1
 /* This flag used to enable or disable the sepical

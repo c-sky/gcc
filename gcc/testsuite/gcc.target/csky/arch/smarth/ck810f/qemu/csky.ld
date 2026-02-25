@@ -6,13 +6,13 @@ ENTRY (__start)
 
 MEMORY
 {
-	ISRAM : ORIGIN = 0x8000000, LENGTH = 0x800000
+	ISRAM : ORIGIN = 0x80000000, LENGTH = 0x800000
 }
 
-PROVIDE (__heap_start = 0x8200000);
-PROVIDE (__heap_end = 0x82f0000);
+PROVIDE (__heap_start = 0x80200000);
+PROVIDE (__heap_end = 0x802f0000);
 
-PROVIDE (__stack = 0x87ffff8);
+PROVIDE (__stack = 0x807ffff8);
 
 SECTIONS {
 	.text : {

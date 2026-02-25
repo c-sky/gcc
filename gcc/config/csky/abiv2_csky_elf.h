@@ -44,8 +44,24 @@
  %{EL:-EL} -X"
 
 #undef  LIB_SPEC
-#define LIB_SPEC \
-  "%{pthread:-lpthread} -lc"
+#ifdef LIBC_MINILIBC
+#define LIB_SPEC "\
+%{pthread:-lpthread} \
+--whole-archive \
+%{msim:-lsemi} \
+--no-whole-archive \
+-lc \
+"
+#else
+#define LIB_SPEC "\
+%{pthread:-lpthread} \
+--start-group \
+-lc \
+%{msim:-lsemi}%{!msim:-lnosys} \
+--end-group \
+"
+#endif
+
 /* FIXME add this to LIB_SPEC when need */
 /*   %{!shared:%{profile:-lc_p}%{!profile:-lc}}" */
 

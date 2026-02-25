@@ -256,7 +256,7 @@ LIB2_DIVMOD_FUNCS = _divdi3 _moddi3 _udivdi3 _umoddi3 _udiv_w_sdiv _udivmoddi4
 
 # List of extra C and assembler files to add to static and shared libgcc2.
 # Assembler files should have names ending in `.S'.
-LIB2ADD = 
+LIB2ADD =
 
 # List of extra C and assembler files to add to static libgcc2.
 # Assembler files should have names ending in `.S'.
@@ -533,13 +533,13 @@ fpbit-src := $(srcdir)/fp-bit.c
 ifneq ($(FPBIT),)
 fpbit-o = $(patsubst %,%$(objext),$(FPBIT_FUNCS))
 $(fpbit-o): %$(objext): $(fpbit-src)
-	$(gcc_compile) -DFINE_GRAINED_LIBRARIES -DL$* -DFLOAT $(FPBIT_CFLAGS) -c $< $(vis_hide)
+	$(gcc_compile) -DFINE_GRAINED_LIBRARIES -DL$* -DFLOAT $(FPBIT_CFLAGS) $($*_CFLAGS) -c $< $(vis_hide)
 libgcc-objects += $(fpbit-o)
 
 ifeq ($(enable_shared),yes)
 fpbit-s-o = $(patsubst %,%_s$(objext),$(FPBIT_FUNCS))
 $(fpbit-s-o): %_s$(objext): $(fpbit-src)
-	$(gcc_s_compile) -DFINE_GRAINED_LIBRARIES -DL$* -DFLOAT $(FPBIT_CFLAGS)  -c $<
+	$(gcc_s_compile) -DFINE_GRAINED_LIBRARIES -DL$* -DFLOAT $(FPBIT_CFLAGS) $($*_CFLAGS) -c $<
 libgcc-s-objects += $(fpbit-s-o)
 endif
 endif

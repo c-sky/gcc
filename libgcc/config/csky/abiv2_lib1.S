@@ -407,6 +407,14 @@ FUNC_START unordsf2
      movi     r0, 1
      rts
 #else
+
+     #if defined(__CSKY_HARD_FLOAT_ABI__)
+     #if defined(__CSKY_FPUV3__)
+     fmfvr.32.1 r0, fr0
+     fmfvr.32.1 r1, fr1
+     #endif
+     #endif
+
      lsli     r2, r0, 1
      lsli     r3, r1, 1
      asri     r2, r2, 24
@@ -496,6 +504,14 @@ FUNC_START unorddf2
      movi     r0, 1
      rts
 #else
+
+     #if defined(__CSKY_HARD_FLOAT_ABI__)
+     #if defined(__CSKY_FPUV3__)
+     fmfvr.64 xl, xh, fr0
+     fmfvr.64 yl, yh, fr1
+     #endif
+     #endif
+
      lsli     r13, xh, 1
      asri     r13, r13, 21
      not      r13

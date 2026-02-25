@@ -425,6 +425,16 @@ proc check_effective_target_alias { } {
     }
 }
 
+# Returns 1 if the target uses the ELF object format, 0 otherwise.
+
+proc check_effective_target_elf { } {
+    if { [gcc_target_object_format] == "elf" } {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
 # Returns 1 if the target toolchain supports ifunc, 0 otherwise.
 
 proc check_ifunc_available { } {
@@ -790,7 +800,7 @@ proc check_effective_target_tls_emulated {} {
 proc check_effective_target_tls_runtime {} {
     # The runtime does not have TLS support, but just
     # running the test below is insufficient to show this.
-    if { [istarget msp430-*-*] || [istarget visium-*-*] } {
+    if { [istarget msp430-*-*] || [istarget visium-*-*] || [istarget csky*-elf*] } {
 	return 0
     }
     return [check_runtime tls_runtime {

@@ -162,7 +162,7 @@ int HIDDEN
 __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
 {
   int actual_oldval, fail;
-    
+
   while (1)
     {
       actual_oldval = *ptr;
@@ -171,7 +171,7 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
 	return actual_oldval;
 
       fail = __kernel_cmpxchg (actual_oldval, newval, ptr);
-  
+
       if (!fail)
         return oldval;
     }
@@ -192,7 +192,7 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
       {									\
 	actual_oldval = *wordptr;					\
 									\
-	if (((actual_oldval & mask) >> shift) != (unsigned int) oldval)	\
+	if (((actual_oldval & mask) >> shift) != ((unsigned int) oldval & MASK_##WIDTH))	\
           return (actual_oldval & mask) >> shift;			\
 									\
 	actual_newval = (actual_oldval & ~mask)				\
@@ -207,7 +207,7 @@ __sync_val_compare_and_swap_4 (int *ptr, int oldval, int newval)
   }
 
 SUBWORD_VAL_CAS (short, 2)
-SUBWORD_VAL_CAS (char,  1)
+SUBWORD_VAL_CAS (signed char,  1)
 
 typedef unsigned char bool;
 
@@ -229,7 +229,7 @@ __sync_bool_compare_and_swap_4 (int *ptr, int oldval, int newval)
   }
 
 SUBWORD_BOOL_CAS (short, 2)
-SUBWORD_BOOL_CAS (char,  1)
+SUBWORD_BOOL_CAS (signed char,  1)
 
 void HIDDEN
 __sync_synchronize (void)

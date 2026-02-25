@@ -89,6 +89,9 @@ namespace __sanitizer {
   const unsigned struct___old_kernel_stat_sz = 0;
   const unsigned struct_kernel_stat_sz = 64;
   const unsigned struct_kernel_stat64_sz = 104;
+#elif defined(__csky__)
+  const unsigned struct_kernel_stat_sz = 80;
+  const unsigned struct_kernel_stat64_sz = 104;
 #endif
   struct __sanitizer_perf_event_attr {
     unsigned type;
@@ -109,7 +112,7 @@ namespace __sanitizer {
 
 #if SANITIZER_LINUX || SANITIZER_FREEBSD
 
-#if defined(__powerpc64__)
+#if defined(__powerpc64__) || defined(__csky__)
   const unsigned struct___old_kernel_stat_sz = 0;
 #elif !defined(__sparc__)
   const unsigned struct___old_kernel_stat_sz = 32;
@@ -519,7 +522,7 @@ namespace __sanitizer {
 
 #if SANITIZER_LINUX || SANITIZER_FREEBSD
 #if defined(_LP64) || defined(__x86_64__) || defined(__powerpc__)\
-                   || defined(__mips__)
+                   || defined(__mips__) || defined(__csky__)
   typedef unsigned __sanitizer___kernel_uid_t;
   typedef unsigned __sanitizer___kernel_gid_t;
 #else
@@ -532,7 +535,7 @@ namespace __sanitizer {
   typedef long __sanitizer___kernel_off_t;
 #endif
 
-#if defined(__powerpc__) || defined(__mips__)
+#if defined(__powerpc__) || defined(__mips__) || defined(__csky__)
   typedef unsigned int __sanitizer___kernel_old_uid_t;
   typedef unsigned int __sanitizer___kernel_old_gid_t;
 #else

@@ -46,6 +46,8 @@ load_gcc_lib torture-options.exp
 load_gcc_lib timeout.exp
 load_gcc_lib timeout-dg.exp
 load_gcc_lib fortran-modules.exp
+load_gcc_lib gcc-gdb-test.exp
+load_gcc_lib gcc-qemu-test.exp
 
 set dg-do-what-default run
 

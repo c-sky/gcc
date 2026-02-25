@@ -3851,7 +3851,8 @@ adjust_setup_cost (struct ivopts_data *data, unsigned cost)
 {
   if (cost == INFTY)
     return cost;
-  else if (optimize_loop_for_speed_p (data->current_loop))
+  else if (optimize_loop_for_speed_p (data->current_loop)
+           || flag_ivopt_loop_speedup)
     return cost / avg_loop_niter (data->current_loop);
   else
     return cost;

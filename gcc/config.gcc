@@ -2033,10 +2033,17 @@ csky-*)
     csky*-elf*)
       tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/${csky_abi}_csky_elf.h"
       tmake_file="${tmake_file} csky/${csky_abi}_t-csky-elf"
-      inhibit_libc=true
+      #inhibit_libc=true
       csky_elf_libgcov=true
       default_use_cxa_atexit=no
       use_gcc_stdint=wrap
+      case ${target} in
+        *-none*)
+          ;;
+        *)
+          tm_defines="${tm_defines} LIBC_MINILIBC"
+          ;;
+      esac
       ;;
     csky*-ecos*)
       tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file} csky/csky-ecos-elf.h"

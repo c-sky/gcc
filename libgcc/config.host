@@ -858,9 +858,16 @@ csky-*)
   esac
 
   case ${host} in
-      csky-*-elf*)
+      csky*-elf*)
           tmake_file="csky/${csky_abi}_t-csky t-fdpbit"
-          extra_parts=""
+          case ${host} in
+            *-none*)
+              extra_parts="crti.o crtn.o crtbegin.o crtend.o"
+              ;;
+            *)
+              extra_parts=""
+              ;;
+          esac
           ;;
       csky-*-ecos*)
           tmake_file="${tmake_file} csky/${csky_abi}_t-csky t-fdpbit"
